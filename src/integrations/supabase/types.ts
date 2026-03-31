@@ -14,16 +14,153 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      meditations: {
+        Row: {
+          audio_url: string | null
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          month: string
+          music_mood: string
+          script: string
+          title: string
+          user_id: string
+          voice_id: string
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          month: string
+          music_mood: string
+          script: string
+          title: string
+          user_id: string
+          voice_id: string
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          month?: string
+          music_mood?: string
+          script?: string
+          title?: string
+          user_id?: string
+          voice_id?: string
+        }
+        Relationships: []
+      }
+      monthly_themes: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          month: string
+          theme: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          month: string
+          theme: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          month?: string
+          theme?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_answers: {
+        Row: {
+          created_at: string
+          id: string
+          question_1: string
+          question_2: string
+          question_3: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          question_1: string
+          question_2: string
+          question_3: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          question_1?: string
+          question_2?: string
+          question_3?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +287,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
