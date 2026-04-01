@@ -72,18 +72,6 @@ const VoiceStep = ({ selectedVoice, onSelect }: VoiceStepProps) => {
         ))}
       </div>
 
-      {selectedVoice === "own" && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          className="mt-4 p-4 rounded-2xl bg-teal-light/20 border border-primary/20"
-        >
-          <p className="font-body text-xs text-accent leading-relaxed">
-            🔒 <strong>Privacy promise:</strong> Your voice is used only to create your meditation.
-            It is never stored, sold, or shared. Once your meditation is ready, your recording is permanently deleted.
-          </p>
-        </motion.div>
-      )}
     </motion.div>
   );
 };
