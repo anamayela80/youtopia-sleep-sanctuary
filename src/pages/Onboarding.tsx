@@ -99,10 +99,10 @@ const Onboarding = () => {
       const monthSlug = currentMonth.replace(/\s/g, "-");
       
       setGenerationStatus("Composing your background music...");
-      let _musicUrl: string | undefined;
+      let musicUrl: string | undefined;
       try {
         const musicBlob = await generateMusic(selectedMusic || "deep-sleep");
-        _musicUrl = await uploadMusicTrack(user.id, musicBlob, monthSlug);
+        musicUrl = await uploadMusicTrack(user.id, musicBlob, monthSlug);
       } catch (musicErr) {
         console.warn("Music generation failed, continuing without music:", musicErr);
       }
@@ -120,6 +120,7 @@ const Onboarding = () => {
         voiceId: selectedVoice === "own" ? "own-clone" : (selectedVoice || "sofia"),
         musicMood: selectedMusic || "deep-sleep",
         month: currentMonth,
+        musicUrl,
       });
 
       toast({ title: "Your meditation is ready! 🧘", description: "Time to drift into peace." });
