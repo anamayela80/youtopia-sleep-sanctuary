@@ -37,12 +37,13 @@ const Onboarding = () => {
   const handleGenerateMeditation = async () => {
     setIsGenerating(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
         toast({ variant: "destructive", title: "Not logged in", description: "Please sign in first." });
         navigate("/auth?mode=login");
         return;
       }
+      const user = session.user;
 
       // Step 1: Save answers
       setGenerationStatus("Saving your intentions...");
