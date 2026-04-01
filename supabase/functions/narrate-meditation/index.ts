@@ -55,10 +55,14 @@ serve(async (req) => {
       return clipped;
     };
 
-    // Clean script: remove [pause] and [breathe] markers, replace with natural pauses
+    // Clean script: replace markers with natural pauses via SSML-like ellipses
     const cleanedScript = script
-      .replace(/\[pause\]/gi, "...")
-      .replace(/\[breathe\]/gi, "... Take a slow, deep breath ...");
+      .replace(/\[silence\s+45s\]/gi, "... ... ... ... ... ... ... ... ... ... ... ... ... ... ...")
+      .replace(/\[silence\s+30s\]/gi, "... ... ... ... ... ... ... ... ... ...")
+      .replace(/\[silence\s+15s\]/gi, "... ... ... ... ... ...")
+      .replace(/\[long\s+pause\]/gi, "... ... ... ...")
+      .replace(/\[pause\]/gi, "... ...")
+      .replace(/\[breathe\]/gi, "... Take a slow, deep breath in ... and gently breathe out ... ...");
 
     // Try TTS, fallback to default voice on 404
     const fallbackVoiceId = "21m00Tcm4TlvDq8ikWAM"; // Rachel - reliable default
