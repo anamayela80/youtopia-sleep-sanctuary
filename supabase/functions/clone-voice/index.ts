@@ -26,10 +26,14 @@ serve(async (req) => {
       });
     }
 
+    // Read audio file bytes
+    const audioBytes = await audioFile.arrayBuffer();
+    console.log("Audio file size:", audioBytes.byteLength, "type:", audioFile.type);
+
     // Create instant voice clone via ElevenLabs
     const cloneForm = new FormData();
     cloneForm.append("name", `youtopia-clone-${Date.now()}`);
-    cloneForm.append("files", audioFile);
+    cloneForm.append("files", new File([audioBytes], audioFile.name || "voice-sample.webm", { type: audioFile.type || "audio/webm" }));
     cloneForm.append("remove_background_noise", "true");
     cloneForm.append("description", "Temporary voice clone for YOUTOPIA meditation");
 
