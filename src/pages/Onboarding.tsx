@@ -11,8 +11,6 @@ import {
   saveUserAnswers,
   cloneVoice,
   deleteVoice,
-  generateMusic,
-  uploadMusicTrack,
 } from "@/services/meditationService";
 import QuestionsStep from "@/components/onboarding/QuestionsStep";
 import VoiceStep from "@/components/onboarding/VoiceStep";
@@ -94,24 +92,14 @@ const Onboarding = () => {
         voiceRecordingRef.current = null;
       }
 
-      // Step 6: Generate background music
+      // Step 6: Upload narration audio
       const currentMonth = new Date().toLocaleString("default", { month: "long", year: "numeric" });
       const monthSlug = currentMonth.replace(/\s/g, "-");
       
-      setGenerationStatus("Composing your background music...");
-      let musicUrl: string | undefined;
-      try {
-        const musicBlob = await generateMusic(selectedMusic || "deep-sleep");
-        musicUrl = await uploadMusicTrack(user.id, musicBlob, monthSlug);
-      } catch (musicErr) {
-        console.warn("Music generation failed, continuing without music:", musicErr);
-      }
-
-      // Step 7: Upload narration audio
       setGenerationStatus("Saving your meditation...");
       const audioUrl = await uploadMeditationAudio(user.id, audioBlob, monthSlug);
 
-      // Step 8: Save meditation record
+      // Step 7: Save meditation record (music is generated procedurally in the player)
       await saveMeditation({
         userId: user.id,
         title: `${currentMonth} Meditation`,
@@ -120,7 +108,6 @@ const Onboarding = () => {
         voiceId: selectedVoice === "own" ? "own-clone" : (selectedVoice || "sofia"),
         musicMood: selectedMusic || "deep-sleep",
         month: currentMonth,
-        musicUrl,
       });
 
       toast({ title: "Your meditation is ready! 🧘", description: "Time to drift into peace." });

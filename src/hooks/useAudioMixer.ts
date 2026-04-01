@@ -1,28 +1,28 @@
 import { useRef, useState, useCallback, useEffect } from "react";
+import { useAmbientGenerator } from "./useAmbientGenerator";
 
 interface UseAudioMixerOptions {
   narrationUrl: string | null;
-  musicUrl: string | null;
+  musicMood?: string;
   musicVolume?: number; // 0-1, default 0.15
 }
 
-export function useAudioMixer({ narrationUrl, musicUrl, musicVolume = 0.15 }: UseAudioMixerOptions) {
+export function useAudioMixer({ narrationUrl, musicMood = "deep-sleep", musicVolume = 0.15 }: UseAudioMixerOptions) {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const narrationSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const musicSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const narrationGainRef = useRef<GainNode | null>(null);
-  const musicGainRef = useRef<GainNode | null>(null);
   const narrationBufferRef = useRef<AudioBuffer | null>(null);
-  const musicBufferRef = useRef<AudioBuffer | null>(null);
   const startTimeRef = useRef(0);
   const pauseOffsetRef = useRef(0);
   const rafRef = useRef<number>(0);
+  const ambientActiveRef = useRef(false);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+
+  const ambient = useAmbientGenerator();
 
   const loadBuffer = async (ctx: AudioContext, url: string): Promise<AudioBuffer> => {
     const resp = await fetch(url);
@@ -40,21 +40,12 @@ export function useAudioMixer({ narrationUrl, musicUrl, musicVolume = 0.15 }: Us
       const narrationBuffer = await loadBuffer(ctx, narrationUrl);
       narrationBufferRef.current = narrationBuffer;
       setDuration(narrationBuffer.duration);
-
-      if (musicUrl) {
-        try {
-          const mBuf = await loadBuffer(ctx, musicUrl);
-          musicBufferRef.current = mBuf;
-        } catch (e) {
-          console.warn("Could not load music track:", e);
-        }
-      }
     } catch (e) {
       console.error("Audio loading error:", e);
     } finally {
       setIsLoading(false);
     }
-  }, [narrationUrl, musicUrl]);
+  }, [narrationUrl]);
 
   useEffect(() => {
     load();
@@ -62,7 +53,7 @@ export function useAudioMixer({ narrationUrl, musicUrl, musicVolume = 0.15 }: Us
       stop();
       audioCtxRef.current?.close();
     };
-  }, [narrationUrl, musicUrl]);
+  }, [narrationUrl]);
 
   const tick = useCallback(() => {
     const ctx = audioCtxRef.current;
@@ -76,8 +67,13 @@ export function useAudioMixer({ narrationUrl, musicUrl, musicVolume = 0.15 }: Us
     } else {
       setIsPlaying(false);
       pauseOffsetRef.current = 0;
+      // Stop ambient when narration ends
+      if (audioCtxRef.current && ambientActiveRef.current) {
+        ambient.stop(audioCtxRef.current);
+        ambientActiveRef.current = false;
+      }
     }
-  }, []);
+  }, [ambient]);
 
   const play = useCallback(() => {
     const ctx = audioCtxRef.current;
@@ -93,33 +89,25 @@ export function useAudioMixer({ narrationUrl, musicUrl, musicVolume = 0.15 }: Us
     narGain.gain.value = 1.0;
     narSource.connect(narGain).connect(ctx.destination);
     narrationSourceRef.current = narSource;
-    narrationGainRef.current = narGain;
 
-    // Music (loop behind narration)
-    const musBuf = musicBufferRef.current;
-    if (musBuf) {
-      const musSource = ctx.createBufferSource();
-      musSource.buffer = musBuf;
-      musSource.loop = true;
-      const musGain = ctx.createGain();
-      musGain.gain.value = musicVolume;
-      musSource.connect(musGain).connect(ctx.destination);
-      musicSourceRef.current = musSource;
-      musicGainRef.current = musGain;
-      musSource.start(0, pauseOffsetRef.current % musBuf.duration);
-    }
+    // Start procedural ambient music
+    ambient.start(ctx, ctx.destination, musicMood, musicVolume);
+    ambientActiveRef.current = true;
 
     narSource.start(0, pauseOffsetRef.current);
     startTimeRef.current = ctx.currentTime;
     narSource.onended = () => {
       setIsPlaying(false);
       pauseOffsetRef.current = 0;
-      try { musicSourceRef.current?.stop(); } catch {}
+      if (audioCtxRef.current && ambientActiveRef.current) {
+        ambient.stop(audioCtxRef.current);
+        ambientActiveRef.current = false;
+      }
     };
 
     setIsPlaying(true);
     rafRef.current = requestAnimationFrame(tick);
-  }, [musicVolume, tick]);
+  }, [musicMood, musicVolume, tick, ambient]);
 
   const pause = useCallback(() => {
     const ctx = audioCtxRef.current;
@@ -127,20 +115,26 @@ export function useAudioMixer({ narrationUrl, musicUrl, musicVolume = 0.15 }: Us
     const elapsed = ctx.currentTime - startTimeRef.current + pauseOffsetRef.current;
     pauseOffsetRef.current = elapsed;
     try { narrationSourceRef.current?.stop(); } catch {}
-    try { musicSourceRef.current?.stop(); } catch {}
+    if (ambientActiveRef.current) {
+      ambient.stop(ctx);
+      ambientActiveRef.current = false;
+    }
     cancelAnimationFrame(rafRef.current);
     setIsPlaying(false);
-  }, []);
+  }, [ambient]);
 
   const stop = useCallback(() => {
     try { narrationSourceRef.current?.stop(); } catch {}
-    try { musicSourceRef.current?.stop(); } catch {}
+    if (audioCtxRef.current && ambientActiveRef.current) {
+      ambient.stop(audioCtxRef.current);
+      ambientActiveRef.current = false;
+    }
     cancelAnimationFrame(rafRef.current);
     pauseOffsetRef.current = 0;
     setIsPlaying(false);
     setProgress(0);
     setCurrentTime(0);
-  }, []);
+  }, [ambient]);
 
   const togglePlay = useCallback(() => {
     if (isPlaying) pause();
