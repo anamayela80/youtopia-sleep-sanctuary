@@ -41,27 +41,40 @@ serve(async (req) => {
       .replace(/\[pause\]/gi, "...")
       .replace(/\[breathe\]/gi, "... Take a slow, deep breath ...");
 
-    const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${elevenLabsVoiceId}?output_format=mp3_44100_128`,
-      {
-        method: "POST",
-        headers: {
-          "xi-api-key": ELEVENLABS_API_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          text: cleanedScript,
-          model_id: "eleven_multilingual_v2",
-          voice_settings: {
-            stability: 0.7,
-            similarity_boost: 0.75,
-            style: 0.3,
-            use_speaker_boost: true,
-            speed: 0.85,
+    // Try TTS, fallback to default voice on 404
+    const fallbackVoiceId = "21m00Tcm4TlvDq8ikWAM"; // Rachel - reliable default
+    
+    const doTTS = async (vid: string) => {
+      return await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${vid}?output_format=mp3_44100_128`,
+        {
+          method: "POST",
+          headers: {
+            "xi-api-key": ELEVENLABS_API_KEY,
+            "Content-Type": "application/json",
           },
-        }),
-      }
-    );
+          body: JSON.stringify({
+            text: cleanedScript,
+            model_id: "eleven_multilingual_v2",
+            voice_settings: {
+              stability: 0.7,
+              similarity_boost: 0.75,
+              style: 0.3,
+              use_speaker_boost: true,
+              speed: 0.85,
+            },
+          }),
+        }
+      );
+    };
+
+    let response = await doTTS(elevenLabsVoiceId);
+
+    // If voice not found, retry with fallback
+    if (response.status === 404 && elevenLabsVoiceId !== fallbackVoiceId) {
+      console.warn(`Voice ${elevenLabsVoiceId} not found, falling back to default`);
+      response = await doTTS(fallbackVoiceId);
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
