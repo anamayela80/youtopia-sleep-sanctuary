@@ -1,32 +1,41 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Play, Pause, Download, Bell, Library, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAudioMixer } from "@/hooks/useAudioMixer";
 import logo from "@/assets/youtopia-logo.png";
 
 interface Meditation {
   id: string;
   title: string;
   audio_url: string | null;
+  music_url: string | null;
   music_mood: string;
   month: string;
   created_at: string;
 }
 
 const Home = () => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [currentTime, setCurrentTime] = useState("0:00");
-  const [duration, setDuration] = useState("0:00");
   const [meditations, setMeditations] = useState<Meditation[]>([]);
   const [loading, setLoading] = useState(true);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const navigate = useNavigate();
 
-  const currentMonth = new Date().toLocaleString("default", { month: "long", year: "numeric" });
   const currentMeditation = meditations[0];
   const pastMeditations = meditations.slice(1);
+
+  const {
+    isPlaying,
+    isLoading: audioLoading,
+    progress,
+    currentTime,
+    duration,
+    togglePlay,
+  } = useAudioMixer({
+    narrationUrl: currentMeditation?.audio_url || null,
+    musicUrl: currentMeditation?.music_url || null,
+    musicVolume: 0.15,
+  });
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -53,30 +62,6 @@ const Home = () => {
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
     return `${m}:${s.toString().padStart(2, "0")}`;
-  };
-
-  const togglePlay = () => {
-    if (!currentMeditation?.audio_url) return;
-
-    if (!audioRef.current) {
-      audioRef.current = new Audio(currentMeditation.audio_url);
-      audioRef.current.addEventListener("timeupdate", () => {
-        const a = audioRef.current!;
-        setProgress((a.currentTime / a.duration) * 100);
-        setCurrentTime(formatTime(a.currentTime));
-      });
-      audioRef.current.addEventListener("loadedmetadata", () => {
-        setDuration(formatTime(audioRef.current!.duration));
-      });
-      audioRef.current.addEventListener("ended", () => setIsPlaying(false));
-    }
-
-    if (isPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
-    }
-    setIsPlaying(!isPlaying);
   };
 
   const handleSignOut = async () => {
@@ -146,8 +131,8 @@ const Home = () => {
                   <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progress}%` }} />
                 </div>
                 <div className="flex justify-between mt-1.5">
-                  <span className="text-xs font-body text-muted-foreground">{currentTime}</span>
-                  <span className="text-xs font-body text-muted-foreground">{duration}</span>
+                  <span className="text-xs font-body text-muted-foreground">{formatTime(currentTime)}</span>
+                  <span className="text-xs font-body text-muted-foreground">{formatTime(duration)}</span>
                 </div>
               </div>
 
@@ -159,9 +144,20 @@ const Home = () => {
                 )}
                 <button
                   onClick={togglePlay}
-                  className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground transition-all active:scale-95"
+                  disabled={audioLoading}
+                  className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground transition-all active:scale-95 disabled:opacity-50"
                 >
-                  {isPlaying ? <Pause size={24} /> : <Play size={24} className="ml-1" />}
+                  {audioLoading ? (
+                    <motion.div
+                      className="w-5 h-5 rounded-full border-2 border-primary-foreground border-t-transparent"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    />
+                  ) : isPlaying ? (
+                    <Pause size={24} />
+                  ) : (
+                    <Play size={24} className="ml-1" />
+                  )}
                 </button>
                 <button className="text-accent">
                   <Bell size={20} />
