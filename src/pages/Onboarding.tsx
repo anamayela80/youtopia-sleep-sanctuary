@@ -62,18 +62,21 @@ const Onboarding = () => {
 
       // Step 2: Clone voice if using own voice
       let voiceIdForNarration = selectedVoice || "sofia";
-      if (selectedVoice === "own" && voiceRecordingRef.current) {
+      const isCustomVoice = selectedVoice === "own" && voiceRecordingRef.current;
+      
+      if (isCustomVoice) {
         setGenerationStatus("Cloning your voice...");
-        clonedVoiceId = await cloneVoice(voiceRecordingRef.current);
+        clonedVoiceId = await cloneVoice(voiceRecordingRef.current!);
         voiceIdForNarration = clonedVoiceId;
       }
 
-      // Step 3: Generate script
+      // Step 3: Generate script (shorter for custom voices to save credits)
       setGenerationStatus("Writing your personal meditation...");
       const script = await generateMeditationScript({
         question1: answers[0],
         question2: answers[1],
         question3: answers[2],
+        shortScript: !!isCustomVoice,
       });
 
       // Step 4: Narrate with chosen/cloned voice
@@ -91,12 +94,22 @@ const Onboarding = () => {
         voiceRecordingRef.current = null;
       }
 
-      // Step 6: Upload audio
-      setGenerationStatus("Saving your meditation...");
-      const currentMonth = new Date().toLocaleString("default", { month: "long", year: "numeric" });
-      const audioUrl = await uploadMeditationAudio(user.id, audioBlob, currentMonth.replace(/\s/g, "-"));
+      // Step 6: Generate background music
+      setGenerationStatus("Composing your background music...");
+      let musicUrl: string | undefined;
+      try {
+        const musicBlob = await generateMusic(selectedMusic || "deep-sleep");
+        musicUrl = await uploadMusicTrack(user.id, musicBlob, currentMonth.replace(/\s/g, "-"));
+      } catch (musicErr) {
+        console.warn("Music generation failed, continuing without music:", musicErr);
+      }
 
-      // Step 7: Save meditation record
+      // Step 7: Upload narration audio
+      setGenerationStatus("Saving your meditation...");
+      const currentMonth2 = currentMonth;
+      const audioUrl = await uploadMeditationAudio(user.id, audioBlob, currentMonth2.replace(/\s/g, "-"));
+
+      // Step 8: Save meditation record
       await saveMeditation({
         userId: user.id,
         title: `${currentMonth} Meditation`,
