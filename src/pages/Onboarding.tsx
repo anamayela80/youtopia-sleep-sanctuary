@@ -11,6 +11,8 @@ import {
   saveUserAnswers,
   cloneVoice,
   deleteVoice,
+  generateMusic,
+  uploadMusicTrack,
 } from "@/services/meditationService";
 import QuestionsStep from "@/components/onboarding/QuestionsStep";
 import VoiceStep from "@/components/onboarding/VoiceStep";
@@ -60,18 +62,21 @@ const Onboarding = () => {
 
       // Step 2: Clone voice if using own voice
       let voiceIdForNarration = selectedVoice || "sofia";
-      if (selectedVoice === "own" && voiceRecordingRef.current) {
+      const isCustomVoice = selectedVoice === "own" && voiceRecordingRef.current;
+      
+      if (isCustomVoice) {
         setGenerationStatus("Cloning your voice...");
-        clonedVoiceId = await cloneVoice(voiceRecordingRef.current);
+        clonedVoiceId = await cloneVoice(voiceRecordingRef.current!);
         voiceIdForNarration = clonedVoiceId;
       }
 
-      // Step 3: Generate script
+      // Step 3: Generate script (shorter for custom voices to save credits)
       setGenerationStatus("Writing your personal meditation...");
       const script = await generateMeditationScript({
         question1: answers[0],
         question2: answers[1],
         question3: answers[2],
+        shortScript: !!isCustomVoice,
       });
 
       // Step 4: Narrate with chosen/cloned voice
@@ -89,12 +94,24 @@ const Onboarding = () => {
         voiceRecordingRef.current = null;
       }
 
-      // Step 6: Upload audio
-      setGenerationStatus("Saving your meditation...");
+      // Step 6: Generate background music
       const currentMonth = new Date().toLocaleString("default", { month: "long", year: "numeric" });
-      const audioUrl = await uploadMeditationAudio(user.id, audioBlob, currentMonth.replace(/\s/g, "-"));
+      const monthSlug = currentMonth.replace(/\s/g, "-");
+      
+      setGenerationStatus("Composing your background music...");
+      let _musicUrl: string | undefined;
+      try {
+        const musicBlob = await generateMusic(selectedMusic || "deep-sleep");
+        _musicUrl = await uploadMusicTrack(user.id, musicBlob, monthSlug);
+      } catch (musicErr) {
+        console.warn("Music generation failed, continuing without music:", musicErr);
+      }
 
-      // Step 7: Save meditation record
+      // Step 7: Upload narration audio
+      setGenerationStatus("Saving your meditation...");
+      const audioUrl = await uploadMeditationAudio(user.id, audioBlob, monthSlug);
+
+      // Step 8: Save meditation record
       await saveMeditation({
         userId: user.id,
         title: `${currentMonth} Meditation`,
