@@ -145,20 +145,22 @@ serve(async (req) => {
         }
       }
 
-      if (response.status === 401) {
-        return new Response(JSON.stringify({ error: "ElevenLabs authentication failed" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "ElevenLabs rate limit. Please try again shortly." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (!response.ok) {
+        if (response.status === 401) {
+          return new Response(JSON.stringify({ error: "ElevenLabs authentication failed" }), {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ error: "ElevenLabs rate limit. Please try again shortly." }), {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
 
-      throw new Error(`ElevenLabs TTS failed: ${response.status}`);
+        throw new Error(`ElevenLabs TTS failed: ${response.status}`);
+      }
     }
 
     const audioBuffer = await response.arrayBuffer();
