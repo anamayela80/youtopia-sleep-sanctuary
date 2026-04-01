@@ -128,3 +128,42 @@ export async function deleteVoice(voiceId: string): Promise<void> {
     console.warn("Failed to delete cloned voice:", e);
   }
 }
+
+export async function generateMusic(mood: string): Promise<Blob> {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/generate-music`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+    },
+    body: JSON.stringify({ mood }),
+  });
+
+  if (!response.ok) {
+    let errorMsg = `Music generation failed (${response.status})`;
+    try {
+      const errData = await response.json();
+      errorMsg = errData.error || errorMsg;
+    } catch { /* binary response */ }
+    throw new Error(errorMsg);
+  }
+
+  return await response.blob();
+}
+
+export async function uploadMusicTrack(userId: string, musicBlob: Blob, month: string): Promise<string> {
+  const fileName = `${userId}/music-${month}-${Date.now()}.mp3`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("meditations")
+    .upload(fileName, musicBlob, { contentType: "audio/mpeg" });
+
+  if (uploadError) throw uploadError;
+
+  const { data: urlData } = supabase.storage
+    .from("meditations")
+    .getPublicUrl(fileName);
+
+  return urlData.publicUrl;
+}
