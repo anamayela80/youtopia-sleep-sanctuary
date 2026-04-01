@@ -8,6 +8,7 @@ export interface GenerateMeditationParams {
   question2: string;
   question3: string;
   monthlyTheme?: string;
+  shortScript?: boolean;
 }
 
 export async function generateMeditationScript(params: GenerateMeditationParams): Promise<string> {
