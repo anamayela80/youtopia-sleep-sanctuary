@@ -22,6 +22,7 @@ export type Database = {
           id: string
           month: string
           music_mood: string
+          music_url: string | null
           script: string
           title: string
           user_id: string
@@ -34,6 +35,7 @@ export type Database = {
           id?: string
           month: string
           music_mood: string
+          music_url?: string | null
           script: string
           title: string
           user_id: string
@@ -46,6 +48,7 @@ export type Database = {
           id?: string
           month?: string
           music_mood?: string
+          music_url?: string | null
           script?: string
           title?: string
           user_id?: string

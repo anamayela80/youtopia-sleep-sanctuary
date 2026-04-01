@@ -1,0 +1,1 @@
+ALTER TABLE public.meditations ADD COLUMN music_url text;
