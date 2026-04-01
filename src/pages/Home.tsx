@@ -33,7 +33,7 @@ const Home = () => {
     togglePlay,
   } = useAudioMixer({
     narrationUrl: currentMeditation?.audio_url || null,
-    musicUrl: currentMeditation?.music_url || null,
+    musicMood: currentMeditation?.music_mood || "deep-sleep",
     musicVolume: 0.15,
   });
 
