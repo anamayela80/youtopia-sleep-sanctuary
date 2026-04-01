@@ -91,3 +91,39 @@ export async function saveUserAnswers(userId: string, answers: string[]) {
 
   if (error) throw error;
 }
+
+export async function cloneVoice(audioBlob: Blob): Promise<string> {
+  const formData = new FormData();
+  formData.append("audio", audioBlob, "voice-sample.webm");
+
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/clone-voice`, {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    let errorMsg = `Voice cloning failed (${response.status})`;
+    try {
+      const errData = await response.json();
+      errorMsg = errData.error || errorMsg;
+    } catch { /* */ }
+    throw new Error(errorMsg);
+  }
+
+  const data = await response.json();
+  return data.voiceId;
+}
+
+export async function deleteVoice(voiceId: string): Promise<void> {
+  try {
+    await supabase.functions.invoke("delete-voice", {
+      body: { voiceId },
+    });
+  } catch (e) {
+    console.warn("Failed to delete cloned voice:", e);
+  }
+}
