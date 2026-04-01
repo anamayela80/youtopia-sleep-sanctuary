@@ -68,6 +68,7 @@ export async function saveMeditation(params: {
   voiceId: string;
   musicMood: string;
   month: string;
+  musicUrl?: string;
 }) {
   const { error } = await supabase.from("meditations").insert({
     user_id: params.userId,
@@ -77,6 +78,7 @@ export async function saveMeditation(params: {
     voice_id: params.voiceId,
     music_mood: params.musicMood,
     month: params.month,
+    music_url: params.musicUrl || null,
   });
 
   if (error) throw error;
