@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Play, Pause, Download, Bell, Library, Settings } from "lucide-react";
+import { Play, Pause, Download, Bell, Library, Settings, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAudioMixer } from "@/hooks/useAudioMixer";
 import logo from "@/assets/youtopia-logo.png";
@@ -211,6 +211,13 @@ const Home = () => {
           <button className="flex flex-col items-center gap-1 text-primary">
             <Play size={20} />
             <span className="text-[10px] font-body font-medium">Now</span>
+          </button>
+          <button
+            onClick={() => navigate("/onboarding")}
+            className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
+          >
+            <Plus size={20} />
+            <span className="text-[10px] font-body">New</span>
           </button>
           <button className="flex flex-col items-center gap-1 text-muted-foreground">
             <Library size={20} />
