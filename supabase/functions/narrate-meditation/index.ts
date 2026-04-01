@@ -34,7 +34,9 @@ serve(async (req) => {
     };
 
     // If voiceId is in the map, use the mapped value; otherwise treat it as a direct ElevenLabs voice ID (e.g. cloned voice)
+    const isClonedVoice = !voiceMap[voiceId];
     const elevenLabsVoiceId = voiceMap[voiceId] || voiceId;
+    console.log("Using voice:", voiceId, "→ ElevenLabs ID:", elevenLabsVoiceId, "isCloned:", isClonedVoice);
 
     // Clean script: remove [pause] and [breathe] markers, replace with natural pauses
     const cleanedScript = script
