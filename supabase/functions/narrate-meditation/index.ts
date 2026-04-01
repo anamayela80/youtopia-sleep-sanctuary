@@ -38,6 +38,23 @@ serve(async (req) => {
     const elevenLabsVoiceId = voiceMap[voiceId] || voiceId;
     console.log("Using voice:", voiceId, "→ ElevenLabs ID:", elevenLabsVoiceId, "isCloned:", isClonedVoice);
 
+    const trimScriptToBudget = (text: string, maxChars: number) => {
+      if (text.length <= maxChars) return text;
+
+      const clipped = text.slice(0, maxChars).trimEnd();
+      const lastSentenceBreak = Math.max(
+        clipped.lastIndexOf("."),
+        clipped.lastIndexOf("!"),
+        clipped.lastIndexOf("?")
+      );
+
+      if (lastSentenceBreak > Math.floor(maxChars * 0.7)) {
+        return clipped.slice(0, lastSentenceBreak + 1).trim();
+      }
+
+      return clipped;
+    };
+
     // Clean script: remove [pause] and [breathe] markers, replace with natural pauses
     const cleanedScript = script
       .replace(/\[pause\]/gi, "...")
@@ -46,7 +63,7 @@ serve(async (req) => {
     // Try TTS, fallback to default voice on 404
     const fallbackVoiceId = "21m00Tcm4TlvDq8ikWAM"; // Rachel - reliable default
     
-    const doTTS = async (vid: string) => {
+    const doTTS = async (vid: string, text: string) => {
       return await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${vid}?output_format=mp3_44100_128`,
         {
@@ -56,7 +73,7 @@ serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            text: cleanedScript,
+            text,
             model_id: "eleven_multilingual_v2",
             voice_settings: {
               stability: 0.7,
@@ -70,17 +87,63 @@ serve(async (req) => {
       );
     };
 
-    let response = await doTTS(elevenLabsVoiceId);
+    let narrationText = cleanedScript;
+    let response = await doTTS(elevenLabsVoiceId, narrationText);
 
     // If voice not found, retry with fallback
     if (response.status === 404 && elevenLabsVoiceId !== fallbackVoiceId) {
       console.warn(`Voice ${elevenLabsVoiceId} not found, falling back to default`);
-      response = await doTTS(fallbackVoiceId);
+      response = await doTTS(fallbackVoiceId, narrationText);
     }
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error("ElevenLabs error:", response.status, errorText);
+
+      let errorDetailStatus: string | undefined;
+      let errorDetailMessage: string | undefined;
+
+      try {
+        const parsed = JSON.parse(errorText);
+        errorDetailStatus = parsed?.detail?.status;
+        errorDetailMessage = parsed?.detail?.message;
+      } catch {
+        // ignore non-JSON errors
+      }
+
+      if (errorDetailStatus === "quota_exceeded") {
+        const remainingCreditsMatch = errorDetailMessage?.match(/You have\s+(\d+)\s+credits remaining/i);
+        const remainingCredits = remainingCreditsMatch ? Number.parseInt(remainingCreditsMatch[1], 10) : null;
+        const safeBudget = remainingCredits ? Math.max(remainingCredits - 250, 0) : 0;
+
+        if (safeBudget >= 600 && narrationText.length > safeBudget) {
+          narrationText = trimScriptToBudget(narrationText, safeBudget);
+          console.warn(`Quota exceeded for ${cleanedScript.length} chars, retrying with ${narrationText.length} chars`);
+
+          response = await doTTS(elevenLabsVoiceId, narrationText);
+
+          if (response.status === 404 && elevenLabsVoiceId !== fallbackVoiceId) {
+            console.warn(`Voice ${elevenLabsVoiceId} not found during quota retry, falling back to default`);
+            response = await doTTS(fallbackVoiceId, narrationText);
+          }
+
+          if (response.ok) {
+            console.log("Narration succeeded after shortening script for available quota");
+          } else {
+            const retryErrorText = await response.text();
+            console.error("ElevenLabs quota retry failed:", response.status, retryErrorText);
+          }
+        }
+
+        if (!response.ok) {
+          return new Response(JSON.stringify({
+            error: "Your ElevenLabs credits are too low for this narration. Please top up credits or try again with a shorter meditation.",
+          }), {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
 
       if (response.status === 401) {
         return new Response(JSON.stringify({ error: "ElevenLabs authentication failed" }), {
