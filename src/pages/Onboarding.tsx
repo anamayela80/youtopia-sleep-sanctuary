@@ -78,6 +78,10 @@ const Onboarding = () => {
       setGenerationStatus("Creating your voice narration...");
       const audioBlob = await narrateMeditation(script, voiceIdForNarration);
 
+      if (!audioBlob || audioBlob.size === 0) {
+        throw new Error("Narration could not be created. Please try again.");
+      }
+
       // Step 5: Delete cloned voice immediately (privacy)
       if (clonedVoiceId) {
         await deleteVoice(clonedVoiceId);
@@ -105,7 +109,11 @@ const Onboarding = () => {
       navigate("/home");
     } catch (err: any) {
       console.error("Generation error:", err);
-      toast({ variant: "destructive", title: "Something went wrong", description: err.message });
+      toast({
+        variant: "destructive",
+        title: err?.message?.toLowerCase().includes("credits") ? "More voice credits needed" : "Something went wrong",
+        description: err.message,
+      });
 
       // Cleanup: delete cloned voice on error too
       if (clonedVoiceId) {
