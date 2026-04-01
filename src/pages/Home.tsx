@@ -212,6 +212,13 @@ const Home = () => {
             <Play size={20} />
             <span className="text-[10px] font-body font-medium">Now</span>
           </button>
+          <button
+            onClick={() => navigate("/onboarding")}
+            className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
+          >
+            <Plus size={20} />
+            <span className="text-[10px] font-body">New</span>
+          </button>
           <button className="flex flex-col items-center gap-1 text-muted-foreground">
             <Library size={20} />
             <span className="text-[10px] font-body">Library</span>
