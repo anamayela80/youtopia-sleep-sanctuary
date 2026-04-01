@@ -33,7 +33,7 @@ serve(async (req) => {
       marco: "TX3LPaxmHKxFdv7VOQHJ",    // Liam - smooth and grounding
     };
 
-    const elevenLabsVoiceId = voiceMap[voiceId] || voiceId;
+    const elevenLabsVoiceId = voiceMap[voiceId] || voiceMap["sofia"];
 
     // Clean script: remove [pause] and [breathe] markers, replace with natural pauses
     const cleanedScript = script

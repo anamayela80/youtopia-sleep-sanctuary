@@ -28,23 +28,16 @@ const VoiceStep = ({ selectedVoice, onSelect }: VoiceStepProps) => {
         Your meditation will be narrated in this voice.
       </p>
 
-      {/* Own voice option */}
-      <button
-        onClick={() => onSelect("own")}
-        className={`w-full p-4 rounded-2xl border-2 transition-all mb-4 flex items-center gap-4 ${
-          selectedVoice === "own"
-            ? "border-primary bg-teal-light/30"
-            : "border-border bg-cream-light hover:border-primary/40"
-        }`}
-      >
+      {/* Own voice option - coming soon */}
+      <div className="w-full p-4 rounded-2xl border-2 border-border bg-cream-light/50 mb-4 flex items-center gap-4 opacity-50 cursor-not-allowed">
         <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-          <Mic className="text-primary" size={22} />
+          <Mic className="text-muted-foreground" size={22} />
         </div>
         <div className="text-left">
-          <p className="font-body font-semibold text-foreground">Use my own voice</p>
-          <p className="font-body text-xs text-muted-foreground">Record 2 minutes and we'll create your personal narrator</p>
+          <p className="font-body font-semibold text-muted-foreground">Use my own voice</p>
+          <p className="font-body text-xs text-muted-foreground">Coming soon — voice cloning in a future update</p>
         </div>
-      </button>
+      </div>
 
       <div className="flex items-center gap-3 my-3">
         <div className="flex-1 h-px bg-border" />
