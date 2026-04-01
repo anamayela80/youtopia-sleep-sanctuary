@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { question1, question2, question3, monthlyTheme } = await req.json();
+    const { question1, question2, question3, monthlyTheme, shortScript } = await req.json();
 
     if (!question1 || !question2 || !question3) {
       return new Response(JSON.stringify({ error: "All 3 answers are required" }), {
