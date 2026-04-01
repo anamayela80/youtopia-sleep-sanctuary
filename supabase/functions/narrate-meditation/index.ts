@@ -33,7 +33,8 @@ serve(async (req) => {
       marco: "TX3LPaxmHKxFdv7VOQHJ",    // Liam - smooth and grounding
     };
 
-    const elevenLabsVoiceId = voiceMap[voiceId] || voiceMap["sofia"];
+    // If voiceId is in the map, use the mapped value; otherwise treat it as a direct ElevenLabs voice ID (e.g. cloned voice)
+    const elevenLabsVoiceId = voiceMap[voiceId] || voiceId;
 
     // Clean script: remove [pause] and [breathe] markers, replace with natural pauses
     const cleanedScript = script

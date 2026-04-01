@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,8 @@ import {
   uploadMeditationAudio,
   saveMeditation,
   saveUserAnswers,
+  cloneVoice,
+  deleteVoice,
 } from "@/services/meditationService";
 import QuestionsStep from "@/components/onboarding/QuestionsStep";
 import VoiceStep from "@/components/onboarding/VoiceStep";
@@ -22,6 +24,7 @@ const Onboarding = () => {
   const [selectedMusic, setSelectedMusic] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStatus, setGenerationStatus] = useState("");
+  const voiceRecordingRef = useRef<Blob | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -34,8 +37,14 @@ const Onboarding = () => {
     setAnswers(newAnswers);
   };
 
+  const handleVoiceRecording = (blob: Blob) => {
+    voiceRecordingRef.current = blob;
+  };
+
   const handleGenerateMeditation = async () => {
     setIsGenerating(true);
+    let clonedVoiceId: string | null = null;
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
@@ -49,7 +58,15 @@ const Onboarding = () => {
       setGenerationStatus("Saving your intentions...");
       await saveUserAnswers(user.id, answers);
 
-      // Step 2: Generate script
+      // Step 2: Clone voice if using own voice
+      let voiceIdForNarration = selectedVoice || "sofia";
+      if (selectedVoice === "own" && voiceRecordingRef.current) {
+        setGenerationStatus("Cloning your voice...");
+        clonedVoiceId = await cloneVoice(voiceRecordingRef.current);
+        voiceIdForNarration = clonedVoiceId;
+      }
+
+      // Step 3: Generate script
       setGenerationStatus("Writing your personal meditation...");
       const script = await generateMeditationScript({
         question1: answers[0],
@@ -57,22 +74,29 @@ const Onboarding = () => {
         question3: answers[2],
       });
 
-      // Step 3: Narrate with chosen voice
+      // Step 4: Narrate with chosen/cloned voice
       setGenerationStatus("Creating your voice narration...");
-      const audioBlob = await narrateMeditation(script, selectedVoice || "sofia");
+      const audioBlob = await narrateMeditation(script, voiceIdForNarration);
 
-      // Step 4: Upload audio
+      // Step 5: Delete cloned voice immediately (privacy)
+      if (clonedVoiceId) {
+        await deleteVoice(clonedVoiceId);
+        clonedVoiceId = null;
+        voiceRecordingRef.current = null;
+      }
+
+      // Step 6: Upload audio
       setGenerationStatus("Saving your meditation...");
       const currentMonth = new Date().toLocaleString("default", { month: "long", year: "numeric" });
       const audioUrl = await uploadMeditationAudio(user.id, audioBlob, currentMonth.replace(/\s/g, "-"));
 
-      // Step 5: Save meditation record
+      // Step 7: Save meditation record
       await saveMeditation({
         userId: user.id,
         title: `${currentMonth} Meditation`,
         script,
         audioUrl,
-        voiceId: selectedVoice || "sofia",
+        voiceId: selectedVoice === "own" ? "own-clone" : (selectedVoice || "sofia"),
         musicMood: selectedMusic || "deep-sleep",
         month: currentMonth,
       });
@@ -82,6 +106,12 @@ const Onboarding = () => {
     } catch (err: any) {
       console.error("Generation error:", err);
       toast({ variant: "destructive", title: "Something went wrong", description: err.message });
+
+      // Cleanup: delete cloned voice on error too
+      if (clonedVoiceId) {
+        await deleteVoice(clonedVoiceId);
+      }
+
       setIsGenerating(false);
     }
   };
@@ -145,6 +175,7 @@ const Onboarding = () => {
               key="voice"
               selectedVoice={selectedVoice}
               onSelect={setSelectedVoice}
+              onVoiceRecording={handleVoiceRecording}
             />
           )}
           {step === 5 && (

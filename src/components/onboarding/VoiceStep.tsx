@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Mic, User } from "lucide-react";
+import VoiceRecorder from "./VoiceRecorder";
 
 const presetVoices = [
   { id: "sofia", name: "Sofia", desc: "Warm and gentle", color: "bg-coral-light" },
@@ -11,9 +13,25 @@ const presetVoices = [
 interface VoiceStepProps {
   selectedVoice: string | null;
   onSelect: (voice: string) => void;
+  onVoiceRecording?: (blob: Blob) => void;
 }
 
-const VoiceStep = ({ selectedVoice, onSelect }: VoiceStepProps) => {
+const VoiceStep = ({ selectedVoice, onSelect, onVoiceRecording }: VoiceStepProps) => {
+  const [showRecorder, setShowRecorder] = useState(false);
+
+  if (showRecorder) {
+    return (
+      <VoiceRecorder
+        onRecordingComplete={(blob) => {
+          onSelect("own");
+          onVoiceRecording?.(blob);
+          setShowRecorder(false);
+        }}
+        onCancel={() => setShowRecorder(false)}
+      />
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 30 }}
@@ -28,16 +46,29 @@ const VoiceStep = ({ selectedVoice, onSelect }: VoiceStepProps) => {
         Your meditation will be narrated in this voice.
       </p>
 
-      {/* Own voice option - coming soon */}
-      <div className="w-full p-4 rounded-2xl border-2 border-border bg-cream-light/50 mb-4 flex items-center gap-4 opacity-50 cursor-not-allowed">
+      {/* Own voice option */}
+      <button
+        onClick={() => setShowRecorder(true)}
+        className={`w-full p-4 rounded-2xl border-2 transition-all mb-4 flex items-center gap-4 ${
+          selectedVoice === "own"
+            ? "border-primary bg-teal-light/30"
+            : "border-border bg-cream-light hover:border-primary/40"
+        }`}
+      >
         <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-          <Mic className="text-muted-foreground" size={22} />
+          <Mic className="text-primary" size={22} />
         </div>
         <div className="text-left">
-          <p className="font-body font-semibold text-muted-foreground">Use my own voice</p>
-          <p className="font-body text-xs text-muted-foreground">Coming soon — voice cloning in a future update</p>
+          <p className="font-body font-semibold text-foreground">
+            {selectedVoice === "own" ? "✓ Voice recorded" : "Use my own voice"}
+          </p>
+          <p className="font-body text-xs text-muted-foreground">
+            {selectedVoice === "own"
+              ? "Tap to re-record"
+              : "Record 30 seconds and we'll create your personal narrator"}
+          </p>
         </div>
-      </div>
+      </button>
 
       <div className="flex items-center gap-3 my-3">
         <div className="flex-1 h-px bg-border" />
@@ -62,16 +93,22 @@ const VoiceStep = ({ selectedVoice, onSelect }: VoiceStepProps) => {
             </div>
             <p className="font-body font-semibold text-sm text-foreground">{voice.name}</p>
             <p className="font-body text-xs text-muted-foreground">{voice.desc}</p>
-            <button
-              onClick={(e) => { e.stopPropagation(); }}
-              className="mt-2 text-xs font-body text-primary font-medium"
-            >
-              ▶ Preview
-            </button>
           </button>
         ))}
       </div>
 
+      {selectedVoice === "own" && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          className="mt-4 p-4 rounded-2xl bg-teal-light/20 border border-primary/20"
+        >
+          <p className="font-body text-xs text-accent leading-relaxed">
+            🔒 <strong>Privacy promise:</strong> Your voice recording is permanently deleted
+            immediately after your meditation is generated. It is never stored, sold, or shared.
+          </p>
+        </motion.div>
+      )}
     </motion.div>
   );
 };
