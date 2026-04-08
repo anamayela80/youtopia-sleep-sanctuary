@@ -276,6 +276,26 @@ export function useSegmentedMixer({
   const skipForward = useCallback(() => skip(30), [skip]);
   const skipBackward = useCallback(() => skip(-30), [skip]);
 
+  const seekTo = useCallback((timeInSeconds: number) => {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+    const wasPlaying = isPlaying;
+    const newPos = Math.max(0, Math.min(timeInSeconds, totalDurationRef.current));
+
+    stopAllSources();
+
+    const newCtx = new AudioContext();
+    audioCtxRef.current = newCtx;
+    offsetRef.current = newPos;
+
+    if (wasPlaying || isPaused) {
+      playFromOffset(newPos);
+    } else {
+      setCurrentTime(newPos);
+      setProgress((newPos / totalDurationRef.current) * 100);
+    }
+  }, [isPlaying, isPaused, stopAllSources, playFromOffset]);
+
   const togglePlay = useCallback(() => {
     if (isPlaying) {
       pause();
@@ -289,6 +309,6 @@ export function useSegmentedMixer({
   return {
     isPlaying, isPaused, isLoading, progress, currentTime, duration,
     currentSegment, hasStarted, togglePlay, stop: stopAll,
-    skipForward, skipBackward,
+    skipForward, skipBackward, seekTo,
   };
 }
