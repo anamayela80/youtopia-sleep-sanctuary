@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Play, Pause, Download, Moon, Sun, Settings, Headphones, SkipForward, SkipBack } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { useSegmentedMixer } from "@/hooks/useSegmentedMixer";
 import { useSeedsPlayer } from "@/hooks/useSeedsPlayer";
@@ -132,9 +133,13 @@ const Home = () => {
               {/* Progress */}
               {(meditationMixer.isPlaying || meditationMixer.isPaused || meditationMixer.hasStarted) && (
                 <div className="mb-4">
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${meditationMixer.progress}%` }} />
-                  </div>
+                  <Slider
+                    value={[meditationMixer.currentTime]}
+                    max={meditationMixer.duration || 1}
+                    step={1}
+                    onValueChange={([v]) => meditationMixer.seekTo(v)}
+                    className="w-full"
+                  />
                   <div className="flex justify-between mt-1.5">
                     <span className="text-xs font-body text-muted-foreground">{formatTime(meditationMixer.currentTime)}</span>
                     <span className="text-xs font-body text-muted-foreground">{formatTime(meditationMixer.duration)}</span>
@@ -214,9 +219,13 @@ const Home = () => {
               {/* Progress */}
               {(seedsPlayer.isPlaying || seedsPlayer.isPaused || seedsPlayer.hasStarted) && (
                 <div className="mb-4">
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-secondary rounded-full transition-all" style={{ width: `${seedsPlayer.progress}%` }} />
-                  </div>
+                  <Slider
+                    value={[seedsPlayer.currentTime]}
+                    max={seedsPlayer.duration || 1}
+                    step={1}
+                    onValueChange={([v]) => seedsPlayer.seekTo(v)}
+                    className="w-full"
+                  />
                   <div className="flex justify-between mt-1.5">
                     <span className="text-xs font-body text-muted-foreground">{formatTime(seedsPlayer.currentTime)}</span>
                     <span className="text-xs font-body text-muted-foreground">{formatTime(seedsPlayer.duration)}</span>
