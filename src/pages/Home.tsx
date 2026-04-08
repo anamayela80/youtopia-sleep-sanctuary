@@ -130,7 +130,7 @@ const Home = () => {
               </div>
 
               {/* Progress */}
-              {meditationMixer.isPlaying && (
+              {(meditationMixer.isPlaying || meditationMixer.isPaused || meditationMixer.hasStarted) && (
                 <div className="mb-4">
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${meditationMixer.progress}%` }} />
@@ -186,7 +186,7 @@ const Home = () => {
               </div>
 
               {/* Progress */}
-              {seedsPlayer.isPlaying && (
+              {(seedsPlayer.isPlaying || seedsPlayer.isPaused || seedsPlayer.hasStarted) && (
                 <div className="mb-4">
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div className="h-full bg-secondary rounded-full transition-all" style={{ width: `${seedsPlayer.progress}%` }} />

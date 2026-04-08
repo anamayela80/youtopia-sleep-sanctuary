@@ -3,7 +3,7 @@ import { useRef, useState, useCallback, useEffect } from "react";
 interface UseSegmentedMixerOptions {
   segmentUrls: string[];
   musicUrl: string | null;
-  musicBridgeDurations?: number[]; // seconds for each bridge between segments
+  musicBridgeDurations?: number[];
   musicFadeInDuration?: number;
   musicFadeOutDuration?: number;
   musicVolume?: number;
@@ -22,16 +22,18 @@ export function useSegmentedMixer({
   const musicBufferRef = useRef<AudioBuffer | null>(null);
   const musicSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const musicGainRef = useRef<GainNode | null>(null);
-  const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const schedulerRef = useRef<NodeJS.Timeout | null>(null);
   const rafRef = useRef<number>(0);
+  const startTimeRef = useRef(0);
+  const totalDurationRef = useRef(0);
 
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [currentSegment, setCurrentSegment] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);
 
   const loadBuffer = async (ctx: AudioContext, url: string): Promise<AudioBuffer> => {
     const resp = await fetch(url);
@@ -55,7 +57,6 @@ export function useSegmentedMixer({
           musicBufferRef.current = await loadBuffer(ctx, musicUrl);
         }
 
-        // Calculate total duration
         let total = musicFadeInDuration;
         buffers.forEach((buf, i) => {
           total += buf.duration;
@@ -77,6 +78,21 @@ export function useSegmentedMixer({
     };
   }, [segmentUrls.join(","), musicUrl]);
 
+  const tick = useCallback(() => {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+    const elapsed = ctx.currentTime - startTimeRef.current;
+    const total = totalDurationRef.current;
+    setCurrentTime(Math.min(elapsed, total));
+    setProgress(Math.min((elapsed / total) * 100, 100));
+    if (elapsed < total) {
+      rafRef.current = requestAnimationFrame(tick);
+    } else {
+      setIsPlaying(false);
+      setIsPaused(false);
+    }
+  }, []);
+
   const playSequence = useCallback(() => {
     const ctx = audioCtxRef.current;
     const buffers = segmentBuffersRef.current;
@@ -86,9 +102,9 @@ export function useSegmentedMixer({
     if (ctx.state === "suspended") ctx.resume();
 
     const startTime = ctx.currentTime;
+    startTimeRef.current = startTime;
     let scheduleTime = startTime;
 
-    // Start music (looping)
     if (musicBuf) {
       const musicSource = ctx.createBufferSource();
       musicSource.buffer = musicBuf;
@@ -102,7 +118,6 @@ export function useSegmentedMixer({
       musicGainRef.current = gainNode;
     }
 
-    // Schedule: fade-in music → segments interleaved with music bridges
     scheduleTime += musicFadeInDuration;
 
     buffers.forEach((buf, i) => {
@@ -112,63 +127,68 @@ export function useSegmentedMixer({
       gain.gain.value = 1.0;
       source.connect(gain).connect(ctx.destination);
       source.start(scheduleTime);
-
       scheduleTime += buf.duration;
       if (i < buffers.length - 1) {
         scheduleTime += musicBridgeDurations[i + 1] || 60;
       }
     });
 
-    // Fade out music
     const fadeOutStart = scheduleTime;
     const fadeOutEnd = fadeOutStart + musicFadeOutDuration;
     if (musicGainRef.current) {
       musicGainRef.current.gain.setValueAtTime(musicVolume, fadeOutStart);
       musicGainRef.current.gain.linearRampToValueAtTime(0, fadeOutEnd);
     }
-
-    // Stop music after fade
     if (musicSourceRef.current) {
       musicSourceRef.current.stop(fadeOutEnd + 0.1);
     }
 
     const totalDuration = fadeOutEnd - startTime;
+    totalDurationRef.current = totalDuration;
     setDuration(totalDuration);
-
-    // Progress tracking
-    const tick = () => {
-      if (!ctx) return;
-      const elapsed = ctx.currentTime - startTime;
-      setCurrentTime(Math.min(elapsed, totalDuration));
-      setProgress(Math.min((elapsed / totalDuration) * 100, 100));
-
-      if (elapsed < totalDuration) {
-        rafRef.current = requestAnimationFrame(tick);
-      } else {
-        setIsPlaying(false);
-      }
-    };
-    rafRef.current = requestAnimationFrame(tick);
     setIsPlaying(true);
-  }, [musicVolume, musicFadeInDuration, musicFadeOutDuration, musicBridgeDurations]);
+    setIsPaused(false);
+    setHasStarted(true);
+    rafRef.current = requestAnimationFrame(tick);
+  }, [musicVolume, musicFadeInDuration, musicFadeOutDuration, musicBridgeDurations, tick]);
+
+  const pause = useCallback(() => {
+    const ctx = audioCtxRef.current;
+    if (!ctx || ctx.state !== "running") return;
+    ctx.suspend();
+    cancelAnimationFrame(rafRef.current);
+    setIsPlaying(false);
+    setIsPaused(true);
+  }, []);
+
+  const resume = useCallback(() => {
+    const ctx = audioCtxRef.current;
+    if (!ctx || ctx.state !== "suspended") return;
+    ctx.resume();
+    setIsPlaying(true);
+    setIsPaused(false);
+    rafRef.current = requestAnimationFrame(tick);
+  }, [tick]);
 
   const stop = useCallback(() => {
     try { musicSourceRef.current?.stop(); } catch {}
-    try { currentSourceRef.current?.stop(); } catch {}
     cancelAnimationFrame(rafRef.current);
-    if (schedulerRef.current) clearTimeout(schedulerRef.current);
     setIsPlaying(false);
+    setIsPaused(false);
     setProgress(0);
     setCurrentTime(0);
+    setHasStarted(false);
   }, []);
 
   const togglePlay = useCallback(() => {
     if (isPlaying) {
-      stop();
+      pause();
+    } else if (isPaused) {
+      resume();
     } else {
       playSequence();
     }
-  }, [isPlaying, stop, playSequence]);
+  }, [isPlaying, isPaused, pause, resume, playSequence]);
 
-  return { isPlaying, isLoading, progress, currentTime, duration, currentSegment, togglePlay, stop };
+  return { isPlaying, isPaused, isLoading, progress, currentTime, duration, currentSegment, hasStarted, togglePlay, stop };
 }
