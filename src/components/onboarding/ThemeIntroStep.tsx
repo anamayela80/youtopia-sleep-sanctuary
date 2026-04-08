@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import SunIcon from "@/components/SunIcon";
 
 interface ThemeIntroStepProps {
   themeName: string;
@@ -15,21 +16,15 @@ const ThemeIntroStep = ({ themeName, description, intention }: ThemeIntroStepPro
       transition={{ duration: 0.8 }}
       className="flex flex-col items-center text-center flex-1 justify-center px-4"
     >
-      {/* Decorative spiral */}
+      {/* Decorative sun from logo */}
       <motion.div
         className="mb-8"
         initial={{ scale: 0.6, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 1, delay: 0.2 }}
       >
-        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-          <motion.span
-            className="text-4xl"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          >
-            🌀
-          </motion.span>
+        <div className="w-20 h-20 rounded-full bg-coral/10 flex items-center justify-center">
+          <SunIcon size={44} animate />
         </div>
       </motion.div>
 
