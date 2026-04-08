@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import SunIcon from "@/components/SunIcon";
+import sun from "@/assets/youtopia-sun.png";
 
 interface GeneratingStepProps {
   status: string;
@@ -13,10 +13,13 @@ const GeneratingStep = ({ status }: GeneratingStepProps) => {
         animate={{ opacity: 1, scale: 1 }}
         className="flex flex-col items-center text-center"
       >
-        {/* Animated sun */}
-        <div className="mb-8">
-          <SunIcon size={80} animate />
-        </div>
+        <motion.img
+          src={sun}
+          alt=""
+          className="w-24 h-24 mb-8"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+        />
 
         <h2 className="font-heading text-2xl text-secondary mb-3">
           Crafting your meditation
@@ -35,7 +38,7 @@ const GeneratingStep = ({ status }: GeneratingStepProps) => {
           {[0, 1, 2].map((i) => (
             <motion.div
               key={i}
-              className="w-2 h-2 rounded-full bg-coral"
+              className="w-2 h-2 rounded-full bg-primary"
               animate={{ opacity: [0.3, 1, 0.3] }}
               transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.3 }}
             />

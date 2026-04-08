@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import SunIcon from "@/components/SunIcon";
+import sun from "@/assets/youtopia-sun.png";
 
 interface ThemeIntroStepProps {
   themeName: string;
@@ -16,19 +16,22 @@ const ThemeIntroStep = ({ themeName, description, intention }: ThemeIntroStepPro
       transition={{ duration: 0.8 }}
       className="flex flex-col items-center text-center flex-1 justify-center px-4"
     >
-      {/* Decorative sun from logo */}
+      {/* Spiral sun from logo */}
       <motion.div
         className="mb-8"
         initial={{ scale: 0.6, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 1, delay: 0.2 }}
       >
-        <div className="w-20 h-20 rounded-full bg-coral/10 flex items-center justify-center">
-          <SunIcon size={44} animate />
-        </div>
+        <motion.img
+          src={sun}
+          alt=""
+          className="w-20 h-20"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+        />
       </motion.div>
 
-      {/* Theme name — large serif heading */}
       <motion.h1
         className="font-heading text-4xl md:text-5xl text-secondary mb-6 leading-tight tracking-tight"
         initial={{ opacity: 0, y: 16 }}
@@ -38,7 +41,6 @@ const ThemeIntroStep = ({ themeName, description, intention }: ThemeIntroStepPro
         {themeName}
       </motion.h1>
 
-      {/* Description — 2-3 sentences */}
       <motion.p
         className="font-body text-base text-accent leading-relaxed mb-8 max-w-sm"
         initial={{ opacity: 0, y: 12 }}
@@ -48,7 +50,6 @@ const ThemeIntroStep = ({ themeName, description, intention }: ThemeIntroStepPro
         {description}
       </motion.p>
 
-      {/* Core intention — italic */}
       <motion.p
         className="font-body text-sm text-muted-foreground italic max-w-xs leading-relaxed"
         initial={{ opacity: 0 }}
