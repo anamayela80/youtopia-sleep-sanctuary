@@ -75,6 +75,7 @@ const Onboarding = () => {
 
   const handleVoiceRecording = (blob: Blob) => {
     voiceRecordingRef.current = blob;
+    setHasRecording(true);
   };
 
   const handleGenerate = async () => {
