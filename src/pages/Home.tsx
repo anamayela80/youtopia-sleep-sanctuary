@@ -224,7 +224,20 @@ const Home = () => {
                 </div>
               )}
 
-              <div className="flex items-center justify-center">
+              <div className="flex items-center justify-center gap-6">
+                {/* Skip back 30s */}
+                <button
+                  onClick={() => seedsPlayer.skipBackward()}
+                  disabled={!seedsPlayer.hasStarted}
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-accent transition-all active:scale-90 disabled:opacity-30"
+                >
+                  <div className="relative">
+                    <SkipBack size={18} />
+                    <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-[9px] font-body font-medium text-muted-foreground">30</span>
+                  </div>
+                </button>
+
+                {/* Play / Pause */}
                 <button
                   onClick={() => {
                     if (meditationMixer.isPlaying) meditationMixer.stop();
@@ -241,6 +254,18 @@ const Home = () => {
                   ) : (
                     <Play size={22} className="ml-1" />
                   )}
+                </button>
+
+                {/* Skip forward 30s */}
+                <button
+                  onClick={() => seedsPlayer.skipForward()}
+                  disabled={!seedsPlayer.hasStarted}
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-accent transition-all active:scale-90 disabled:opacity-30"
+                >
+                  <div className="relative">
+                    <SkipForward size={18} />
+                    <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-[9px] font-body font-medium text-muted-foreground">30</span>
+                  </div>
                 </button>
               </div>
 
