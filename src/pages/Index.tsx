@@ -34,11 +34,10 @@ const Index = () => {
         </div>
 
         <h1 className="font-heading text-3xl text-secondary mb-3">
-          Your Personal<br />Sleep Meditation
+          Creating Your<br />Everyday Utopia
         </h1>
         <p className="font-body text-accent mb-10 leading-relaxed">
-          A new meditation crafted just for you, every single month.
-          Drift into sleep with your own voice or a calming guide.
+          A personalized monthly inner transformation experience combining morning meditation and nightly seeds.
         </p>
 
         <div className="w-full space-y-3">

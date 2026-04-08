@@ -1,34 +1,36 @@
 import { motion } from "framer-motion";
 
-const questions = [
+interface QuestionsStepProps {
+  questionIndex: number;
+  answer: string;
+  onAnswer: (answer: string) => void;
+  questions?: string[];
+}
+
+const defaultQuestions = [
   {
     emoji: "🌿",
-    title: "How do you want to feel\nevery day?",
+    title: "How do you want to feel\nevery day this month?",
     placeholder: "Calm, focused, at peace, energized...",
     hint: "There's no wrong answer — speak from your heart.",
   },
   {
     emoji: "✨",
-    title: "What does your ideal life\nlook like in 90 days?",
+    title: "What does your life look and feel\nlike 90 days from now?",
     placeholder: "I see myself waking up feeling rested...",
     hint: "Paint a picture — be as specific or dreamy as you like.",
   },
   {
     emoji: "🍃",
-    title: "What is one thing you\nwant to let go of?",
+    title: "What is one thing you are\nready to release this month?",
     placeholder: "Stress about work, self-doubt, restless nights...",
     hint: "This stays between you and your meditation.",
   },
 ];
 
-interface QuestionsStepProps {
-  questionIndex: number;
-  answer: string;
-  onAnswer: (answer: string) => void;
-}
-
-const QuestionsStep = ({ questionIndex, answer, onAnswer }: QuestionsStepProps) => {
-  const q = questions[questionIndex];
+const QuestionsStep = ({ questionIndex, answer, onAnswer, questions: customQuestions }: QuestionsStepProps) => {
+  const q = defaultQuestions[questionIndex];
+  const questionText = customQuestions?.[questionIndex] || q.title;
 
   return (
     <motion.div
@@ -40,7 +42,7 @@ const QuestionsStep = ({ questionIndex, answer, onAnswer }: QuestionsStepProps) 
     >
       <div className="text-4xl mb-4">{q.emoji}</div>
       <h2 className="font-heading text-2xl text-secondary mb-2 whitespace-pre-line leading-snug">
-        {q.title}
+        {questionText}
       </h2>
       <p className="font-body text-sm text-muted-foreground mb-6">{q.hint}</p>
 
