@@ -66,8 +66,8 @@ const Auth = () => {
         </h2>
         <p className="font-body text-muted-foreground mb-8 text-center">
           {mode === "signup"
-            ? "Begin your journey to better sleep"
-            : "Continue your meditation journey"}
+            ? "Begin your inner transformation journey"
+            : "Continue your journey"}
         </p>
 
         <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">

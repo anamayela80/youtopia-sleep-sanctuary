@@ -1,34 +1,69 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
   generateMeditationScript,
-  narrateMeditation,
-  uploadMeditationAudio,
+  narrateSegment,
+  uploadSegmentAudio,
   saveMeditation,
+  saveMeditationSegment,
   saveUserAnswers,
   cloneVoice,
-  deleteVoice,
+  saveVoiceClone,
+  getUserVoiceClone,
+  generateSeeds,
+  narrateSeed,
+  uploadSeedAudio,
+  saveSeeds,
+  getActiveTheme,
 } from "@/services/meditationService";
+import ThemeIntroStep from "@/components/onboarding/ThemeIntroStep";
 import QuestionsStep from "@/components/onboarding/QuestionsStep";
-import VoiceStep from "@/components/onboarding/VoiceStep";
-import MusicStep from "@/components/onboarding/MusicStep";
+import VoiceCaptureStep from "@/components/onboarding/VoiceCaptureStep";
 import GeneratingStep from "@/components/onboarding/GeneratingStep";
 
 const Onboarding = () => {
   const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState<string[]>(["", "", ""]);
-  const [selectedVoice, setSelectedVoice] = useState<string | null>(null);
-  const [selectedMusic, setSelectedMusic] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStatus, setGenerationStatus] = useState("");
+  const [hasExistingClone, setHasExistingClone] = useState(false);
+  const [theme, setTheme] = useState<any>(null);
+  const [themeQuestions, setThemeQuestions] = useState<string[] | undefined>();
   const voiceRecordingRef = useRef<Blob | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const totalSteps = 5;
+  const totalSteps = 5; // theme intro + 3 questions + voice capture
+  // Step 1: theme intro, Steps 2-4: questions, Step 5: voice capture
+
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    const activeTheme = await getActiveTheme();
+    if (activeTheme) {
+      setTheme(activeTheme);
+      if (activeTheme.questions) {
+        try {
+          const qs = typeof activeTheme.questions === "string"
+            ? JSON.parse(activeTheme.questions)
+            : activeTheme.questions;
+          if (Array.isArray(qs) && qs.length >= 3) setThemeQuestions(qs);
+        } catch {}
+      }
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const voiceId = await getUserVoiceClone(user.id);
+      if (voiceId) setHasExistingClone(true);
+    }
+  };
+
   const progress = (step / totalSteps) * 100;
 
   const handleQuestionAnswer = (questionIndex: number, answer: string) => {
@@ -41,9 +76,8 @@ const Onboarding = () => {
     voiceRecordingRef.current = blob;
   };
 
-  const handleGenerateMeditation = async () => {
+  const handleGenerate = async () => {
     setIsGenerating(true);
-    let clonedVoiceId: string | null = null;
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -53,78 +87,108 @@ const Onboarding = () => {
         return;
       }
       const user = session.user;
+      const userName = user.user_metadata?.full_name || "";
 
-      // Step 1: Save answers
+      // 1. Save answers
       setGenerationStatus("Saving your intentions...");
       await saveUserAnswers(user.id, answers);
 
-      // Step 2: Clone voice if using own voice
-      let voiceIdForNarration = selectedVoice || "sofia";
-      const isCustomVoice = selectedVoice === "own" && voiceRecordingRef.current;
-      
-      if (isCustomVoice) {
-        setGenerationStatus("Cloning your voice...");
-        clonedVoiceId = await cloneVoice(voiceRecordingRef.current!);
-        voiceIdForNarration = clonedVoiceId;
+      // 2. Clone voice if new recording provided
+      let userVoiceId = await getUserVoiceClone(user.id);
+      if (voiceRecordingRef.current) {
+        setGenerationStatus("Creating your personal voice...");
+        const clonedId = await cloneVoice(voiceRecordingRef.current);
+        await saveVoiceClone(user.id, clonedId);
+        userVoiceId = clonedId;
+        voiceRecordingRef.current = null; // Delete raw recording reference
       }
 
-      // Step 3: Generate script (shorter for custom voices to save credits)
-      setGenerationStatus("Writing your personal meditation...");
-      const script = await generateMeditationScript({
+      // 3. Generate meditation script (4 segments)
+      setGenerationStatus("Writing your morning meditation...");
+      const guideVoiceId = theme?.guide_voice_id || "9BDgg2Q7WSrW0x8naPLw";
+      const { script, segments } = await generateMeditationScript({
         question1: answers[0],
         question2: answers[1],
         question3: answers[2],
-        shortScript: !!isCustomVoice,
+        userName,
+        monthlyTheme: theme?.theme,
+        themeIntention: theme?.intention,
       });
 
-      // Step 4: Narrate with chosen/cloned voice
-      setGenerationStatus("Creating your voice narration...");
-      const audioBlob = await narrateMeditation(script, voiceIdForNarration);
-
-      if (!audioBlob || audioBlob.size === 0) {
-        throw new Error("Narration could not be created. Please try again.");
-      }
-
-      // Step 5: Delete cloned voice immediately (privacy)
-      if (clonedVoiceId) {
-        await deleteVoice(clonedVoiceId);
-        clonedVoiceId = null;
-        voiceRecordingRef.current = null;
-      }
-
-      // Step 6: Upload narration audio
+      // 4. Narrate each segment with guide voice
       const currentMonth = new Date().toLocaleString("default", { month: "long", year: "numeric" });
       const monthSlug = currentMonth.replace(/\s/g, "-");
-      
-      setGenerationStatus("Saving your meditation...");
-      const audioUrl = await uploadMeditationAudio(user.id, audioBlob, monthSlug);
 
-      // Step 7: Save meditation record (music is generated procedurally in the player)
-      await saveMeditation({
+      setGenerationStatus("Creating voice narration (segment 1 of 4)...");
+      const segmentAudioUrls: string[] = [];
+      for (let i = 0; i < segments.length && i < 4; i++) {
+        setGenerationStatus(`Creating voice narration (segment ${i + 1} of 4)...`);
+        const audioBlob = await narrateSegment(segments[i].text, guideVoiceId, i + 1);
+        if (!audioBlob || audioBlob.size === 0) throw new Error(`Segment ${i + 1} narration failed`);
+        const audioUrl = await uploadSegmentAudio(user.id, audioBlob, monthSlug, i + 1);
+        segmentAudioUrls.push(audioUrl);
+      }
+
+      // 5. Save meditation
+      setGenerationStatus("Saving your meditation...");
+      const meditationId = await saveMeditation({
         userId: user.id,
         title: `${currentMonth} Meditation`,
         script,
-        audioUrl,
-        voiceId: selectedVoice === "own" ? "own-clone" : (selectedVoice || "sofia"),
-        musicMood: selectedMusic || "deep-sleep",
+        voiceId: guideVoiceId,
+        musicMood: "theme",
         month: currentMonth,
+        themeId: theme?.id,
       });
 
-      toast({ title: "Your meditation is ready! 🧘", description: "Time to drift into peace." });
+      // Save segments
+      for (let i = 0; i < segmentAudioUrls.length; i++) {
+        await saveMeditationSegment(meditationId, i + 1, segmentAudioUrls[i]);
+      }
+
+      // 6. Generate seeds if user has a voice clone
+      if (userVoiceId) {
+        setGenerationStatus("Creating your personal seeds...");
+        const phrases = await generateSeeds({
+          question1: answers[0],
+          question2: answers[1],
+          question3: answers[2],
+          monthlyTheme: theme?.theme,
+          themeIntention: theme?.intention,
+        });
+
+        // Narrate seeds with user's cloned voice
+        const seedAudioUrls: string[] = [];
+        for (let i = 0; i < phrases.length && i < 5; i++) {
+          setGenerationStatus(`Whispering seed ${i + 1} of 5...`);
+          try {
+            const seedBlob = await narrateSeed(phrases[i], userVoiceId);
+            const seedUrl = await uploadSeedAudio(user.id, seedBlob, monthSlug, i + 1);
+            seedAudioUrls.push(seedUrl);
+          } catch (e: any) {
+            console.error(`Seed ${i + 1} narration failed:`, e);
+            seedAudioUrls.push("");
+          }
+        }
+
+        await saveSeeds({
+          userId: user.id,
+          month: currentMonth,
+          themeId: theme?.id,
+          phrases,
+          audioUrls: seedAudioUrls,
+        });
+      }
+
+      toast({ title: "Your meditation is ready! 🧘", description: "Your morning meditation and seeds are waiting." });
       navigate("/home");
     } catch (err: any) {
       console.error("Generation error:", err);
       toast({
         variant: "destructive",
-        title: err?.message?.toLowerCase().includes("credits") ? "More voice credits needed" : "Something went wrong",
+        title: err?.message?.toLowerCase().includes("credits") ? "More credits needed" : "Something went wrong",
         description: err.message,
       });
-
-      // Cleanup: delete cloned voice on error too
-      if (clonedVoiceId) {
-        await deleteVoice(clonedVoiceId);
-      }
-
       setIsGenerating(false);
     }
   };
@@ -133,7 +197,7 @@ const Onboarding = () => {
     if (step < totalSteps) {
       setStep(step + 1);
     } else {
-      handleGenerateMeditation();
+      handleGenerate();
     }
   };
 
@@ -142,9 +206,9 @@ const Onboarding = () => {
   };
 
   const canProceed = () => {
-    if (step <= 3) return answers[step - 1].trim().length > 0;
-    if (step === 4) return selectedVoice !== null;
-    if (step === 5) return selectedMusic !== null;
+    if (step === 1) return true; // Theme intro — always can proceed
+    if (step >= 2 && step <= 4) return answers[step - 2].trim().length > 0;
+    if (step === 5) return hasExistingClone || voiceRecordingRef.current !== null;
     return false;
   };
 
@@ -175,27 +239,28 @@ const Onboarding = () => {
       {/* Content */}
       <div className="flex-1 flex flex-col">
         <AnimatePresence mode="wait">
-          {step <= 3 && (
-            <QuestionsStep
-              key={`q-${step}`}
-              questionIndex={step - 1}
-              answer={answers[step - 1]}
-              onAnswer={(a) => handleQuestionAnswer(step - 1, a)}
+          {step === 1 && (
+            <ThemeIntroStep
+              key="theme"
+              themeName={theme?.theme || "Your Journey Begins"}
+              description={theme?.description || "Each month brings a new focus for your inner transformation. Answer three questions and we'll create your personalized meditation and seeds."}
+              intention={theme?.intention || "Creating your everyday utopia"}
             />
           )}
-          {step === 4 && (
-            <VoiceStep
-              key="voice"
-              selectedVoice={selectedVoice}
-              onSelect={setSelectedVoice}
-              onVoiceRecording={handleVoiceRecording}
+          {step >= 2 && step <= 4 && (
+            <QuestionsStep
+              key={`q-${step}`}
+              questionIndex={step - 2}
+              answer={answers[step - 2]}
+              onAnswer={(a) => handleQuestionAnswer(step - 2, a)}
+              questions={themeQuestions}
             />
           )}
           {step === 5 && (
-            <MusicStep
-              key="music"
-              selectedMusic={selectedMusic}
-              onSelect={setSelectedMusic}
+            <VoiceCaptureStep
+              key="voice"
+              onRecordingComplete={handleVoiceRecording}
+              hasExistingClone={hasExistingClone}
             />
           )}
         </AnimatePresence>
@@ -208,7 +273,11 @@ const Onboarding = () => {
         className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-body font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed mt-6"
         whileTap={{ scale: 0.98 }}
       >
-        {step === totalSteps ? "Create My Meditation ✨" : "Continue"}
+        {step === 1
+          ? "Begin"
+          : step === totalSteps
+          ? "Create My Meditation ✨"
+          : "Continue"}
       </motion.button>
     </div>
   );

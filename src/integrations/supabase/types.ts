@@ -14,6 +14,65 @@ export type Database = {
   }
   public: {
     Tables: {
+      checkin_responses: {
+        Row: {
+          answer: string
+          created_at: string
+          id: string
+          month: string
+          question: string
+          user_id: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          id?: string
+          month: string
+          question: string
+          user_id: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          id?: string
+          month?: string
+          question?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      meditation_segments: {
+        Row: {
+          audio_url: string
+          created_at: string
+          id: string
+          meditation_id: string
+          segment_number: number
+        }
+        Insert: {
+          audio_url: string
+          created_at?: string
+          id?: string
+          meditation_id: string
+          segment_number: number
+        }
+        Update: {
+          audio_url?: string
+          created_at?: string
+          id?: string
+          meditation_id?: string
+          segment_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meditation_segments_meditation_id_fkey"
+            columns: ["meditation_id"]
+            isOneToOne: false
+            referencedRelation: "meditations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meditations: {
         Row: {
           audio_url: string | null
@@ -24,6 +83,7 @@ export type Database = {
           music_mood: string
           music_url: string | null
           script: string
+          theme_id: string | null
           title: string
           user_id: string
           voice_id: string
@@ -37,6 +97,7 @@ export type Database = {
           music_mood: string
           music_url?: string | null
           script: string
+          theme_id?: string | null
           title: string
           user_id: string
           voice_id: string
@@ -50,32 +111,62 @@ export type Database = {
           music_mood?: string
           music_url?: string | null
           script?: string
+          theme_id?: string | null
           title?: string
           user_id?: string
           voice_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "meditations_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_themes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       monthly_themes: {
         Row: {
+          checkin_count: number | null
+          checkin_question: string | null
           created_at: string
           description: string | null
+          guide_voice_id: string | null
           id: string
+          intention: string | null
+          is_active: boolean | null
           month: string
+          music_file_url: string | null
+          questions: Json | null
           theme: string
         }
         Insert: {
+          checkin_count?: number | null
+          checkin_question?: string | null
           created_at?: string
           description?: string | null
+          guide_voice_id?: string | null
           id?: string
+          intention?: string | null
+          is_active?: boolean | null
           month: string
+          music_file_url?: string | null
+          questions?: Json | null
           theme: string
         }
         Update: {
+          checkin_count?: number | null
+          checkin_question?: string | null
           created_at?: string
           description?: string | null
+          guide_voice_id?: string | null
           id?: string
+          intention?: string | null
+          is_active?: boolean | null
           month?: string
+          music_file_url?: string | null
+          questions?: Json | null
           theme?: string
         }
         Relationships: []
@@ -85,6 +176,8 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          morning_reminder_time: string | null
+          night_reminder_time: string | null
           updated_at: string
           user_id: string
         }
@@ -92,6 +185,8 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          morning_reminder_time?: string | null
+          night_reminder_time?: string | null
           updated_at?: string
           user_id: string
         }
@@ -99,10 +194,74 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          morning_reminder_time?: string | null
+          night_reminder_time?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: []
+      }
+      seeds: {
+        Row: {
+          audio_url_1: string | null
+          audio_url_2: string | null
+          audio_url_3: string | null
+          audio_url_4: string | null
+          audio_url_5: string | null
+          created_at: string
+          id: string
+          month: string
+          phrase_1: string
+          phrase_2: string
+          phrase_3: string
+          phrase_4: string
+          phrase_5: string
+          theme_id: string | null
+          user_id: string
+        }
+        Insert: {
+          audio_url_1?: string | null
+          audio_url_2?: string | null
+          audio_url_3?: string | null
+          audio_url_4?: string | null
+          audio_url_5?: string | null
+          created_at?: string
+          id?: string
+          month: string
+          phrase_1: string
+          phrase_2: string
+          phrase_3: string
+          phrase_4: string
+          phrase_5: string
+          theme_id?: string | null
+          user_id: string
+        }
+        Update: {
+          audio_url_1?: string | null
+          audio_url_2?: string | null
+          audio_url_3?: string | null
+          audio_url_4?: string | null
+          audio_url_5?: string | null
+          created_at?: string
+          id?: string
+          month?: string
+          phrase_1?: string
+          phrase_2?: string
+          phrase_3?: string
+          phrase_4?: string
+          phrase_5?: string
+          theme_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seeds_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_themes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_answers: {
         Row: {
@@ -145,6 +304,27 @@ export type Database = {
         Update: {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_voice_clones: {
+        Row: {
+          created_at: string
+          elevenlabs_voice_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          elevenlabs_voice_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          elevenlabs_voice_id?: string
+          id?: string
           user_id?: string
         }
         Relationships: []
