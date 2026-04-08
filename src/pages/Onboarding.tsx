@@ -210,7 +210,7 @@ const Onboarding = () => {
   const canProceed = () => {
     if (step === 1) return true; // Theme intro — always can proceed
     if (step >= 2 && step <= 4) return answers[step - 2].trim().length > 0;
-    if (step === 5) return hasExistingClone || voiceRecordingRef.current !== null;
+    if (step === 5) return hasExistingClone || hasRecording;
     return false;
   };
 
