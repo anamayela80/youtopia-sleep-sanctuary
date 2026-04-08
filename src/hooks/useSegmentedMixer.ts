@@ -20,10 +20,12 @@ export function useSegmentedMixer({
   const audioCtxRef = useRef<AudioContext | null>(null);
   const segmentBuffersRef = useRef<AudioBuffer[]>([]);
   const musicBufferRef = useRef<AudioBuffer | null>(null);
+  const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const musicSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const musicGainRef = useRef<GainNode | null>(null);
   const rafRef = useRef<number>(0);
   const startTimeRef = useRef(0);
+  const offsetRef = useRef(0); // virtual offset into the timeline
   const totalDurationRef = useRef(0);
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -40,6 +42,20 @@ export function useSegmentedMixer({
     const arrayBuf = await resp.arrayBuffer();
     return await ctx.decodeAudioData(arrayBuf);
   };
+
+  // Build the timeline: returns array of { startOffset, duration } for each segment
+  const buildTimeline = useCallback(() => {
+    const buffers = segmentBuffersRef.current;
+    const events: { type: "segment"; index: number; startOffset: number; duration: number }[] = [];
+    let t = musicFadeInDuration;
+    buffers.forEach((buf, i) => {
+      events.push({ type: "segment", index: i, startOffset: t, duration: buf.duration });
+      t += buf.duration;
+      if (i < buffers.length - 1) t += musicBridgeDurations[i + 1] || 60;
+    });
+    const totalDur = t + musicFadeOutDuration;
+    return { events, totalDuration: totalDur };
+  }, [musicFadeInDuration, musicFadeOutDuration, musicBridgeDurations]);
 
   useEffect(() => {
     if (segmentUrls.length === 0) return;
@@ -73,7 +89,7 @@ export function useSegmentedMixer({
 
     load();
     return () => {
-      stop();
+      stopAll();
       audioCtxRef.current?.close();
     };
   }, [segmentUrls.join(","), musicUrl]);
@@ -81,7 +97,7 @@ export function useSegmentedMixer({
   const tick = useCallback(() => {
     const ctx = audioCtxRef.current;
     if (!ctx) return;
-    const elapsed = ctx.currentTime - startTimeRef.current;
+    const elapsed = offsetRef.current + (ctx.currentTime - startTimeRef.current);
     const total = totalDurationRef.current;
     setCurrentTime(Math.min(elapsed, total));
     setProgress(Math.min((elapsed / total) * 100, 100));
@@ -93,7 +109,16 @@ export function useSegmentedMixer({
     }
   }, []);
 
-  const playSequence = useCallback(() => {
+  const stopAllSources = useCallback(() => {
+    activeSourcesRef.current.forEach((s) => { try { s.stop(); } catch {} });
+    activeSourcesRef.current = [];
+    try { musicSourceRef.current?.stop(); } catch {};
+    musicSourceRef.current = null;
+    musicGainRef.current = null;
+    cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  const playFromOffset = useCallback((fromOffset: number) => {
     const ctx = audioCtxRef.current;
     const buffers = segmentBuffersRef.current;
     const musicBuf = musicBufferRef.current;
@@ -101,60 +126,103 @@ export function useSegmentedMixer({
 
     if (ctx.state === "suspended") ctx.resume();
 
-    const startTime = ctx.currentTime;
-    startTimeRef.current = startTime;
-    let scheduleTime = startTime;
+    const { events, totalDuration } = buildTimeline();
+    totalDurationRef.current = totalDuration;
+    setDuration(totalDuration);
 
+    const clampedOffset = Math.max(0, Math.min(fromOffset, totalDuration));
+    offsetRef.current = clampedOffset;
+
+    const now = ctx.currentTime;
+    startTimeRef.current = now;
+
+    // Schedule music from offset
     if (musicBuf) {
       const musicSource = ctx.createBufferSource();
       musicSource.buffer = musicBuf;
       musicSource.loop = true;
       const gainNode = ctx.createGain();
-      gainNode.gain.setValueAtTime(0, startTime);
-      gainNode.gain.linearRampToValueAtTime(musicVolume, startTime + musicFadeInDuration);
+
+      // Compute current music gain at this offset
+      let currentGain = musicVolume;
+      if (clampedOffset < musicFadeInDuration) {
+        currentGain = (clampedOffset / musicFadeInDuration) * musicVolume;
+      }
+      const fadeOutStart = totalDuration - musicFadeOutDuration;
+      if (clampedOffset >= fadeOutStart) {
+        currentGain = Math.max(0, ((totalDuration - clampedOffset) / musicFadeOutDuration) * musicVolume);
+      }
+
+      gainNode.gain.setValueAtTime(currentGain, now);
+
+      // Schedule remaining fade-in
+      if (clampedOffset < musicFadeInDuration) {
+        const remainFade = musicFadeInDuration - clampedOffset;
+        gainNode.gain.linearRampToValueAtTime(musicVolume, now + remainFade);
+      }
+
+      // Schedule fade-out
+      const fadeOutStartOffset = totalDuration - musicFadeOutDuration;
+      if (clampedOffset < fadeOutStartOffset) {
+        const fadeOutAt = now + (fadeOutStartOffset - clampedOffset);
+        gainNode.gain.setValueAtTime(musicVolume, fadeOutAt);
+        gainNode.gain.linearRampToValueAtTime(0, fadeOutAt + musicFadeOutDuration);
+      } else if (clampedOffset < totalDuration) {
+        // Already in fade-out zone
+        const remaining = totalDuration - clampedOffset;
+        gainNode.gain.linearRampToValueAtTime(0, now + remaining);
+      }
+
       musicSource.connect(gainNode).connect(ctx.destination);
-      musicSource.start(startTime);
+      // Start music at a looped position
+      musicSource.start(now, clampedOffset % musicBuf.duration);
       musicSourceRef.current = musicSource;
       musicGainRef.current = gainNode;
+      activeSourcesRef.current.push(musicSource);
+
+      // Stop music at end
+      const musicStopAt = now + (totalDuration - clampedOffset) + 0.1;
+      musicSource.stop(musicStopAt);
     }
 
-    scheduleTime += musicFadeInDuration;
+    // Schedule segments that are still relevant
+    events.forEach((evt) => {
+      const segEnd = evt.startOffset + evt.duration;
+      if (segEnd <= clampedOffset) return; // already passed
 
-    buffers.forEach((buf, i) => {
       const source = ctx.createBufferSource();
-      source.buffer = buf;
+      source.buffer = buffers[evt.index];
       const gain = ctx.createGain();
       gain.gain.value = 1.0;
       source.connect(gain).connect(ctx.destination);
-      source.start(scheduleTime);
-      scheduleTime += buf.duration;
-      if (i < buffers.length - 1) {
-        scheduleTime += musicBridgeDurations[i + 1] || 60;
+
+      if (clampedOffset > evt.startOffset) {
+        // We're in the middle of this segment
+        const skipInto = clampedOffset - evt.startOffset;
+        source.start(now, skipInto);
+      } else {
+        // Schedule in the future
+        const delay = evt.startOffset - clampedOffset;
+        source.start(now + delay);
       }
+      activeSourcesRef.current.push(source);
     });
 
-    const fadeOutStart = scheduleTime;
-    const fadeOutEnd = fadeOutStart + musicFadeOutDuration;
-    if (musicGainRef.current) {
-      musicGainRef.current.gain.setValueAtTime(musicVolume, fadeOutStart);
-      musicGainRef.current.gain.linearRampToValueAtTime(0, fadeOutEnd);
-    }
-    if (musicSourceRef.current) {
-      musicSourceRef.current.stop(fadeOutEnd + 0.1);
-    }
-
-    const totalDuration = fadeOutEnd - startTime;
-    totalDurationRef.current = totalDuration;
-    setDuration(totalDuration);
     setIsPlaying(true);
     setIsPaused(false);
     setHasStarted(true);
     rafRef.current = requestAnimationFrame(tick);
-  }, [musicVolume, musicFadeInDuration, musicFadeOutDuration, musicBridgeDurations, tick]);
+  }, [musicVolume, musicFadeInDuration, musicFadeOutDuration, buildTimeline, tick]);
+
+  const playSequence = useCallback(() => {
+    playFromOffset(0);
+  }, [playFromOffset]);
 
   const pause = useCallback(() => {
     const ctx = audioCtxRef.current;
     if (!ctx || ctx.state !== "running") return;
+    // Capture current position before suspending
+    offsetRef.current = offsetRef.current + (ctx.currentTime - startTimeRef.current);
     ctx.suspend();
     cancelAnimationFrame(rafRef.current);
     setIsPlaying(false);
@@ -164,21 +232,49 @@ export function useSegmentedMixer({
   const resume = useCallback(() => {
     const ctx = audioCtxRef.current;
     if (!ctx || ctx.state !== "suspended") return;
+    startTimeRef.current = ctx.currentTime;
     ctx.resume();
     setIsPlaying(true);
     setIsPaused(false);
     rafRef.current = requestAnimationFrame(tick);
   }, [tick]);
 
-  const stop = useCallback(() => {
-    try { musicSourceRef.current?.stop(); } catch {}
-    cancelAnimationFrame(rafRef.current);
+  const stopAll = useCallback(() => {
+    stopAllSources();
     setIsPlaying(false);
     setIsPaused(false);
     setProgress(0);
     setCurrentTime(0);
     setHasStarted(false);
-  }, []);
+    offsetRef.current = 0;
+  }, [stopAllSources]);
+
+  const skip = useCallback((seconds: number) => {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+    const wasPlaying = isPlaying;
+    const currentPos = wasPlaying
+      ? offsetRef.current + (ctx.currentTime - startTimeRef.current)
+      : offsetRef.current;
+    const newPos = Math.max(0, Math.min(currentPos + seconds, totalDurationRef.current));
+
+    stopAllSources();
+
+    // Need a fresh context since sources are one-shot
+    const newCtx = new AudioContext();
+    audioCtxRef.current = newCtx;
+    offsetRef.current = newPos;
+
+    if (wasPlaying || isPaused) {
+      playFromOffset(newPos);
+    } else {
+      setCurrentTime(newPos);
+      setProgress((newPos / totalDurationRef.current) * 100);
+    }
+  }, [isPlaying, isPaused, stopAllSources, playFromOffset]);
+
+  const skipForward = useCallback(() => skip(30), [skip]);
+  const skipBackward = useCallback(() => skip(-30), [skip]);
 
   const togglePlay = useCallback(() => {
     if (isPlaying) {
@@ -190,5 +286,9 @@ export function useSegmentedMixer({
     }
   }, [isPlaying, isPaused, pause, resume, playSequence]);
 
-  return { isPlaying, isPaused, isLoading, progress, currentTime, duration, currentSegment, hasStarted, togglePlay, stop };
+  return {
+    isPlaying, isPaused, isLoading, progress, currentTime, duration,
+    currentSegment, hasStarted, togglePlay, stop: stopAll,
+    skipForward, skipBackward,
+  };
 }
