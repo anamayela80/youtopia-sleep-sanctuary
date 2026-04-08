@@ -16,9 +16,9 @@ const defaultQuestions = [
   },
   {
     emoji: "✨",
-    title: "What does your life look and feel\nlike 90 days from now?",
-    placeholder: "I see myself waking up feeling rested...",
-    hint: "Paint a picture — be as specific or dreamy as you like.",
+    title: "What would a transformed version\nof you look like in 30 days?",
+    placeholder: "I see myself waking up feeling rested and present...",
+    hint: "Imagine the best version of this month — be specific or dreamy.",
   },
   {
     emoji: "🍃",
