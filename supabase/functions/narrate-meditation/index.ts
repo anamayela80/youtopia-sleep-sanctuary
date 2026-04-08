@@ -39,7 +39,7 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             text: wrappedText,
-            model_id: "eleven_multilingual_v3",
+            model_id: "eleven_multilingual_v2",
             voice_settings: {
               stability: 0.85,
               similarity_boost: 0.75,
