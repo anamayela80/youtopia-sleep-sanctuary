@@ -33,6 +33,7 @@ const Onboarding = () => {
   const [theme, setTheme] = useState<any>(null);
   const [themeQuestions, setThemeQuestions] = useState<string[] | undefined>();
   const voiceRecordingRef = useRef<Blob | null>(null);
+  const [hasRecording, setHasRecording] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
