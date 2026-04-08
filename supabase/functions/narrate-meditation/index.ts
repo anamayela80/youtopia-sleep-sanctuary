@@ -27,6 +27,8 @@ serve(async (req) => {
     console.log(`Narrating segment ${segmentNumber || 'full'} with voice ${elevenLabsVoiceId}, text length: ${script.length}`);
 
     const doTTS = async (vid: string, text: string) => {
+      // Wrap in slow+breathe tags for v3 meditative delivery
+      const wrappedText = `[slow][breathe]${text}[/breathe][/slow]`;
       return await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${vid}?output_format=mp3_44100_128`,
         {
@@ -36,14 +38,13 @@ serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            text,
-            model_id: "eleven_multilingual_v2",
+            text: wrappedText,
+            model_id: "eleven_multilingual_v3",
             voice_settings: {
-              stability: 0.80,
+              stability: 0.85,
               similarity_boost: 0.75,
-              style: 0.10,
+              style: 0.05,
               use_speaker_boost: true,
-              speed: 0.85,
             },
           }),
         }
