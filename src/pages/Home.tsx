@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Play, Pause, Download, Moon, Sun, Settings, Headphones } from "lucide-react";
+import { Play, Pause, Download, Moon, Sun, Settings, Headphones, SkipForward, SkipBack } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSegmentedMixer } from "@/hooks/useSegmentedMixer";
 import { useSeedsPlayer } from "@/hooks/useSeedsPlayer";
@@ -143,6 +143,19 @@ const Home = () => {
               )}
 
               <div className="flex items-center justify-center gap-6">
+                {/* Skip back 30s */}
+                <button
+                  onClick={() => meditationMixer.skipBackward()}
+                  disabled={!meditationMixer.hasStarted}
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-accent transition-all active:scale-90 disabled:opacity-30"
+                >
+                  <div className="relative">
+                    <SkipBack size={18} />
+                    <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-[9px] font-body font-medium text-muted-foreground">30</span>
+                  </div>
+                </button>
+
+                {/* Play / Pause */}
                 <button
                   onClick={() => {
                     if (seedsPlayer.isPlaying) seedsPlayer.stop();
@@ -160,8 +173,21 @@ const Home = () => {
                     <Play size={22} className="ml-1" />
                   )}
                 </button>
+
+                {/* Skip forward 30s */}
+                <button
+                  onClick={() => meditationMixer.skipForward()}
+                  disabled={!meditationMixer.hasStarted}
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-accent transition-all active:scale-90 disabled:opacity-30"
+                >
+                  <div className="relative">
+                    <SkipForward size={18} />
+                    <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-[9px] font-body font-medium text-muted-foreground">30</span>
+                  </div>
+                </button>
+
                 {meditation.audio_url && (
-                  <a href={meditation.audio_url} download className="text-accent">
+                  <a href={meditation.audio_url} download className="text-accent ml-2">
                     <Download size={18} />
                   </a>
                 )}
