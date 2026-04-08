@@ -33,6 +33,7 @@ const Onboarding = () => {
   const [theme, setTheme] = useState<any>(null);
   const [themeQuestions, setThemeQuestions] = useState<string[] | undefined>();
   const voiceRecordingRef = useRef<Blob | null>(null);
+  const [hasRecording, setHasRecording] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -74,6 +75,7 @@ const Onboarding = () => {
 
   const handleVoiceRecording = (blob: Blob) => {
     voiceRecordingRef.current = blob;
+    setHasRecording(true);
   };
 
   const handleGenerate = async () => {
@@ -208,7 +210,7 @@ const Onboarding = () => {
   const canProceed = () => {
     if (step === 1) return true; // Theme intro — always can proceed
     if (step >= 2 && step <= 4) return answers[step - 2].trim().length > 0;
-    if (step === 5) return hasExistingClone || voiceRecordingRef.current !== null;
+    if (step === 5) return hasExistingClone || hasRecording;
     return false;
   };
 
