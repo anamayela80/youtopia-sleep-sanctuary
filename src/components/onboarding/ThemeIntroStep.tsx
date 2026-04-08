@@ -9,25 +9,59 @@ interface ThemeIntroStepProps {
 const ThemeIntroStep = ({ themeName, description, intention }: ThemeIntroStepProps) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.6 }}
-      className="flex flex-col items-center text-center flex-1 justify-center"
+      transition={{ duration: 0.8 }}
+      className="flex flex-col items-center text-center flex-1 justify-center px-4"
     >
-      <div className="text-4xl mb-6">🌀</div>
+      {/* Decorative spiral */}
+      <motion.div
+        className="mb-8"
+        initial={{ scale: 0.6, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 1, delay: 0.2 }}
+      >
+        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+          <motion.span
+            className="text-4xl"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          >
+            🌀
+          </motion.span>
+        </div>
+      </motion.div>
 
-      <h1 className="font-heading text-3xl text-secondary mb-4 leading-snug">
+      {/* Theme name — large serif heading */}
+      <motion.h1
+        className="font-heading text-4xl md:text-5xl text-secondary mb-6 leading-tight tracking-tight"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, delay: 0.4 }}
+      >
         {themeName}
-      </h1>
+      </motion.h1>
 
-      <p className="font-body text-accent leading-relaxed mb-6 max-w-sm">
+      {/* Description — 2-3 sentences */}
+      <motion.p
+        className="font-body text-base text-accent leading-relaxed mb-8 max-w-sm"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, delay: 0.7 }}
+      >
         {description}
-      </p>
+      </motion.p>
 
-      <p className="font-body text-sm text-muted-foreground italic max-w-xs">
-        {intention}
-      </p>
+      {/* Core intention — italic */}
+      <motion.p
+        className="font-body text-sm text-muted-foreground italic max-w-xs leading-relaxed"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.7, delay: 1.0 }}
+      >
+        "{intention}"
+      </motion.p>
     </motion.div>
   );
 };

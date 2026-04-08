@@ -16,7 +16,7 @@ const Admin = () => {
   const [themeIntention, setThemeIntention] = useState("");
   const [guideVoiceId, setGuideVoiceId] = useState("9BDgg2Q7WSrW0x8naPLw");
   const [q1, setQ1] = useState("How do you want to feel every day this month?");
-  const [q2, setQ2] = useState("What does your life look and feel like 90 days from now?");
+  const [q2, setQ2] = useState("What would a transformed version of you look like in 30 days?");
   const [q3, setQ3] = useState("What is one thing you are ready to release this month?");
   const [checkinQuestion, setCheckinQuestion] = useState("");
   const [checkinCount, setCheckinCount] = useState(1);
