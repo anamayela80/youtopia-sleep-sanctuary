@@ -20,11 +20,15 @@ export function useSeedsPlayer({
   musicFadeOutDuration = 120,
 }: UseSeedsPlayerOptions) {
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const musicSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const musicGainRef = useRef<GainNode | null>(null);
   const rafRef = useRef<number>(0);
   const startTimeRef = useRef(0);
+  const offsetRef = useRef(0);
   const totalDurationRef = useRef(0);
+  const seedBuffersRef = useRef<AudioBuffer[]>([]);
+  const musicBufferRef = useRef<AudioBuffer | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -40,10 +44,22 @@ export function useSeedsPlayer({
     return await ctx.decodeAudioData(arrayBuf);
   };
 
+  const buildTimeline = useCallback(() => {
+    const buffers = seedBuffersRef.current;
+    const events: { index: number; startOffset: number; duration: number }[] = [];
+    let t = musicFadeInDuration;
+    buffers.forEach((buf, i) => {
+      events.push({ index: i, startOffset: t, duration: buf.duration });
+      t += buf.duration + pauseDuration;
+    });
+    const totalDur = t - pauseDuration + musicLoopDuration;
+    return { events, totalDuration: totalDur };
+  }, [musicFadeInDuration, pauseDuration, musicLoopDuration]);
+
   const tick = useCallback(() => {
     const ctx = audioCtxRef.current;
     if (!ctx) return;
-    const elapsed = ctx.currentTime - startTimeRef.current;
+    const elapsed = offsetRef.current + (ctx.currentTime - startTimeRef.current);
     const total = totalDurationRef.current;
     setCurrentTime(Math.min(elapsed, total));
     setProgress(Math.min((elapsed / total) * 100, 100));
@@ -55,6 +71,103 @@ export function useSeedsPlayer({
     }
   }, []);
 
+  const stopAllSources = useCallback(() => {
+    activeSourcesRef.current.forEach((s) => { try { s.stop(); } catch {} });
+    activeSourcesRef.current = [];
+    try { musicSourceRef.current?.stop(); } catch {};
+    musicSourceRef.current = null;
+    musicGainRef.current = null;
+    cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  const playFromOffset = useCallback((fromOffset: number) => {
+    const ctx = audioCtxRef.current;
+    const buffers = seedBuffersRef.current;
+    const musicBuf = musicBufferRef.current;
+    if (!ctx || buffers.length === 0) return;
+
+    if (ctx.state === "suspended") ctx.resume();
+
+    const { events, totalDuration } = buildTimeline();
+    totalDurationRef.current = totalDuration;
+    setDuration(totalDuration);
+
+    const clampedOffset = Math.max(0, Math.min(fromOffset, totalDuration));
+    offsetRef.current = clampedOffset;
+
+    const now = ctx.currentTime;
+    startTimeRef.current = now;
+
+    // Music
+    if (musicBuf) {
+      const musicSource = ctx.createBufferSource();
+      musicSource.buffer = musicBuf;
+      musicSource.loop = true;
+      const gainNode = ctx.createGain();
+
+      let currentGain = musicVolume;
+      if (clampedOffset < musicFadeInDuration) {
+        currentGain = (clampedOffset / musicFadeInDuration) * musicVolume;
+      }
+      const fadeOutStart = totalDuration - musicFadeOutDuration;
+      if (clampedOffset >= fadeOutStart) {
+        currentGain = Math.max(0, ((totalDuration - clampedOffset) / musicFadeOutDuration) * musicVolume);
+      }
+
+      gainNode.gain.setValueAtTime(currentGain, now);
+
+      if (clampedOffset < musicFadeInDuration) {
+        const remainFade = musicFadeInDuration - clampedOffset;
+        gainNode.gain.linearRampToValueAtTime(musicVolume, now + remainFade);
+      }
+
+      const fadeOutStartOffset = totalDuration - musicFadeOutDuration;
+      if (clampedOffset < fadeOutStartOffset) {
+        const fadeOutAt = now + (fadeOutStartOffset - clampedOffset);
+        gainNode.gain.setValueAtTime(musicVolume, fadeOutAt);
+        gainNode.gain.linearRampToValueAtTime(0, fadeOutAt + musicFadeOutDuration);
+      } else if (clampedOffset < totalDuration) {
+        const remaining = totalDuration - clampedOffset;
+        gainNode.gain.linearRampToValueAtTime(0, now + remaining);
+      }
+
+      musicSource.connect(gainNode).connect(ctx.destination);
+      musicSource.start(now, clampedOffset % musicBuf.duration);
+      musicSourceRef.current = musicSource;
+      musicGainRef.current = gainNode;
+      activeSourcesRef.current.push(musicSource);
+
+      const musicStopAt = now + (totalDuration - clampedOffset) + 0.1;
+      musicSource.stop(musicStopAt);
+    }
+
+    // Seeds
+    events.forEach((evt) => {
+      const segEnd = evt.startOffset + evt.duration;
+      if (segEnd <= clampedOffset) return;
+
+      const source = ctx.createBufferSource();
+      source.buffer = buffers[evt.index];
+      const gain = ctx.createGain();
+      gain.gain.value = 0.9;
+      source.connect(gain).connect(ctx.destination);
+
+      if (clampedOffset > evt.startOffset) {
+        const skipInto = clampedOffset - evt.startOffset;
+        source.start(now, skipInto);
+      } else {
+        const delay = evt.startOffset - clampedOffset;
+        source.start(now + delay);
+      }
+      activeSourcesRef.current.push(source);
+    });
+
+    setIsPlaying(true);
+    setIsPaused(false);
+    setHasStarted(true);
+    rafRef.current = requestAnimationFrame(tick);
+  }, [musicVolume, musicFadeInDuration, musicFadeOutDuration, buildTimeline, tick]);
+
   const play = useCallback(async () => {
     if (seedAudioUrls.filter(Boolean).length === 0) return;
 
@@ -63,71 +176,26 @@ export function useSeedsPlayer({
       const ctx = new AudioContext();
       audioCtxRef.current = ctx;
 
-      const seedBuffers = await Promise.all(
+      seedBuffersRef.current = await Promise.all(
         seedAudioUrls.filter(Boolean).map((url) => loadBuffer(ctx, url))
       );
 
-      let musicBuffer: AudioBuffer | null = null;
       if (musicUrl) {
-        musicBuffer = await loadBuffer(ctx, musicUrl);
+        musicBufferRef.current = await loadBuffer(ctx, musicUrl);
       }
 
-      const startTime = ctx.currentTime;
-      startTimeRef.current = startTime;
-      let scheduleTime = startTime;
-
-      if (musicBuffer) {
-        const musicSource = ctx.createBufferSource();
-        musicSource.buffer = musicBuffer;
-        musicSource.loop = true;
-        const gainNode = ctx.createGain();
-        gainNode.gain.setValueAtTime(0, startTime);
-        gainNode.gain.linearRampToValueAtTime(musicVolume, startTime + musicFadeInDuration);
-        musicSource.connect(gainNode).connect(ctx.destination);
-        musicSource.start(startTime);
-        musicSourceRef.current = musicSource;
-        musicGainRef.current = gainNode;
-      }
-
-      scheduleTime += musicFadeInDuration;
-
-      seedBuffers.forEach((buf) => {
-        const source = ctx.createBufferSource();
-        source.buffer = buf;
-        const gain = ctx.createGain();
-        gain.gain.value = 0.9;
-        source.connect(gain).connect(ctx.destination);
-        source.start(scheduleTime);
-        scheduleTime += buf.duration + pauseDuration;
-      });
-
-      const musicEndTime = scheduleTime + musicLoopDuration;
-      
-      if (musicGainRef.current) {
-        musicGainRef.current.gain.setValueAtTime(musicVolume, musicEndTime - musicFadeOutDuration);
-        musicGainRef.current.gain.linearRampToValueAtTime(0, musicEndTime);
-      }
-      if (musicSourceRef.current) {
-        musicSourceRef.current.stop(musicEndTime + 0.1);
-      }
-
-      const totalDuration = musicEndTime - startTime;
-      totalDurationRef.current = totalDuration;
-      setDuration(totalDuration);
       setIsLoading(false);
-      setIsPlaying(true);
-      setIsPaused(false);
-      setHasStarted(true);
-      rafRef.current = requestAnimationFrame(tick);
+      playFromOffset(0);
     } catch (e) {
       console.error("Seeds player error:", e);
       setIsLoading(false);
     }
-  }, [seedAudioUrls, musicUrl, musicVolume, pauseDuration, musicLoopDuration, musicFadeInDuration, musicFadeOutDuration, tick]);
+  }, [seedAudioUrls, musicUrl, playFromOffset]);
 
   const pause = useCallback(() => {
     const ctx = audioCtxRef.current;
     if (!ctx || ctx.state !== "running") return;
+    offsetRef.current = offsetRef.current + (ctx.currentTime - startTimeRef.current);
     ctx.suspend();
     cancelAnimationFrame(rafRef.current);
     setIsPlaying(false);
@@ -137,6 +205,7 @@ export function useSeedsPlayer({
   const resume = useCallback(() => {
     const ctx = audioCtxRef.current;
     if (!ctx || ctx.state !== "suspended") return;
+    startTimeRef.current = ctx.currentTime;
     ctx.resume();
     setIsPlaying(true);
     setIsPaused(false);
@@ -144,8 +213,7 @@ export function useSeedsPlayer({
   }, [tick]);
 
   const stop = useCallback(() => {
-    try { musicSourceRef.current?.stop(); } catch {}
-    cancelAnimationFrame(rafRef.current);
+    stopAllSources();
     audioCtxRef.current?.close();
     audioCtxRef.current = null;
     setIsPlaying(false);
@@ -153,7 +221,34 @@ export function useSeedsPlayer({
     setProgress(0);
     setCurrentTime(0);
     setHasStarted(false);
-  }, []);
+    offsetRef.current = 0;
+  }, [stopAllSources]);
+
+  const skip = useCallback((seconds: number) => {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+    const wasPlaying = isPlaying;
+    const currentPos = wasPlaying
+      ? offsetRef.current + (ctx.currentTime - startTimeRef.current)
+      : offsetRef.current;
+    const newPos = Math.max(0, Math.min(currentPos + seconds, totalDurationRef.current));
+
+    stopAllSources();
+
+    const newCtx = new AudioContext();
+    audioCtxRef.current = newCtx;
+    offsetRef.current = newPos;
+
+    if (wasPlaying || isPaused) {
+      playFromOffset(newPos);
+    } else {
+      setCurrentTime(newPos);
+      setProgress((newPos / totalDurationRef.current) * 100);
+    }
+  }, [isPlaying, isPaused, stopAllSources, playFromOffset]);
+
+  const skipForward = useCallback(() => skip(30), [skip]);
+  const skipBackward = useCallback(() => skip(-30), [skip]);
 
   const togglePlay = useCallback(() => {
     if (isPlaying) {
@@ -169,5 +264,8 @@ export function useSeedsPlayer({
     return () => { stop(); };
   }, []);
 
-  return { isPlaying, isPaused, isLoading, progress, currentTime, duration, hasStarted, togglePlay, stop };
+  return {
+    isPlaying, isPaused, isLoading, progress, currentTime, duration,
+    hasStarted, togglePlay, stop, skipForward, skipBackward,
+  };
 }
