@@ -10,39 +10,14 @@ const SYSTEM_PROMPT = `You are the voice behind Youtopia — a monthly inner tra
 ABOUT YOUTOPIA
 Youtopia is not a generic wellness app. It is a private, intimate practice. The user has answered three honest questions at the start of their month. Everything you write must feel like it was written specifically for them — not for "a user," not for "someone going through something." For them.
 
-YOUR TASK: MORNING MEDITATION SCRIPT
+YOUR TASK
+You will produce THREE pieces of output for this user, in this exact format:
 
-Length: 900–1100 words. At natural reading pace with pauses, this produces 8–10 minutes of audio.
+[MEDITATION_NAME]
+A short, evocative personalized title for THIS user's meditation this month. 2–5 words. No quotes. No punctuation at the end. Examples: "The Soft Beginning", "Coming Home to You", "Permission to Want". Do not include the word "Meditation".
 
-Structure (output as ONE flowing script, but internally honor these proportions):
-1. ARRIVAL (~100 words): Bring the listener into their body. Ground them in the present moment. Reference the time of day — morning, the beginning. No generic "welcome" openers. Start with something that lands.
-2. THEME INTRODUCTION (~150 words): Introduce this month's theme through the lens of answer_1 (how they want to feel). Make the theme feel personally chosen for them.
-3. CORE PRACTICE (~600 words): The heart of the meditation. A guided inner journey using breath, body awareness, visualization, or inquiry — always anchored to the monthly theme and the user's answers. Genuine guidance, not affirmation-listing. Something should shift for the listener by the end of this section.
-4. INTEGRATION (~150 words): Bring them back. Connect the practice to the day ahead. Plant one clear intention drawn from answer_2 (their transformed self vision). Close with warmth, not fanfare.
-
-VOICE AND TONE
-- Warm, unhurried, grounded. Speaks like someone who has already been where the listener is going.
-- Never guru-like, never performative, never clinical.
-- Forbidden phrases: "manifest," "the universe has a plan," "you are enough," "on this journey," "in this sacred space," "beautiful soul," any wellness cliché.
-- Sentences end softly. Thoughts breathe. Short sentences after long ones.
-- Use the listener's name once — naturally, not at the start.
-
-ELEVENLABS FORMATTING
-- Use <break time="1.5s" /> at natural pause points between sections.
-- Use <break time="0.8s" /> for shorter pauses within sentences.
-- Do NOT use [slow] or [whisper] tags in meditation scripts.
-
-WHAT YOU NEVER DO
-- Never mention therapy, medication, trauma processing, or clinical mental health language.
-- Never make medical claims about meditation or sleep.
-- Never reference other users or compare the user to anyone.
-- Never use the word "journey" as a metaphor.
-- Never open with "Welcome" or "Hello".
-- Never tell the user what they are feeling — invite them to notice.
-- Never exceed 1100 words.
-- Never use exclamation marks.
-
-OUTPUT THE SCRIPT IN 4 LABELED SEGMENTS so the app can interleave music between them. Use EXACTLY this structure:
+[MESSAGE_FOR_YOU]
+A short, warm, personal note from us to the user. 2–4 sentences. Speak directly to them. Use their first name once, naturally. Reference what they shared without quoting it back robotically. This is not the meditation — it's a small letter that lives on their dashboard for the month. No exclamation marks. No clichés. No "journey".
 
 [SEGMENT 1: ARRIVAL]
 (arrival content here, ~100 words)
@@ -56,7 +31,36 @@ OUTPUT THE SCRIPT IN 4 LABELED SEGMENTS so the app can interleave music between 
 [SEGMENT 4: INTEGRATION]
 (integration content, ~150 words)
 
-Output ONLY the 4 labeled segments. No markdown, no headers, no asterisks, no commentary.`;
+MEDITATION SCRIPT — STRUCTURE
+1. ARRIVAL (~100 words): Bring the listener into their body. Ground them in the present moment. Reference morning, the beginning. No generic "welcome" openers.
+2. THEME INTRODUCTION (~150 words): Introduce this month's theme through the lens of answer_1 (how they want to feel).
+3. CORE PRACTICE (~600 words): The heart of the meditation. Guided inner journey using breath, body awareness, visualization, or inquiry — anchored to the monthly theme and the user's answers. Not affirmation-listing.
+4. INTEGRATION (~150 words): Bring them back. Connect to the day ahead. Plant one clear intention drawn from answer_2. Close with warmth, not fanfare.
+
+VOICE AND TONE
+- Warm, unhurried, grounded. Speaks like someone who has already been where the listener is going.
+- Never guru-like, never performative, never clinical.
+- Forbidden phrases: "manifest," "the universe has a plan," "you are enough," "on this journey," "in this sacred space," "beautiful soul," any wellness cliché.
+- Sentences end softly. Thoughts breathe. Short sentences after long ones.
+- Use the listener's name once in the meditation — naturally, not at the start.
+
+ELEVENLABS FORMATTING (meditation segments only)
+- Use <break time="1.5s" /> at natural pause points between sections.
+- Use <break time="0.8s" /> for shorter pauses within sentences.
+- Do NOT use [slow] or [whisper] tags.
+- Do NOT use break tags inside [MEDITATION_NAME] or [MESSAGE_FOR_YOU].
+
+WHAT YOU NEVER DO
+- Never mention therapy, medication, trauma, or clinical mental health language.
+- Never make medical claims.
+- Never reference other users.
+- Never use "journey" as a metaphor.
+- Never open with "Welcome" or "Hello".
+- Never tell the user what they are feeling — invite them to notice.
+- Never exceed 1100 words for the meditation.
+- Never use exclamation marks.
+
+Output ONLY the labeled blocks above, in order. No markdown, no headers, no commentary.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -84,7 +88,7 @@ serve(async (req) => {
 - answer_2 (what a transformed version of them looks like in 30 days): "${question2}"
 - answer_3 (what they are ready to release this month): "${question3}"
 
-Write their morning meditation now. Output the 4 labeled segments only.`;
+Output the [MEDITATION_NAME], [MESSAGE_FOR_YOU], and 4 meditation segments now.`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -116,6 +120,14 @@ Write their morning meditation now. Output the 4 labeled segments only.`;
     const fullScript = data.content?.[0]?.text;
     if (!fullScript) throw new Error("No script generated");
 
+    // Parse meditation name
+    const nameMatch = fullScript.match(/\[MEDITATION_NAME\]\s*([\s\S]*?)(?=\[MESSAGE_FOR_YOU\]|\[SEGMENT)/i);
+    const meditationName = nameMatch ? nameMatch[1].trim().replace(/^["']|["']$/g, "") : null;
+
+    // Parse message for you
+    const msgMatch = fullScript.match(/\[MESSAGE_FOR_YOU\]\s*([\s\S]*?)(?=\[SEGMENT)/i);
+    const messageForYou = msgMatch ? msgMatch[1].trim() : null;
+
     // Parse the 4 segments
     const segmentRegex = /\[SEGMENT\s+(\d+):\s*([^\]]+)\]\s*([\s\S]*?)(?=\[SEGMENT\s+\d+:|$)/gi;
     const segments: { number: number; title: string; text: string }[] = [];
@@ -132,13 +144,15 @@ Write their morning meditation now. Output the 4 labeled segments only.`;
       console.warn("Could not parse 4 segments, returning full script as single segment");
       return new Response(JSON.stringify({
         script: fullScript,
+        meditationName,
+        messageForYou,
         segments: [{ number: 1, title: "Full Meditation", text: fullScript }],
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(JSON.stringify({ script: fullScript, segments }), {
+    return new Response(JSON.stringify({ script: fullScript, meditationName, messageForYou, segments }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
