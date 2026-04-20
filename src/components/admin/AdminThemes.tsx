@@ -19,6 +19,8 @@ type Theme = {
   practice: string | null;
   questions: string[];
   guide_voice_id: string | null;
+  seed_voice_id: string | null;
+  allow_voice_clone: boolean;
 };
 
 const parseQuestions = (q: any): string[] => {
@@ -44,7 +46,7 @@ export const AdminThemes = () => {
   const load = async () => {
     const { data } = await supabase
       .from("monthly_themes")
-      .select("id, month_key, month, theme, description, status, intro_orienting, intro_settling, intro_established, about, science, practice, questions, guide_voice_id")
+      .select("id, month_key, month, theme, description, status, intro_orienting, intro_settling, intro_established, about, science, practice, questions, guide_voice_id, seed_voice_id, allow_voice_clone")
       .not("month_key", "is", null);
     if (data) {
       const sorted = [...data].sort((a, b) => ORDER.indexOf(a.month_key!) - ORDER.indexOf(b.month_key!));
