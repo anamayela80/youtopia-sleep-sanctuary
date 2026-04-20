@@ -38,11 +38,10 @@ VOICE AND TONE
 - Sentences end softly. Thoughts breathe. Short sentences after long ones.
 - Use the listener's name once in the meditation — naturally, not at the start.
 
-ELEVENLABS FORMATTING (meditation segments only)
+ELEVENLABS FORMATTING
 - Use <break time="1.5s" /> at natural pause points between sections.
 - Use <break time="0.8s" /> for shorter pauses within sentences.
 - Do NOT use [slow] or [whisper] tags.
-- Do NOT use break tags inside [MEDITATION_NAME] or [MESSAGE_FOR_YOU].
 
 WHAT YOU NEVER DO
 - Never mention therapy, medication, trauma, or clinical mental health language.
@@ -54,7 +53,7 @@ WHAT YOU NEVER DO
 - Never exceed 1100 words for the meditation.
 - Never use exclamation marks.
 
-Output ONLY the labeled blocks above, in order. No markdown, no headers, no commentary.`;
+Output ONLY the 4 labeled segment blocks above, in order. No markdown, no headers, no commentary.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
