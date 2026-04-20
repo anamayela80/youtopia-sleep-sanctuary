@@ -5,19 +5,23 @@ interface UseSeedsPlayerOptions {
   musicUrl: string | null;
   musicVolume?: number;
   pauseDuration?: number;
-  musicLoopDuration?: number;
+  /** Total session length in seconds. Defaults to 45 minutes. */
+  totalDuration?: number;
   musicFadeInDuration?: number;
   musicFadeOutDuration?: number;
+  /** Volume of seed phrases — kept low so it feels like a whisper for sleep. */
+  seedVolume?: number;
 }
 
 export function useSeedsPlayer({
   seedAudioUrls,
   musicUrl,
-  musicVolume = 0.3,
-  pauseDuration = 25,
-  musicLoopDuration = 1200,
-  musicFadeInDuration = 90,
+  musicVolume = 0.18,
+  pauseDuration = 35,
+  totalDuration = 45 * 60,
+  musicFadeInDuration = 60,
   musicFadeOutDuration = 120,
+  seedVolume = 0.45,
 }: UseSeedsPlayerOptions) {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
@@ -47,14 +51,23 @@ export function useSeedsPlayer({
   const buildTimeline = useCallback(() => {
     const buffers = seedBuffersRef.current;
     const events: { index: number; startOffset: number; duration: number }[] = [];
+    if (buffers.length === 0) return { events, totalDuration };
+
+    // Loop seeds across the full session duration.
+    // Stop placing seeds early enough to leave a quiet fade-out tail.
+    const seedWindowEnd = totalDuration - musicFadeOutDuration;
     let t = musicFadeInDuration;
-    buffers.forEach((buf, i) => {
-      events.push({ index: i, startOffset: t, duration: buf.duration });
+    let i = 0;
+    while (t < seedWindowEnd) {
+      const buf = buffers[i % buffers.length];
+      // Don't start a seed that wouldn't finish before the fade-out.
+      if (t + buf.duration > seedWindowEnd) break;
+      events.push({ index: i % buffers.length, startOffset: t, duration: buf.duration });
       t += buf.duration + pauseDuration;
-    });
-    const totalDur = t - pauseDuration + musicLoopDuration;
-    return { events, totalDuration: totalDur };
-  }, [musicFadeInDuration, pauseDuration, musicLoopDuration]);
+      i++;
+    }
+    return { events, totalDuration };
+  }, [musicFadeInDuration, pauseDuration, totalDuration, musicFadeOutDuration]);
 
   const tick = useCallback(() => {
     const ctx = audioCtxRef.current;
@@ -149,7 +162,7 @@ export function useSeedsPlayer({
       const source = ctx.createBufferSource();
       source.buffer = buffers[evt.index];
       const gain = ctx.createGain();
-      gain.gain.value = 0.9;
+      gain.gain.value = seedVolume;
       source.connect(gain).connect(ctx.destination);
 
       if (clampedOffset > evt.startOffset) {

@@ -27,21 +27,22 @@ serve(async (req) => {
     console.log(`Narrating segment ${segmentNumber || 'full'} with voice ${elevenLabsVoiceId}, text length: ${script.length}`);
 
     const doTTS = async (vid: string, text: string, prev?: string, next?: string) => {
-      const wrappedText = `[slow][breathe]${text}[/breathe][/slow]`;
-      const modelId = "eleven_v3";
+      // eleven_multilingual_v2 = stable, supports stitching & ElevenLabs <break> tags.
+      // We do NOT wrap with [slow]/[breathe] — those are not valid v2/v3 SSML and cause 400 errors.
+      const modelId = "eleven_multilingual_v2";
       const body: Record<string, unknown> = {
-        text: wrappedText,
+        text,
         model_id: modelId,
         voice_settings: {
-          stability: 0.85,
+          stability: 0.75,            // calm, consistent narration
           similarity_boost: 0.75,
-          style: 0.05,
+          style: 0.15,                // soft expressiveness, not hyped
           use_speaker_boost: true,
+          speed: 0.9,                 // slower, more meditative pace
         },
       };
-      const supportsStitching = modelId !== "eleven_v3";
-      if (supportsStitching && prev) body.previous_text = prev;
-      if (supportsStitching && next) body.next_text = next;
+      if (prev) body.previous_text = prev;
+      if (next) body.next_text = next;
       return await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${vid}?output_format=mp3_44100_128`,
         {
