@@ -105,10 +105,10 @@ const Onboarding = () => {
         voiceRecordingRef.current = null; // Delete raw recording reference
       }
 
-      // 3. Generate meditation script (4 segments)
+      // 3. Generate meditation script (4 segments) + meditation name + message for you
       setGenerationStatus("Writing your morning meditation...");
       const guideVoiceId = theme?.guide_voice_id || "9BDgg2Q7WSrW0x8naPLw";
-      const { script, segments } = await generateMeditationScript({
+      const { script, segments, meditationName, messageForYou } = await generateMeditationScript({
         question1: answers[0],
         question2: answers[1],
         question3: answers[2],
@@ -131,16 +131,19 @@ const Onboarding = () => {
         segmentAudioUrls.push(audioUrl);
       }
 
-      // 5. Save meditation
+      // 5. Save meditation (with personalized name + message)
       setGenerationStatus("Saving your meditation...");
       const meditationId = await saveMeditation({
         userId: user.id,
-        title: `${currentMonth} Meditation`,
+        title: meditationName || `${currentMonth} Meditation`,
         script,
         voiceId: guideVoiceId,
         musicMood: "theme",
         month: currentMonth,
         themeId: theme?.id,
+        meditationName,
+        messageForYou,
+        meditationArtworkUrl: null,
       });
 
       // Save segments
