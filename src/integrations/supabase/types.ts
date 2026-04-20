@@ -133,6 +133,7 @@ export type Database = {
           month: string
           music_mood: string
           music_url: string | null
+          pending_image_prompt: string | null
           script: string
           theme_id: string | null
           title: string
@@ -150,6 +151,7 @@ export type Database = {
           month: string
           music_mood: string
           music_url?: string | null
+          pending_image_prompt?: string | null
           script: string
           theme_id?: string | null
           title: string
@@ -167,6 +169,7 @@ export type Database = {
           month?: string
           music_mood?: string
           music_url?: string | null
+          pending_image_prompt?: string | null
           script?: string
           theme_id?: string | null
           title?: string
