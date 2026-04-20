@@ -127,6 +127,9 @@ export type Database = {
           created_at: string
           duration_seconds: number | null
           id: string
+          meditation_artwork_url: string | null
+          meditation_name: string | null
+          message_for_you: string | null
           month: string
           music_mood: string
           music_url: string | null
@@ -141,6 +144,9 @@ export type Database = {
           created_at?: string
           duration_seconds?: number | null
           id?: string
+          meditation_artwork_url?: string | null
+          meditation_name?: string | null
+          message_for_you?: string | null
           month: string
           music_mood: string
           music_url?: string | null
@@ -155,6 +161,9 @@ export type Database = {
           created_at?: string
           duration_seconds?: number | null
           id?: string
+          meditation_artwork_url?: string | null
+          meditation_name?: string | null
+          message_for_you?: string | null
           month?: string
           music_mood?: string
           music_url?: string | null
@@ -185,6 +194,9 @@ export type Database = {
           guide_voice_id: string | null
           id: string
           intention: string | null
+          intro_established: string | null
+          intro_orienting: string | null
+          intro_settling: string | null
           is_active: boolean | null
           month: string
           month_key: string | null
@@ -208,6 +220,9 @@ export type Database = {
           guide_voice_id?: string | null
           id?: string
           intention?: string | null
+          intro_established?: string | null
+          intro_orienting?: string | null
+          intro_settling?: string | null
           is_active?: boolean | null
           month: string
           month_key?: string | null
@@ -231,6 +246,9 @@ export type Database = {
           guide_voice_id?: string | null
           id?: string
           intention?: string | null
+          intro_established?: string | null
+          intro_orienting?: string | null
+          intro_settling?: string | null
           is_active?: boolean | null
           month?: string
           month_key?: string | null
@@ -251,6 +269,7 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          membership_start_date: string
           morning_reminder_time: string | null
           night_reminder_time: string | null
           updated_at: string
@@ -260,6 +279,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          membership_start_date?: string
           morning_reminder_time?: string | null
           night_reminder_time?: string | null
           updated_at?: string
@@ -269,6 +289,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          membership_start_date?: string
           morning_reminder_time?: string | null
           night_reminder_time?: string | null
           updated_at?: string

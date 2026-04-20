@@ -18,13 +18,23 @@ export interface GenerateMeditationParams {
   themeIntention?: string;
 }
 
-export async function generateMeditationScript(params: GenerateMeditationParams): Promise<{ script: string; segments: MeditationSegment[] }> {
+export async function generateMeditationScript(params: GenerateMeditationParams): Promise<{
+  script: string;
+  segments: MeditationSegment[];
+  meditationName: string | null;
+  messageForYou: string | null;
+}> {
   const { data, error } = await supabase.functions.invoke("generate-meditation", {
     body: params,
   });
   if (error) throw new Error(error.message || "Failed to generate meditation script");
   if (data?.error) throw new Error(data.error);
-  return { script: data.script, segments: data.segments };
+  return {
+    script: data.script,
+    segments: data.segments,
+    meditationName: data.meditationName ?? null,
+    messageForYou: data.messageForYou ?? null,
+  };
 }
 
 export async function narrateSegment(segmentText: string, voiceId: string, segmentNumber: number): Promise<Blob> {
@@ -64,6 +74,9 @@ export async function saveMeditation(params: {
   musicMood: string;
   month: string;
   themeId?: string;
+  meditationName?: string | null;
+  messageForYou?: string | null;
+  meditationArtworkUrl?: string | null;
 }) {
   const { data, error } = await supabase.from("meditations").insert({
     user_id: params.userId,
@@ -73,10 +86,43 @@ export async function saveMeditation(params: {
     music_mood: params.musicMood,
     month: params.month,
     theme_id: params.themeId || null,
+    meditation_name: params.meditationName ?? null,
+    message_for_you: params.messageForYou ?? null,
+    meditation_artwork_url: params.meditationArtworkUrl ?? null,
   }).select("id").single();
 
   if (error) throw error;
   return data.id;
+}
+
+export async function getUserProfile(userId: string) {
+  const { data } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+  return data;
+}
+
+export async function getUserAnswers(userId: string) {
+  const { data } = await supabase
+    .from("user_answers")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data;
+}
+
+export function getTenureBand(membershipStartDate: string | null | undefined): "orienting" | "settling" | "established" {
+  if (!membershipStartDate) return "orienting";
+  const start = new Date(membershipStartDate);
+  const now = new Date();
+  const months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+  if (months <= 1) return "orienting";
+  if (months <= 4) return "settling";
+  return "established";
 }
 
 export async function saveMeditationSegment(meditationId: string, segmentNumber: number, audioUrl: string) {
