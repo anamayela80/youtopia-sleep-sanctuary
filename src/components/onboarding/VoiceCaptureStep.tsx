@@ -24,13 +24,14 @@ const VoiceCaptureStep = ({
   const presetOnly = !allowVoiceClone && hasPresetVoice;
   const cloneOnly = allowVoiceClone && !hasPresetVoice;
 
-  const initialState: "choose" | "intro" | "recording" | "active" | "done" =
+  type CaptureState = "choose" | "intro" | "recording" | "active" | "done";
+  const initialState: CaptureState =
     hasExistingClone ? "done"
       : presetOnly ? "choose"
       : cloneOnly ? "intro"
       : "choose"; // both available → let user decide
 
-  const [state, setState] = useState<typeof initialState>(initialState);
+  const [state, setState] = useState<CaptureState>(initialState);
   const [presetSelected, setPresetSelected] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [audioLevel, setAudioLevel] = useState(0);
