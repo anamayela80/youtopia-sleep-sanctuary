@@ -21,8 +21,6 @@ export interface GenerateMeditationParams {
 export async function generateMeditationScript(params: GenerateMeditationParams): Promise<{
   script: string;
   segments: MeditationSegment[];
-  meditationName: string | null;
-  messageForYou: string | null;
 }> {
   const { data, error } = await supabase.functions.invoke("generate-meditation", {
     body: params,
@@ -32,8 +30,25 @@ export async function generateMeditationScript(params: GenerateMeditationParams)
   return {
     script: data.script,
     segments: data.segments,
+  };
+}
+
+export async function generateMonthlyPackage(params: {
+  meditationId: string;
+  userName?: string;
+  monthlyTheme?: string;
+  themeIntention?: string;
+  answers: string[];
+}): Promise<{ meditationName: string | null; messageForYou: string | null; imagePrompt: string | null }> {
+  const { data, error } = await supabase.functions.invoke("generate-monthly-package", {
+    body: params,
+  });
+  if (error) throw new Error(error.message || "Failed to generate monthly package");
+  if (data?.error) throw new Error(data.error);
+  return {
     meditationName: data.meditationName ?? null,
     messageForYou: data.messageForYou ?? null,
+    imagePrompt: data.imagePrompt ?? null,
   };
 }
 
