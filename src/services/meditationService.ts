@@ -74,7 +74,7 @@ export async function uploadSegmentAudio(userId: string, audioBlob: Blob, month:
   const fileName = `${userId}/segments/${month}-seg${segmentNumber}-${Date.now()}.mp3`;
   const { error: uploadError } = await supabase.storage
     .from("meditations")
-    .upload(fileName, audioBlob, { contentType: "audio/mpeg" });
+    .upload(fileName, audioBlob, { contentType: audioBlob.type || "audio/mpeg" });
   if (uploadError) throw uploadError;
   const { data: urlData } = supabase.storage.from("meditations").getPublicUrl(fileName);
   return urlData.publicUrl;

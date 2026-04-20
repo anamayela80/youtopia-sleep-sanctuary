@@ -22,8 +22,10 @@ serve(async (req) => {
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     if (!ELEVENLABS_API_KEY) throw new Error("ELEVENLABS_API_KEY is not configured");
 
-    // Use the provided voiceId (guide voice from admin) or default
-    const elevenLabsVoiceId = voiceId || "9BDgg2Q7WSrW0x8naPLw";
+    const requestedVoiceId = typeof voiceId === "string" && voiceId.trim().length > 0
+      ? voiceId.trim()
+      : null;
+    const elevenLabsVoiceId = requestedVoiceId || "9BDgg2Q7WSrW0x8naPLw";
     console.log(`Narrating segment ${segmentNumber || 'full'} with voice ${elevenLabsVoiceId}, text length: ${script.length}`);
 
     const doTTS = async (vid: string, text: string, prev?: string, next?: string) => {
@@ -34,11 +36,11 @@ serve(async (req) => {
         text,
         model_id: modelId,
         voice_settings: {
-          stability: 0.75,            // calm, consistent narration
-          similarity_boost: 0.75,
-          style: 0.15,                // soft expressiveness, not hyped
-          use_speaker_boost: true,
-          speed: 0.9,                 // slower, more meditative pace
+          stability: 0.82,
+          similarity_boost: 0.72,
+          style: 0.05,
+          use_speaker_boost: false,
+          speed: 0.84,
         },
       };
       if (prev) body.previous_text = prev;
@@ -54,6 +56,19 @@ serve(async (req) => {
           body: JSON.stringify(body),
         }
       );
+    };
+
+    const stripId3Tag = (buffer: Uint8Array) => {
+      if (buffer.length < 10) return buffer;
+      if (buffer[0] !== 0x49 || buffer[1] !== 0x44 || buffer[2] !== 0x33) return buffer;
+      const size =
+        ((buffer[6] & 0x7f) << 21) |
+        ((buffer[7] & 0x7f) << 14) |
+        ((buffer[8] & 0x7f) << 7) |
+        (buffer[9] & 0x7f);
+      const footerSize = (buffer[5] & 0x10) !== 0 ? 10 : 0;
+      const offset = Math.min(buffer.length, 10 + size + footerSize);
+      return buffer.slice(offset);
     };
 
     // Chunk script into ≤4500 char pieces, splitting at paragraph/sentence boundaries
@@ -94,13 +109,21 @@ serve(async (req) => {
     console.log(`Split into ${chunks.length} chunk(s)`);
 
     const fallbackVoiceId = "9BDgg2Q7WSrW0x8naPLw";
-    const audioBuffers: ArrayBuffer[] = [];
+    const audioBuffers: Uint8Array[] = [];
 
     for (let i = 0; i < chunks.length; i++) {
       const prev = i > 0 ? chunks[i - 1].slice(-300) : undefined;
       const next = i < chunks.length - 1 ? chunks[i + 1].slice(0, 300) : undefined;
 
       let response = await doTTS(elevenLabsVoiceId, chunks[i], prev, next);
+
+      if (response.status === 404 && requestedVoiceId) {
+        return new Response(JSON.stringify({
+          error: "Configured voice was not found in ElevenLabs. Please re-save the theme voice or paste a valid voice ID.",
+        }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
       if (response.status === 404 && elevenLabsVoiceId !== fallbackVoiceId) {
         console.warn(`Voice ${elevenLabsVoiceId} not found, falling back to default`);
@@ -134,15 +157,15 @@ serve(async (req) => {
         throw new Error(`ElevenLabs TTS failed: ${response.status}`);
       }
 
-      audioBuffers.push(await response.arrayBuffer());
+      const rawAudio = new Uint8Array(await response.arrayBuffer());
+      audioBuffers.push(audioBuffers.length === 0 ? rawAudio : stripId3Tag(rawAudio));
     }
 
-    // Concatenate MP3 buffers
     const totalLength = audioBuffers.reduce((sum, b) => sum + b.byteLength, 0);
     const audioBuffer = new Uint8Array(totalLength);
     let offset = 0;
     for (const buf of audioBuffers) {
-      audioBuffer.set(new Uint8Array(buf), offset);
+      audioBuffer.set(buf, offset);
       offset += buf.byteLength;
     }
 
