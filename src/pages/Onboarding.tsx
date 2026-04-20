@@ -58,6 +58,7 @@ const Onboarding = () => {
   const [showUnlock, setShowUnlock] = useState(false);
   const voiceRecordingRef = useRef<Blob | null>(null);
   const [hasRecording, setHasRecording] = useState(false);
+  const [usePresetVoice, setUsePresetVoice] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -146,12 +147,19 @@ const Onboarding = () => {
   const handleVoiceRecording = (blob: Blob) => {
     voiceRecordingRef.current = blob;
     setHasRecording(true);
+    setUsePresetVoice(false);
+  };
+
+  const handleUsePresetVoice = () => {
+    voiceRecordingRef.current = null;
+    setHasRecording(false);
+    setUsePresetVoice(true);
   };
 
   const canProceed = () => {
     if (currentKind === "welcome" || currentKind === "science" || currentKind === "theme") return true;
     if (currentKind === "question") return (answers[questionIndex] || "").trim().length > 0;
-    if (currentKind === "voice") return hasExistingClone || hasRecording;
+    if (currentKind === "voice") return hasExistingClone || hasRecording || usePresetVoice;
     return false;
   };
 
@@ -181,9 +189,13 @@ const Onboarding = () => {
       const padded = [answers[0] || "", answers[1] || "", answers[2] || ""];
       await saveUserAnswers(user.id, padded);
 
-      // 2. Voice clone (if new recording given). Otherwise fall back to theme guide voice for Seeds.
+      // 2. Voice handling.
+      // - If a new recording was provided, clone it.
+      // - Else if user explicitly chose the preset, use the theme's seed_voice_id.
+      // - Else if they have an existing clone, use it.
+      // - Final fallback: theme guide voice.
       let userVoiceId = await getUserVoiceClone(user.id);
-      if (voiceRecordingRef.current) {
+      if (voiceRecordingRef.current && !usePresetVoice) {
         setGenerationStatus("Creating your personal voice…");
         const clonedId = await cloneVoice(voiceRecordingRef.current);
         await saveVoiceClone(user.id, clonedId);
@@ -191,7 +203,10 @@ const Onboarding = () => {
         voiceRecordingRef.current = null;
       }
       const guideVoiceId = theme?.guide_voice_id || "9BDgg2Q7WSrW0x8naPLw";
-      const seedVoiceId = userVoiceId || guideVoiceId; // Serena fallback = theme guide voice
+      const presetSeedVoiceId = theme?.seed_voice_id || guideVoiceId;
+      const seedVoiceId = usePresetVoice
+        ? presetSeedVoiceId
+        : (userVoiceId || presetSeedVoiceId);
 
       // 3. Meditation script
       setGenerationStatus("Writing your meditation…");
@@ -402,7 +417,10 @@ const Onboarding = () => {
             <VoiceCaptureStep
               key="voice"
               onRecordingComplete={handleVoiceRecording}
+              onUsePresetVoice={handleUsePresetVoice}
               hasExistingClone={hasExistingClone}
+              allowVoiceClone={theme?.allow_voice_clone !== false}
+              hasPresetVoice={!!theme?.seed_voice_id}
             />
           )}
         </AnimatePresence>
@@ -417,21 +435,6 @@ const Onboarding = () => {
       >
         {continueLabel}
       </motion.button>
-
-      {/* Voice fallback link */}
-      {currentKind === "voice" && !hasExistingClone && !hasRecording && (
-        <button
-          onClick={() => {
-            // Mark as "use guide voice" — handled via seedVoiceId fallback in handleGenerate
-            setHasRecording(true);
-            voiceRecordingRef.current = null;
-            setTimeout(handleGenerate, 0);
-          }}
-          className="mt-3 text-sm font-body text-accent underline hover:opacity-80"
-        >
-          Use Serena's voice for now
-        </button>
-      )}
     </div>
   );
 };
