@@ -14,6 +14,9 @@ type Theme = {
   intro_orienting: string | null;
   intro_settling: string | null;
   intro_established: string | null;
+  about: string | null;
+  science: string | null;
+  practice: string | null;
   questions: string[];
 };
 
@@ -40,7 +43,7 @@ export const AdminThemes = () => {
   const load = async () => {
     const { data } = await supabase
       .from("monthly_themes")
-      .select("id, month_key, month, theme, description, status, intro_orienting, intro_settling, intro_established, questions")
+      .select("id, month_key, month, theme, description, status, intro_orienting, intro_settling, intro_established, about, science, practice, questions")
       .not("month_key", "is", null);
     if (data) {
       const sorted = [...data].sort((a, b) => ORDER.indexOf(a.month_key!) - ORDER.indexOf(b.month_key!));
@@ -74,6 +77,9 @@ export const AdminThemes = () => {
         intro_orienting: t.intro_orienting,
         intro_settling: t.intro_settling,
         intro_established: t.intro_established,
+        about: t.about,
+        science: t.science,
+        practice: t.practice,
         questions: t.questions,
       })
       .eq("id", t.id);
@@ -137,6 +143,29 @@ export const AdminThemes = () => {
               onChange={(e) => update(t.id, { intro_established: e.target.value })}
               placeholder="Months 6+ (established): for someone deeply in the practice"
               className="w-full h-20 px-3 py-2 rounded-lg bg-background border border-border font-body text-sm text-foreground resize-none"
+            />
+          </div>
+
+          <div className="space-y-2 pt-2 border-t border-border">
+            <p className="text-[11px] uppercase tracking-wider font-body text-accent">This Month's Practice page</p>
+            <p className="text-[11px] font-body text-muted-foreground -mt-1">Shown in full on the dedicated practice page. Use {"{name}"} to insert the user's first name.</p>
+            <textarea
+              value={t.about || ""}
+              onChange={(e) => update(t.id, { about: e.target.value })}
+              placeholder="What this month is about"
+              className="w-full h-28 px-3 py-2 rounded-lg bg-background border border-border font-body text-sm text-foreground resize-none"
+            />
+            <textarea
+              value={t.science || ""}
+              onChange={(e) => update(t.id, { science: e.target.value })}
+              placeholder="Why it works — the science"
+              className="w-full h-28 px-3 py-2 rounded-lg bg-background border border-border font-body text-sm text-foreground resize-none"
+            />
+            <textarea
+              value={t.practice || ""}
+              onChange={(e) => update(t.id, { practice: e.target.value })}
+              placeholder="Your practice this month"
+              className="w-full h-28 px-3 py-2 rounded-lg bg-background border border-border font-body text-sm text-foreground resize-none"
             />
           </div>
 
