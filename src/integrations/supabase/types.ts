@@ -189,6 +189,7 @@ export type Database = {
       monthly_themes: {
         Row: {
           about: string | null
+          allow_voice_clone: boolean
           checkin_count: number | null
           checkin_question: string | null
           checkin_question_2: string | null
@@ -210,6 +211,7 @@ export type Database = {
           published_at: string | null
           questions: Json | null
           science: string | null
+          seed_voice_id: string | null
           status: string
           theme: string
           voice_id: string | null
@@ -219,6 +221,7 @@ export type Database = {
         }
         Insert: {
           about?: string | null
+          allow_voice_clone?: boolean
           checkin_count?: number | null
           checkin_question?: string | null
           checkin_question_2?: string | null
@@ -240,6 +243,7 @@ export type Database = {
           published_at?: string | null
           questions?: Json | null
           science?: string | null
+          seed_voice_id?: string | null
           status?: string
           theme: string
           voice_id?: string | null
@@ -249,6 +253,7 @@ export type Database = {
         }
         Update: {
           about?: string | null
+          allow_voice_clone?: boolean
           checkin_count?: number | null
           checkin_question?: string | null
           checkin_question_2?: string | null
@@ -270,6 +275,7 @@ export type Database = {
           published_at?: string | null
           questions?: Json | null
           science?: string | null
+          seed_voice_id?: string | null
           status?: string
           theme?: string
           voice_id?: string | null
