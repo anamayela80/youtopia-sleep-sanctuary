@@ -25,21 +25,30 @@ import QuestionsStep from "@/components/onboarding/QuestionsStep";
 import VoiceCaptureStep from "@/components/onboarding/VoiceCaptureStep";
 import GeneratingStep from "@/components/onboarding/GeneratingStep";
 
+const DEFAULT_QUESTIONS = [
+  "How do you want to feel every day this month?",
+  "What would a transformed version of you look like in 30 days?",
+  "What is one thing you are ready to release this month?",
+];
+
 const Onboarding = () => {
   const [step, setStep] = useState(1);
+  const [themeQuestions, setThemeQuestions] = useState<string[]>(DEFAULT_QUESTIONS);
   const [answers, setAnswers] = useState<string[]>(["", "", ""]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStatus, setGenerationStatus] = useState("");
   const [hasExistingClone, setHasExistingClone] = useState(false);
   const [theme, setTheme] = useState<any>(null);
-  const [themeQuestions, setThemeQuestions] = useState<string[] | undefined>();
+  const [userFirstName, setUserFirstName] = useState<string>("");
   const voiceRecordingRef = useRef<Blob | null>(null);
   const [hasRecording, setHasRecording] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const totalSteps = 5; // theme intro + 3 questions + voice capture
-  // Step 1: theme intro, Steps 2-4: questions, Step 5: voice capture
+  // Step 1 = theme intro; Steps 2..(N+1) = questions; last = voice capture
+  const questionCount = themeQuestions.length;
+  const totalSteps = 2 + questionCount;
+  const voiceStep = totalSteps;
 
   useEffect(() => {
     loadInitialData();
@@ -54,19 +63,30 @@ const Onboarding = () => {
           const qs = typeof activeTheme.questions === "string"
             ? JSON.parse(activeTheme.questions)
             : activeTheme.questions;
-          if (Array.isArray(qs) && qs.length >= 3) setThemeQuestions(qs);
+          if (Array.isArray(qs)) {
+            const cleaned = qs
+              .map((q: any) => (typeof q === "string" ? q.trim() : ""))
+              .filter((s: string) => s.length > 0)
+              .slice(0, 5);
+            if (cleaned.length > 0) {
+              setThemeQuestions(cleaned);
+              setAnswers(new Array(cleaned.length).fill(""));
+            }
+          }
         } catch {}
       }
     }
 
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      setUserFirstName((user.user_metadata?.full_name || "").split(" ")[0] || "");
       const voiceId = await getUserVoiceClone(user.id);
       if (voiceId) setHasExistingClone(true);
     }
   };
 
   const progress = (step / totalSteps) * 100;
+
 
   const handleQuestionAnswer = (questionIndex: number, answer: string) => {
     const newAnswers = [...answers];
@@ -92,9 +112,10 @@ const Onboarding = () => {
       const user = session.user;
       const userName = user.user_metadata?.full_name || "";
 
-      // 1. Save answers
+      // 1. Save answers (DB stores first 3 question slots)
       setGenerationStatus("Saving your intentions...");
-      await saveUserAnswers(user.id, answers);
+      const padded = [answers[0] || "", answers[1] || "", answers[2] || ""];
+      await saveUserAnswers(user.id, padded);
 
       // 2. Clone voice if new recording provided
       let userVoiceId = await getUserVoiceClone(user.id);
@@ -224,9 +245,11 @@ const Onboarding = () => {
   };
 
   const canProceed = () => {
-    if (step === 1) return true; // Theme intro — always can proceed
-    if (step >= 2 && step <= 4) return answers[step - 2].trim().length > 0;
-    if (step === 5) return hasExistingClone || hasRecording;
+    if (step === 1) return true;
+    if (step >= 2 && step <= 1 + questionCount) {
+      return (answers[step - 2] || "").trim().length > 0;
+    }
+    if (step === voiceStep) return hasExistingClone || hasRecording;
     return false;
   };
 
@@ -261,20 +284,21 @@ const Onboarding = () => {
             <ThemeIntroStep
               key="theme"
               themeName={theme?.theme || "Your Journey Begins"}
-              description={theme?.description || "Each month brings a new focus for your inner transformation. Answer three questions and we'll create your personalized meditation and seeds."}
+              description={theme?.description || "Each month brings a new focus for your inner transformation. Answer a few questions and we'll create your personalized meditation and seeds."}
               intention={theme?.intention || "Creating your everyday utopia"}
             />
           )}
-          {step >= 2 && step <= 4 && (
+          {step >= 2 && step <= 1 + questionCount && (
             <QuestionsStep
               key={`q-${step}`}
               questionIndex={step - 2}
-              answer={answers[step - 2]}
+              answer={answers[step - 2] || ""}
               onAnswer={(a) => handleQuestionAnswer(step - 2, a)}
-              questions={themeQuestions}
+              question={themeQuestions[step - 2] || ""}
+              userFirstName={userFirstName}
             />
           )}
-          {step === 5 && (
+          {step === voiceStep && (
             <VoiceCaptureStep
               key="voice"
               onRecordingComplete={handleVoiceRecording}

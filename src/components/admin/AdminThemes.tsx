@@ -14,6 +14,18 @@ type Theme = {
   intro_orienting: string | null;
   intro_settling: string | null;
   intro_established: string | null;
+  questions: string[];
+};
+
+const parseQuestions = (q: any): string[] => {
+  let arr: any = q;
+  if (typeof q === "string") {
+    try { arr = JSON.parse(q); } catch { arr = []; }
+  }
+  if (!Array.isArray(arr)) arr = [];
+  const out = arr.map((x: any) => (typeof x === "string" ? x : ""));
+  while (out.length < 5) out.push("");
+  return out.slice(0, 5);
 };
 
 const ORDER = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
@@ -28,16 +40,27 @@ export const AdminThemes = () => {
   const load = async () => {
     const { data } = await supabase
       .from("monthly_themes")
-      .select("id, month_key, month, theme, description, status, intro_orienting, intro_settling, intro_established")
+      .select("id, month_key, month, theme, description, status, intro_orienting, intro_settling, intro_established, questions")
       .not("month_key", "is", null);
     if (data) {
       const sorted = [...data].sort((a, b) => ORDER.indexOf(a.month_key!) - ORDER.indexOf(b.month_key!));
-      setThemes(sorted as Theme[]);
+      setThemes(sorted.map((t) => ({ ...t, questions: parseQuestions((t as any).questions) })) as Theme[]);
     }
   };
 
   const update = (id: string, patch: Partial<Theme>) => {
     setThemes((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+  };
+
+  const updateQuestion = (id: string, idx: number, value: string) => {
+    setThemes((prev) =>
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        const qs = [...t.questions];
+        qs[idx] = value;
+        return { ...t, questions: qs };
+      })
+    );
   };
 
   const save = async (t: Theme) => {
@@ -51,6 +74,7 @@ export const AdminThemes = () => {
         intro_orienting: t.intro_orienting,
         intro_settling: t.intro_settling,
         intro_established: t.intro_established,
+        questions: t.questions,
       })
       .eq("id", t.id);
     setSavingId(null);
@@ -114,6 +138,22 @@ export const AdminThemes = () => {
               placeholder="Months 6+ (established): for someone deeply in the practice"
               className="w-full h-20 px-3 py-2 rounded-lg bg-background border border-border font-body text-sm text-foreground resize-none"
             />
+          </div>
+
+          <div className="space-y-2 pt-2 border-t border-border">
+            <p className="text-[11px] uppercase tracking-wider font-body text-accent">Onboarding questions (5)</p>
+            <p className="text-[11px] font-body text-muted-foreground -mt-1">Shown to users during onboarding for this month. Use {"{name}"} to insert the user's first name.</p>
+            {[0,1,2,3,4].map((i) => (
+              <div key={i} className="flex gap-2 items-start">
+                <span className="text-xs font-body text-muted-foreground pt-2 w-6 shrink-0">Q{i+1}</span>
+                <textarea
+                  value={t.questions[i] || ""}
+                  onChange={(e) => updateQuestion(t.id, i, e.target.value)}
+                  placeholder={`Question ${i+1}`}
+                  className="w-full h-16 px-3 py-2 rounded-lg bg-background border border-border font-body text-sm text-foreground resize-none"
+                />
+              </div>
+            ))}
           </div>
 
           <button
