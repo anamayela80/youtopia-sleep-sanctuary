@@ -55,14 +55,26 @@ export const AdminVoice = () => {
       <div>
         <label className="block font-body text-sm text-accent mb-2">
           Stability: <span className="font-mono">{stability.toFixed(2)}</span>
+          <span className="ml-2 text-xs text-muted-foreground">
+            ({stability < 0.34 ? "Creative" : stability < 0.67 ? "Natural" : "Robust"})
+          </span>
         </label>
         <Slider value={[stability]} min={0} max={1} step={0.05} onValueChange={(v) => setStability(v[0])} />
+        <div className="flex justify-between text-[10px] text-muted-foreground mt-1 font-body">
+          <span>Creative</span><span>Natural</span><span>Robust</span>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2 font-body">
+          For Eleven v3 with a Professional Voice Clone, <strong>Creative (0.0)</strong> sounds most natural and human.
+        </p>
       </div>
       <div>
         <label className="block font-body text-sm text-accent mb-2">
           Style: <span className="font-mono">{style.toFixed(2)}</span>
         </label>
         <Slider value={[style]} min={0} max={1} step={0.05} onValueChange={(v) => setStyle(v[0])} />
+        <p className="text-xs text-muted-foreground mt-2 font-body">
+          Keep near 0 for calm meditation. Higher values exaggerate vocal style.
+        </p>
       </div>
       <button
         onClick={save}
