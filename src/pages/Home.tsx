@@ -116,12 +116,15 @@ const Home = () => {
 
   // Tenure-aware "this month's practice" copy
   const tenure = getTenureBand(profile?.membership_start_date);
-  const tenureIntro =
+  const rawTenureIntro =
     (tenure === "orienting" && theme?.intro_orienting) ||
     (tenure === "settling" && theme?.intro_settling) ||
     (tenure === "established" && theme?.intro_established) ||
     theme?.description ||
     "";
+  const tenureIntro = rawTenureIntro
+    ? rawTenureIntro.replace(/\{name\}/gi, userFirstName || "friend")
+    : "";
 
   const now = new Date();
   const monthYear = now.toLocaleString("default", { month: "long", year: "numeric" });
