@@ -26,9 +26,20 @@ serve(async (req) => {
     const elevenLabsVoiceId = voiceId || "9BDgg2Q7WSrW0x8naPLw";
     console.log(`Narrating segment ${segmentNumber || 'full'} with voice ${elevenLabsVoiceId}, text length: ${script.length}`);
 
-    const doTTS = async (vid: string, text: string) => {
-      // Wrap in slow+breathe tags for v3 meditative delivery
+    const doTTS = async (vid: string, text: string, prev?: string, next?: string) => {
       const wrappedText = `[slow][breathe]${text}[/breathe][/slow]`;
+      const body: Record<string, unknown> = {
+        text: wrappedText,
+        model_id: "eleven_v3",
+        voice_settings: {
+          stability: 0.85,
+          similarity_boost: 0.75,
+          style: 0.05,
+          use_speaker_boost: true,
+        },
+      };
+      if (prev) body.previous_text = prev;
+      if (next) body.next_text = next;
       return await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${vid}?output_format=mp3_44100_128`,
         {
@@ -37,60 +48,100 @@ serve(async (req) => {
             "xi-api-key": ELEVENLABS_API_KEY,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            text: wrappedText,
-            model_id: "eleven_v3",
-            voice_settings: {
-              stability: 0.85,
-              similarity_boost: 0.75,
-              style: 0.05,
-              use_speaker_boost: true,
-            },
-          }),
+          body: JSON.stringify(body),
         }
       );
     };
 
-    let response = await doTTS(elevenLabsVoiceId, script);
+    // Chunk script into ≤4500 char pieces, splitting at paragraph/sentence boundaries
+    const MAX_CHARS = 4500;
+    const chunkScript = (text: string): string[] => {
+      if (text.length <= MAX_CHARS) return [text];
+      const chunks: string[] = [];
+      // Split by paragraphs first
+      const paragraphs = text.split(/\n\n+/);
+      let current = "";
+      for (const p of paragraphs) {
+        if ((current + "\n\n" + p).length <= MAX_CHARS) {
+          current = current ? current + "\n\n" + p : p;
+        } else {
+          if (current) chunks.push(current);
+          if (p.length <= MAX_CHARS) {
+            current = p;
+          } else {
+            // Split paragraph by sentences
+            const sentences = p.split(/(?<=[.!?])\s+/);
+            current = "";
+            for (const s of sentences) {
+              if ((current + " " + s).length <= MAX_CHARS) {
+                current = current ? current + " " + s : s;
+              } else {
+                if (current) chunks.push(current);
+                current = s;
+              }
+            }
+          }
+        }
+      }
+      if (current) chunks.push(current);
+      return chunks;
+    };
 
-    // Fallback to default if voice not found
+    const chunks = chunkScript(script);
+    console.log(`Split into ${chunks.length} chunk(s)`);
+
     const fallbackVoiceId = "9BDgg2Q7WSrW0x8naPLw";
-    if (response.status === 404 && elevenLabsVoiceId !== fallbackVoiceId) {
-      console.warn(`Voice ${elevenLabsVoiceId} not found, falling back to default`);
-      response = await doTTS(fallbackVoiceId, script);
-    }
+    const audioBuffers: ArrayBuffer[] = [];
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("ElevenLabs error:", response.status, errorText);
+    for (let i = 0; i < chunks.length; i++) {
+      const prev = i > 0 ? chunks[i - 1].slice(-300) : undefined;
+      const next = i < chunks.length - 1 ? chunks[i + 1].slice(0, 300) : undefined;
 
-      if (response.status === 401) {
-        return new Response(JSON.stringify({ error: "ElevenLabs authentication failed" }), {
-          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "ElevenLabs rate limit. Please try again shortly." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      let response = await doTTS(elevenLabsVoiceId, chunks[i], prev, next);
+
+      if (response.status === 404 && elevenLabsVoiceId !== fallbackVoiceId) {
+        console.warn(`Voice ${elevenLabsVoiceId} not found, falling back to default`);
+        response = await doTTS(fallbackVoiceId, chunks[i], prev, next);
       }
 
-      // Check for quota exceeded
-      try {
-        const parsed = JSON.parse(errorText);
-        if (parsed?.detail?.status === "quota_exceeded") {
-          return new Response(JSON.stringify({
-            error: "Your ElevenLabs credits are too low. Please top up credits.",
-          }), {
-            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`ElevenLabs error chunk ${i + 1}:`, response.status, errorText);
+
+        if (response.status === 401) {
+          return new Response(JSON.stringify({ error: "ElevenLabs authentication failed" }), {
+            status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-      } catch {}
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ error: "ElevenLabs rate limit. Please try again shortly." }), {
+            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        try {
+          const parsed = JSON.parse(errorText);
+          if (parsed?.detail?.status === "quota_exceeded") {
+            return new Response(JSON.stringify({
+              error: "Your ElevenLabs credits are too low. Please top up credits.",
+            }), {
+              status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        } catch {}
+        throw new Error(`ElevenLabs TTS failed: ${response.status}`);
+      }
 
-      throw new Error(`ElevenLabs TTS failed: ${response.status}`);
+      audioBuffers.push(await response.arrayBuffer());
     }
 
-    const audioBuffer = await response.arrayBuffer();
+    // Concatenate MP3 buffers
+    const totalLength = audioBuffers.reduce((sum, b) => sum + b.byteLength, 0);
+    const audioBuffer = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const buf of audioBuffers) {
+      audioBuffer.set(new Uint8Array(buf), offset);
+      offset += buf.byteLength;
+    }
 
     return new Response(audioBuffer, {
       headers: {
