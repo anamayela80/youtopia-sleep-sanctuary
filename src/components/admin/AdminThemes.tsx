@@ -14,6 +14,18 @@ type Theme = {
   intro_orienting: string | null;
   intro_settling: string | null;
   intro_established: string | null;
+  questions: string[];
+};
+
+const parseQuestions = (q: any): string[] => {
+  let arr: any = q;
+  if (typeof q === "string") {
+    try { arr = JSON.parse(q); } catch { arr = []; }
+  }
+  if (!Array.isArray(arr)) arr = [];
+  const out = arr.map((x: any) => (typeof x === "string" ? x : ""));
+  while (out.length < 5) out.push("");
+  return out.slice(0, 5);
 };
 
 const ORDER = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
