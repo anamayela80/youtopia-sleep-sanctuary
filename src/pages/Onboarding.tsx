@@ -245,9 +245,11 @@ const Onboarding = () => {
   };
 
   const canProceed = () => {
-    if (step === 1) return true; // Theme intro — always can proceed
-    if (step >= 2 && step <= 4) return answers[step - 2].trim().length > 0;
-    if (step === 5) return hasExistingClone || hasRecording;
+    if (step === 1) return true;
+    if (step >= 2 && step <= 1 + questionCount) {
+      return (answers[step - 2] || "").trim().length > 0;
+    }
+    if (step === voiceStep) return hasExistingClone || hasRecording;
     return false;
   };
 
@@ -282,20 +284,21 @@ const Onboarding = () => {
             <ThemeIntroStep
               key="theme"
               themeName={theme?.theme || "Your Journey Begins"}
-              description={theme?.description || "Each month brings a new focus for your inner transformation. Answer three questions and we'll create your personalized meditation and seeds."}
+              description={theme?.description || "Each month brings a new focus for your inner transformation. Answer a few questions and we'll create your personalized meditation and seeds."}
               intention={theme?.intention || "Creating your everyday utopia"}
             />
           )}
-          {step >= 2 && step <= 4 && (
+          {step >= 2 && step <= 1 + questionCount && (
             <QuestionsStep
               key={`q-${step}`}
               questionIndex={step - 2}
-              answer={answers[step - 2]}
+              answer={answers[step - 2] || ""}
               onAnswer={(a) => handleQuestionAnswer(step - 2, a)}
-              questions={themeQuestions}
+              question={themeQuestions[step - 2] || ""}
+              userFirstName={userFirstName}
             />
           )}
-          {step === 5 && (
+          {step === voiceStep && (
             <VoiceCaptureStep
               key="voice"
               onRecordingComplete={handleVoiceRecording}
