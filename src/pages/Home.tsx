@@ -14,14 +14,18 @@ import {
   getUserAnswers,
   getTenureBand,
 } from "@/services/meditationService";
+import { getCurrentIntake, isIntakeExpired, type UserIntake } from "@/services/intakeService";
+import { supabase as sb } from "@/integrations/supabase/client";
 import logo from "@/assets/youtopia-logo.png";
 
 const Home = () => {
   const [meditation, setMeditation] = useState<any>(null);
   const [seeds, setSeeds] = useState<any>(null);
   const [theme, setTheme] = useState<any>(null);
+  const [intake, setIntake] = useState<UserIntake | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [answers, setAnswers] = useState<any>(null);
+  const [intakeQuestions, setIntakeQuestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [practiceExpanded, setPracticeExpanded] = useState(false);
@@ -57,18 +61,43 @@ const Home = () => {
 
     setUserFirstName((user.user_metadata?.full_name || "").split(" ")[0] || "");
 
-    const [med, seedData, activeTheme, roleRes, prof, ans] = await Promise.all([
+    const [med, seedData, currentIntake, roleRes, prof, ans] = await Promise.all([
       getLatestMeditation(user.id),
       getLatestSeeds(user.id),
-      getActiveTheme(),
+      getCurrentIntake(user.id),
       supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle(),
       getUserProfile(user.id),
       getUserAnswers(user.id),
     ]);
 
+    setIntake(currentIntake);
+
+    // Theme: prefer the snapshotted theme from the user's current intake, else active theme
+    let displayTheme: any = null;
+    let qs: string[] = [];
+    if (currentIntake?.theme_id) {
+      const { data: snap } = await sb
+        .from("monthly_themes")
+        .select("*")
+        .eq("id", currentIntake.theme_id)
+        .maybeSingle();
+      displayTheme = snap;
+      try {
+        const raw = snap?.questions;
+        const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+        if (Array.isArray(parsed)) {
+          qs = parsed.map((q: any) => (typeof q === "string" ? q.trim() : "")).filter(Boolean).slice(0, 5);
+        }
+      } catch {}
+    }
+    if (!displayTheme) {
+      displayTheme = await getActiveTheme();
+    }
+
     setMeditation(med);
     setSeeds(seedData);
-    setTheme(activeTheme);
+    setTheme(displayTheme);
+    setIntakeQuestions(qs);
     setIsAdmin(!!roleRes.data);
     setProfile(prof);
     setAnswers(ans);
