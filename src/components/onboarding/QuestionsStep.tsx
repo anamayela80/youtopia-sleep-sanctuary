@@ -6,6 +6,7 @@ interface QuestionsStepProps {
   onAnswer: (answer: string) => void;
   question: string;
   userFirstName?: string;
+  themeName?: string;
 }
 
 const EMOJIS = ["🌿", "✨", "🍃", "🌙", "🌤️"];
