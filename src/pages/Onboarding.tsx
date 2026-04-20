@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
   generateMeditationScript,
+  generateMonthlyPackage,
   narrateSegment,
   uploadSegmentAudio,
   saveMeditation,
@@ -105,10 +106,10 @@ const Onboarding = () => {
         voiceRecordingRef.current = null; // Delete raw recording reference
       }
 
-      // 3. Generate meditation script (4 segments) + meditation name + message for you
+      // 3. Generate meditation script (4 segments)
       setGenerationStatus("Writing your morning meditation...");
       const guideVoiceId = theme?.guide_voice_id || "9BDgg2Q7WSrW0x8naPLw";
-      const { script, segments, meditationName, messageForYou } = await generateMeditationScript({
+      const { script, segments } = await generateMeditationScript({
         question1: answers[0],
         question2: answers[1],
         question3: answers[2],
@@ -131,22 +132,21 @@ const Onboarding = () => {
         segmentAudioUrls.push(audioUrl);
       }
 
-      // 5. Save meditation (with personalized name + message)
+      // 5. Save meditation row (name/message/artwork prompt filled by monthly-package)
       setGenerationStatus("Saving your meditation...");
       const meditationId = await saveMeditation({
         userId: user.id,
-        title: meditationName || `${currentMonth} Meditation`,
+        title: `${currentMonth} Meditation`,
         script,
         voiceId: guideVoiceId,
         musicMood: "theme",
         month: currentMonth,
         themeId: theme?.id,
-        meditationName,
-        messageForYou,
+        meditationName: null,
+        messageForYou: null,
         meditationArtworkUrl: null,
       });
 
-      // Save segments
       for (let i = 0; i < segmentAudioUrls.length; i++) {
         await saveMeditationSegment(meditationId, i + 1, segmentAudioUrls[i]);
       }
@@ -162,7 +162,6 @@ const Onboarding = () => {
           themeIntention: theme?.intention,
         });
 
-        // Narrate seeds with user's cloned voice
         const seedAudioUrls: string[] = [];
         for (let i = 0; i < phrases.length && i < 5; i++) {
           setGenerationStatus(`Whispering seed ${i + 1} of 5...`);
@@ -183,6 +182,20 @@ const Onboarding = () => {
           phrases,
           audioUrls: seedAudioUrls,
         });
+      }
+
+      // 7. Generate monthly package (name, message, image prompt) and persist
+      setGenerationStatus("Composing your monthly message...");
+      try {
+        await generateMonthlyPackage({
+          meditationId,
+          userName,
+          monthlyTheme: theme?.theme,
+          themeIntention: theme?.intention,
+          answers: answers.filter((a) => a.trim().length > 0),
+        });
+      } catch (e) {
+        console.error("Monthly package generation failed (non-blocking):", e);
       }
 
       toast({ title: "Your meditation is ready! 🧘", description: "Your morning meditation and seeds are waiting." });
