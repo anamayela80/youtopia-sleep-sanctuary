@@ -185,7 +185,7 @@ const Onboarding = () => {
 
         const seedAudioUrls: string[] = [];
         for (let i = 0; i < phrases.length && i < 5; i++) {
-          setGenerationStatus(`Whispering seed ${i + 1} of 5...`);
+          setGenerationStatus(`Planting seed ${i + 1} of 5...`);
           try {
             const seedBlob = await narrateSeed(phrases[i], userVoiceId);
             const seedUrl = await uploadSeedAudio(user.id, seedBlob, monthSlug, i + 1);
