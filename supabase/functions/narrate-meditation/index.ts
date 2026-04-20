@@ -29,19 +29,19 @@ serve(async (req) => {
     console.log(`Narrating segment ${segmentNumber || 'full'} with voice ${elevenLabsVoiceId}, text length: ${script.length}`);
 
     const doTTS = async (vid: string, text: string, prev?: string, next?: string) => {
-      // eleven_multilingual_v2 = "Robust" model — best for Professional Voice Clones.
-      // Wrap with [soft][slow] for calm meditation delivery.
-      const modelId = "eleven_multilingual_v2";
+      // Eleven v3 with Creative stability — matches ElevenLabs studio settings for Serena.
+      // Wrap with [soft][slow] audio tags for calm meditation delivery.
+      const modelId = "eleven_v3";
       const wrapped = `[soft][slow]${text}[/slow][/soft]`;
       const body: Record<string, unknown> = {
         text: wrapped,
         model_id: modelId,
         voice_settings: {
-          stability: 0.85,
+          stability: 0.0,        // Creative
           similarity_boost: 0.85,
           style: 0.0,
           use_speaker_boost: false,
-          speed: 0.82,
+          speed: 0.85,
         },
       };
       if (prev) body.previous_text = prev;
