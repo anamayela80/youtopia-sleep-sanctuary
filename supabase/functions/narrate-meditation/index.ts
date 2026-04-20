@@ -28,9 +28,10 @@ serve(async (req) => {
 
     const doTTS = async (vid: string, text: string, prev?: string, next?: string) => {
       const wrappedText = `[slow][breathe]${text}[/breathe][/slow]`;
+      const modelId = "eleven_v3";
       const body: Record<string, unknown> = {
         text: wrappedText,
-        model_id: "eleven_v3",
+        model_id: modelId,
         voice_settings: {
           stability: 0.85,
           similarity_boost: 0.75,
@@ -38,8 +39,9 @@ serve(async (req) => {
           use_speaker_boost: true,
         },
       };
-      if (prev) body.previous_text = prev;
-      if (next) body.next_text = next;
+      const supportsStitching = modelId !== "eleven_v3";
+      if (supportsStitching && prev) body.previous_text = prev;
+      if (supportsStitching && next) body.next_text = next;
       return await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${vid}?output_format=mp3_44100_128`,
         {
