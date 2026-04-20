@@ -34,13 +34,13 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           text: wrappedText,
-          model_id: "eleven_multilingual_v2",
+          model_id: "eleven_v3",
           voice_settings: {
-            stability: 0.9,
+            stability: 0.0,        // Creative — matches ElevenLabs UI
             similarity_boost: 0.85,
             style: 0,
             use_speaker_boost: false,
-            speed: 0.78,
+            speed: 0.8,
           },
         }),
       }
