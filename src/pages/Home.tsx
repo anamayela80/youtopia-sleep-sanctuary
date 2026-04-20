@@ -462,14 +462,22 @@ const Home = () => {
             <div className={`font-body text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap ${!practiceExpanded ? "line-clamp-3" : ""}`}>
               {tenureIntro}
             </div>
-            {tenureIntro.length > 180 && (
+            <div className="mt-3 flex items-center gap-4">
+              {tenureIntro.length > 180 && (
+                <button
+                  onClick={() => setPracticeExpanded((v) => !v)}
+                  className="text-xs font-body font-medium text-coral-dark hover:opacity-80"
+                >
+                  {practiceExpanded ? "Show less" : "Read more"}
+                </button>
+              )}
               <button
-                onClick={() => setPracticeExpanded((v) => !v)}
-                className="mt-3 text-xs font-body font-medium text-coral-dark hover:opacity-80"
+                onClick={() => navigate("/practice")}
+                className="text-xs font-body font-medium text-coral-dark hover:opacity-80"
               >
-                {practiceExpanded ? "Show less" : "Read more"}
+                Open full practice →
               </button>
-            )}
+            </div>
           </div>
         </div>
       )}
