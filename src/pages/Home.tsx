@@ -476,6 +476,14 @@ const Home = () => {
             <Settings size={20} />
             <span className="text-[10px] font-body">Settings</span>
           </button>
+          <button
+            onClick={() => navigate("/onboarding")}
+            className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
+            title="Re-run onboarding (testing)"
+          >
+            <Plus size={20} />
+            <span className="text-[10px] font-body">New</span>
+          </button>
           {isAdmin && (
             <button
               onClick={() => navigate("/admin")}
