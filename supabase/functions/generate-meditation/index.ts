@@ -8,16 +8,10 @@ const corsHeaders = {
 const SYSTEM_PROMPT = `You are the voice behind Youtopia — a monthly inner transformation practice that combines morning meditation and nightly sleep Seeds.
 
 ABOUT YOUTOPIA
-Youtopia is not a generic wellness app. It is a private, intimate practice. The user has answered three honest questions at the start of their month. Everything you write must feel like it was written specifically for them — not for "a user," not for "someone going through something." For them.
+Youtopia is not a generic wellness app. It is a private, intimate practice. The user has answered honest questions at the start of their month. Everything you write must feel like it was written specifically for them — not for "a user," not for "someone going through something." For them.
 
 YOUR TASK
-You will produce THREE pieces of output for this user, in this exact format:
-
-[MEDITATION_NAME]
-A short, evocative personalized title for THIS user's meditation this month. 2–5 words. No quotes. No punctuation at the end. Examples: "The Soft Beginning", "Coming Home to You", "Permission to Want". Do not include the word "Meditation".
-
-[MESSAGE_FOR_YOU]
-A short, warm, personal note from us to the user. 2–4 sentences. Speak directly to them. Use their first name once, naturally. Reference what they shared without quoting it back robotically. This is not the meditation — it's a small letter that lives on their dashboard for the month. No exclamation marks. No clichés. No "journey".
+You will produce a 4-segment meditation script for this user, in this exact format:
 
 [SEGMENT 1: ARRIVAL]
 (arrival content here, ~100 words)
@@ -44,11 +38,10 @@ VOICE AND TONE
 - Sentences end softly. Thoughts breathe. Short sentences after long ones.
 - Use the listener's name once in the meditation — naturally, not at the start.
 
-ELEVENLABS FORMATTING (meditation segments only)
+ELEVENLABS FORMATTING
 - Use <break time="1.5s" /> at natural pause points between sections.
 - Use <break time="0.8s" /> for shorter pauses within sentences.
 - Do NOT use [slow] or [whisper] tags.
-- Do NOT use break tags inside [MEDITATION_NAME] or [MESSAGE_FOR_YOU].
 
 WHAT YOU NEVER DO
 - Never mention therapy, medication, trauma, or clinical mental health language.
@@ -60,7 +53,7 @@ WHAT YOU NEVER DO
 - Never exceed 1100 words for the meditation.
 - Never use exclamation marks.
 
-Output ONLY the labeled blocks above, in order. No markdown, no headers, no commentary.`;
+Output ONLY the 4 labeled segment blocks above, in order. No markdown, no headers, no commentary.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -88,7 +81,7 @@ serve(async (req) => {
 - answer_2 (what a transformed version of them looks like in 30 days): "${question2}"
 - answer_3 (what they are ready to release this month): "${question3}"
 
-Output the [MEDITATION_NAME], [MESSAGE_FOR_YOU], and 4 meditation segments now.`;
+Output the 4 meditation segments now.`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -120,14 +113,6 @@ Output the [MEDITATION_NAME], [MESSAGE_FOR_YOU], and 4 meditation segments now.`
     const fullScript = data.content?.[0]?.text;
     if (!fullScript) throw new Error("No script generated");
 
-    // Parse meditation name
-    const nameMatch = fullScript.match(/\[MEDITATION_NAME\]\s*([\s\S]*?)(?=\[MESSAGE_FOR_YOU\]|\[SEGMENT)/i);
-    const meditationName = nameMatch ? nameMatch[1].trim().replace(/^["']|["']$/g, "") : null;
-
-    // Parse message for you
-    const msgMatch = fullScript.match(/\[MESSAGE_FOR_YOU\]\s*([\s\S]*?)(?=\[SEGMENT)/i);
-    const messageForYou = msgMatch ? msgMatch[1].trim() : null;
-
     // Parse the 4 segments
     const segmentRegex = /\[SEGMENT\s+(\d+):\s*([^\]]+)\]\s*([\s\S]*?)(?=\[SEGMENT\s+\d+:|$)/gi;
     const segments: { number: number; title: string; text: string }[] = [];
@@ -144,15 +129,13 @@ Output the [MEDITATION_NAME], [MESSAGE_FOR_YOU], and 4 meditation segments now.`
       console.warn("Could not parse 4 segments, returning full script as single segment");
       return new Response(JSON.stringify({
         script: fullScript,
-        meditationName,
-        messageForYou,
         segments: [{ number: 1, title: "Full Meditation", text: fullScript }],
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(JSON.stringify({ script: fullScript, meditationName, messageForYou, segments }), {
+    return new Response(JSON.stringify({ script: fullScript, segments }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

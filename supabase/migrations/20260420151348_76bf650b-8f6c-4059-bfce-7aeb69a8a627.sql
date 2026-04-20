@@ -1,0 +1,1 @@
+ALTER TABLE public.meditations ADD COLUMN IF NOT EXISTS pending_image_prompt TEXT;
