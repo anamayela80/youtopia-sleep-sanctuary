@@ -85,6 +85,8 @@ export const AdminThemes = () => {
         practice: t.practice,
         questions: t.questions,
         guide_voice_id: (t.guide_voice_id || "").trim() || null,
+        seed_voice_id: (t.seed_voice_id || "").trim() || null,
+        allow_voice_clone: t.allow_voice_clone,
       })
       .eq("id", t.id);
     setSavingId(null);
@@ -128,15 +130,39 @@ export const AdminThemes = () => {
             className="w-full h-20 px-3 py-2 rounded-lg bg-background border border-border font-body text-sm text-foreground resize-none"
           />
 
-          <div className="space-y-1 pt-2 border-t border-border">
-            <p className="text-[11px] uppercase tracking-wider font-body text-accent">Guide voice (ElevenLabs voice ID)</p>
-            <p className="text-[11px] font-body text-muted-foreground">Used to narrate this month's morning meditation. Leave blank to use the global default.</p>
-            <input
-              value={t.guide_voice_id || ""}
-              onChange={(e) => update(t.id, { guide_voice_id: e.target.value })}
-              placeholder="e.g. EXAVITQu4vr4xnSDxMaL"
-              className="w-full px-3 py-2 rounded-lg bg-background border border-border font-mono text-xs text-foreground"
-            />
+          <div className="space-y-3 pt-2 border-t border-border">
+            <p className="text-[11px] uppercase tracking-wider font-body text-accent">Voices</p>
+
+            <div className="space-y-1">
+              <p className="text-[11px] font-body text-muted-foreground">Guide voice — narrates the morning meditation. Leave blank to use the global default.</p>
+              <input
+                value={t.guide_voice_id || ""}
+                onChange={(e) => update(t.id, { guide_voice_id: e.target.value })}
+                placeholder="Guide voice ID (e.g. EXAVITQu4vr4xnSDxMaL)"
+                className="w-full px-3 py-2 rounded-lg bg-background border border-border font-mono text-xs text-foreground"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-[11px] font-body text-muted-foreground">Preset Seed voice (Serena) — used when a user opts not to record their own voice. Falls back to the guide voice if blank.</p>
+              <input
+                value={t.seed_voice_id || ""}
+                onChange={(e) => update(t.id, { seed_voice_id: e.target.value })}
+                placeholder="Preset Seed voice ID"
+                className="w-full px-3 py-2 rounded-lg bg-background border border-border font-mono text-xs text-foreground"
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-3 pt-1">
+              <div className="flex-1">
+                <p className="text-[12px] font-body text-foreground">Allow users to record their own voice</p>
+                <p className="text-[11px] font-body text-muted-foreground">When off, every user gets the preset Seed voice above.</p>
+              </div>
+              <Switch
+                checked={t.allow_voice_clone}
+                onCheckedChange={(v) => update(t.id, { allow_voice_clone: v })}
+              />
+            </div>
           </div>
 
           <div className="space-y-2 pt-2 border-t border-border">
