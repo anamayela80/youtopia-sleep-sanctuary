@@ -250,6 +250,7 @@ export async function generateSeeds(params: {
 }
 
 export async function narrateSeed(phrase: string, voiceId: string): Promise<Blob> {
+  const settings = await getVoiceSettings();
   const response = await fetch(`${SUPABASE_URL}/functions/v1/narrate-seeds`, {
     method: "POST",
     headers: {
@@ -257,7 +258,7 @@ export async function narrateSeed(phrase: string, voiceId: string): Promise<Blob
       apikey: SUPABASE_KEY,
       Authorization: `Bearer ${SUPABASE_KEY}`,
     },
-    body: JSON.stringify({ phrase, voiceId }),
+    body: JSON.stringify({ phrase, voiceId, ...settings }),
   });
 
   if (!response.ok) {
