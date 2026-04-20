@@ -9,6 +9,7 @@ import Onboarding from "./pages/Onboarding.tsx";
 import Home from "./pages/Home.tsx";
 import Settings from "./pages/Settings.tsx";
 import Admin from "./pages/Admin.tsx";
+import Practice from "./pages/Practice.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/home" element={<Home />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/practice" element={<Practice />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
