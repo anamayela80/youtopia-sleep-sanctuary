@@ -10,12 +10,11 @@ export interface MeditationSegment {
 }
 
 export interface GenerateMeditationParams {
-  question1: string;
-  question2: string;
-  question3: string;
+  answers: string[]; // up to 5 intake answers
   userName?: string;
   monthlyTheme?: string;
   themeIntention?: string;
+  previousTheme?: string;
 }
 
 export async function generateMeditationScript(params: GenerateMeditationParams): Promise<{
