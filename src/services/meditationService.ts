@@ -51,7 +51,17 @@ export async function generateMonthlyPackage(params: {
   };
 }
 
+async function getVoiceSettings() {
+  const { data } = await supabase.from("app_settings").select("*").maybeSingle();
+  return {
+    model: data?.default_voice_model || "eleven_v3",
+    stability: data?.default_voice_stability ?? 0.0,
+    style: data?.default_voice_style ?? 0.0,
+  };
+}
+
 export async function narrateSegment(segmentText: string, voiceId: string, segmentNumber: number): Promise<Blob> {
+  const settings = await getVoiceSettings();
   const response = await fetch(`${SUPABASE_URL}/functions/v1/narrate-meditation`, {
     method: "POST",
     headers: {
@@ -59,7 +69,7 @@ export async function narrateSegment(segmentText: string, voiceId: string, segme
       apikey: SUPABASE_KEY,
       Authorization: `Bearer ${SUPABASE_KEY}`,
     },
-    body: JSON.stringify({ script: segmentText, voiceId, segmentNumber }),
+    body: JSON.stringify({ script: segmentText, voiceId, segmentNumber, ...settings }),
   });
 
   if (!response.ok) {
