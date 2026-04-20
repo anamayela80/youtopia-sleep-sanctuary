@@ -126,7 +126,8 @@ export const AdminMusic = () => {
 
   const updateSlot = async (id: string, field: "morning_music_url" | "evening_music_url", url: string | null) => {
     setThemes((prev) => prev.map((t) => (t.id === id ? { ...t, [field]: url } : t)));
-    await supabase.from("monthly_themes").update({ [field]: url }).eq("id", id);
+    const patch = field === "morning_music_url" ? { morning_music_url: url } : { evening_music_url: url };
+    await supabase.from("monthly_themes").update(patch).eq("id", id);
   };
 
   return (
