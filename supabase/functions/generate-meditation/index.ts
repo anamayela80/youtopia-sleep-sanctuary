@@ -79,10 +79,20 @@ serve(async (req) => {
   }
 
   try {
-    const { question1, question2, question3, userName, monthlyTheme, themeIntention } = await req.json();
+    const body = await req.json();
+    const { userName, monthlyTheme, themeIntention, previousTheme } = body;
 
-    if (!question1 || !question2 || !question3) {
-      return new Response(JSON.stringify({ error: "All 3 answers are required" }), {
+    let answers: string[] = Array.isArray(body.answers)
+      ? body.answers.filter((a: any) => typeof a === "string")
+      : [];
+    if (answers.length === 0) {
+      answers = [body.question1, body.question2, body.question3].filter(
+        (a) => typeof a === "string" && a.trim()
+      );
+    }
+
+    if (answers.length < 1) {
+      return new Response(JSON.stringify({ error: "At least one intake answer is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -91,15 +101,18 @@ serve(async (req) => {
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
 
-    const userPrompt = `USER CONTEXT:
-- user_name: ${userName || "(not provided — do not invent one; simply omit any name reference)"}
-- monthly_theme: ${monthlyTheme || "(no specific theme this month — let the answers lead)"}
-- theme_intro: ${themeIntention || "(none)"}
-- answer_1 (how they want to feel every day this month): "${question1}"
-- answer_2 (what a transformed version of them looks like in 30 days): "${question2}"
-- answer_3 (what they are ready to release this month): "${question3}"
+    const answerLines = [1, 2, 3, 4, 5]
+      .map((i) => `- answer_${i}: "${answers[i - 1] ?? "(not provided)"}"`)
+      .join("\n");
 
-Output the 4 meditation segments now.`;
+    const userPrompt = `USER CONTEXT:
+- user_name: ${userName || "(not provided — do not use a name in the script)"}
+- theme_name: ${monthlyTheme || "(no specific theme this month — let the answers lead)"}
+- theme_intro: ${themeIntention || "(none)"}
+- previous_theme: ${previousTheme || "(none)"}
+${answerLines}
+
+Output the meditation script now — one continuous flowing script, no segment labels.`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -128,30 +141,10 @@ Output the 4 meditation segments now.`;
     }
 
     const data = await response.json();
-    const fullScript = data.content?.[0]?.text;
+    const fullScript: string = data.content?.[0]?.text;
     if (!fullScript) throw new Error("No script generated");
 
-    // Parse the 4 segments
-    const segmentRegex = /\[SEGMENT\s+(\d+):\s*([^\]]+)\]\s*([\s\S]*?)(?=\[SEGMENT\s+\d+:|$)/gi;
-    const segments: { number: number; title: string; text: string }[] = [];
-    let match;
-    while ((match = segmentRegex.exec(fullScript)) !== null) {
-      segments.push({
-        number: parseInt(match[1]),
-        title: match[2].trim(),
-        text: match[3].trim(),
-      });
-    }
-
-    if (segments.length < 4) {
-      console.warn("Could not parse 4 segments, returning full script as single segment");
-      return new Response(JSON.stringify({
-        script: fullScript,
-        segments: [{ number: 1, title: "Full Meditation", text: fullScript }],
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const segments = [{ number: 1, title: "Morning Meditation", text: fullScript.trim() }];
 
     return new Response(JSON.stringify({ script: fullScript, segments }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
