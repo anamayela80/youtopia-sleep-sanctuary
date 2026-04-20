@@ -25,7 +25,7 @@ const PLACEHOLDERS = [
   "Speak from where you are right now...",
 ];
 
-const QuestionsStep = ({ questionIndex, answer, onAnswer, question, userFirstName }: QuestionsStepProps) => {
+const QuestionsStep = ({ questionIndex, answer, onAnswer, question, userFirstName, themeName }: QuestionsStepProps) => {
   const emoji = EMOJIS[questionIndex] || "🌿";
   const hint = HINTS[questionIndex] || HINTS[0];
   const placeholder = PLACEHOLDERS[questionIndex] || PLACEHOLDERS[0];
@@ -39,6 +39,11 @@ const QuestionsStep = ({ questionIndex, answer, onAnswer, question, userFirstNam
       transition={{ duration: 0.4 }}
       className="flex flex-col"
     >
+      {themeName && (
+        <p className="text-[11px] uppercase tracking-[0.18em] font-body text-accent mb-3">
+          This month · {themeName}
+        </p>
+      )}
       <div className="text-4xl mb-4">{emoji}</div>
       <h2 className="font-heading text-2xl text-secondary mb-2 whitespace-pre-line leading-snug">
         {rendered}
