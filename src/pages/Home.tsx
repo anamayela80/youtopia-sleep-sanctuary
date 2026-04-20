@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Play, Pause, Download, Moon, Sun, Settings, Headphones, SkipForward, SkipBack } from "lucide-react";
+import { Play, Pause, Download, Moon, Sun, Settings, Headphones, SkipForward, SkipBack, Shield } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { useSegmentedMixer } from "@/hooks/useSegmentedMixer";
@@ -15,6 +15,7 @@ const Home = () => {
   const [theme, setTheme] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activePlayer, setActivePlayer] = useState<"meditation" | "seeds" | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
   const segmentUrls = meditation?.meditation_segments
@@ -43,15 +44,17 @@ const Home = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { navigate("/auth?mode=login"); return; }
 
-    const [med, seedData, activeTheme] = await Promise.all([
+    const [med, seedData, activeTheme, roleRes] = await Promise.all([
       getLatestMeditation(user.id),
       getLatestSeeds(user.id),
       getActiveTheme(),
+      supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle(),
     ]);
 
     setMeditation(med);
     setSeeds(seedData);
     setTheme(activeTheme);
+    setIsAdmin(!!roleRes.data);
     setLoading(false);
   };
 
@@ -87,6 +90,11 @@ const Home = () => {
       <div className="px-6 pt-8 pb-4 flex items-center justify-between">
         <img src={logo} alt="YOUTOPIA" className="h-8" />
         <div className="flex items-center gap-4">
+          {isAdmin && (
+            <button onClick={() => navigate("/admin")} className="text-accent" aria-label="Admin">
+              <Shield size={20} />
+            </button>
+          )}
           <button onClick={() => navigate("/settings")} className="text-accent">
             <Settings size={20} />
           </button>
@@ -328,6 +336,15 @@ const Home = () => {
             <Settings size={20} />
             <span className="text-[10px] font-body">Settings</span>
           </button>
+          {isAdmin && (
+            <button
+              onClick={() => navigate("/admin")}
+              className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
+            >
+              <Shield size={20} />
+              <span className="text-[10px] font-body">Admin</span>
+            </button>
+          )}
         </div>
       </div>
     </div>
