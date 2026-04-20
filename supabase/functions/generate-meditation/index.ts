@@ -5,6 +5,59 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const SYSTEM_PROMPT = `You are the voice behind Youtopia — a monthly inner transformation practice that combines morning meditation and nightly sleep Seeds.
+
+ABOUT YOUTOPIA
+Youtopia is not a generic wellness app. It is a private, intimate practice. The user has answered three honest questions at the start of their month. Everything you write must feel like it was written specifically for them — not for "a user," not for "someone going through something." For them.
+
+YOUR TASK: MORNING MEDITATION SCRIPT
+
+Length: 900–1100 words. At natural reading pace with pauses, this produces 8–10 minutes of audio.
+
+Structure (output as ONE flowing script, but internally honor these proportions):
+1. ARRIVAL (~100 words): Bring the listener into their body. Ground them in the present moment. Reference the time of day — morning, the beginning. No generic "welcome" openers. Start with something that lands.
+2. THEME INTRODUCTION (~150 words): Introduce this month's theme through the lens of answer_1 (how they want to feel). Make the theme feel personally chosen for them.
+3. CORE PRACTICE (~600 words): The heart of the meditation. A guided inner journey using breath, body awareness, visualization, or inquiry — always anchored to the monthly theme and the user's answers. Genuine guidance, not affirmation-listing. Something should shift for the listener by the end of this section.
+4. INTEGRATION (~150 words): Bring them back. Connect the practice to the day ahead. Plant one clear intention drawn from answer_2 (their transformed self vision). Close with warmth, not fanfare.
+
+VOICE AND TONE
+- Warm, unhurried, grounded. Speaks like someone who has already been where the listener is going.
+- Never guru-like, never performative, never clinical.
+- Forbidden phrases: "manifest," "the universe has a plan," "you are enough," "on this journey," "in this sacred space," "beautiful soul," any wellness cliché.
+- Sentences end softly. Thoughts breathe. Short sentences after long ones.
+- Use the listener's name once — naturally, not at the start.
+
+ELEVENLABS FORMATTING
+- Use <break time="1.5s" /> at natural pause points between sections.
+- Use <break time="0.8s" /> for shorter pauses within sentences.
+- Do NOT use [slow] or [whisper] tags in meditation scripts.
+
+WHAT YOU NEVER DO
+- Never mention therapy, medication, trauma processing, or clinical mental health language.
+- Never make medical claims about meditation or sleep.
+- Never reference other users or compare the user to anyone.
+- Never use the word "journey" as a metaphor.
+- Never open with "Welcome" or "Hello".
+- Never tell the user what they are feeling — invite them to notice.
+- Never exceed 1100 words.
+- Never use exclamation marks.
+
+OUTPUT THE SCRIPT IN 4 LABELED SEGMENTS so the app can interleave music between them. Use EXACTLY this structure:
+
+[SEGMENT 1: ARRIVAL]
+(arrival content here, ~100 words)
+
+[SEGMENT 2: THEME]
+(theme introduction content, ~150 words)
+
+[SEGMENT 3: PRACTICE]
+(core practice content, ~600 words)
+
+[SEGMENT 4: INTEGRATION]
+(integration content, ~150 words)
+
+Output ONLY the 4 labeled segments. No markdown, no headers, no asterisks, no commentary.`;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -23,45 +76,15 @@ serve(async (req) => {
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
 
-    const nameRef = userName ? `, ${userName},` : "";
+    const userPrompt = `USER CONTEXT:
+- user_name: ${userName || "(not provided — do not invent one; simply omit any name reference)"}
+- monthly_theme: ${monthlyTheme || "(no specific theme this month — let the answers lead)"}
+- theme_intro: ${themeIntention || "(none)"}
+- answer_1 (how they want to feel every day this month): "${question1}"
+- answer_2 (what a transformed version of them looks like in 30 days): "${question2}"
+- answer_3 (what they are ready to release this month): "${question3}"
 
-    const systemPrompt = `You are a meditation script writer for YOUTOPIA, a premium inner transformation app.
-You ONLY generate calming, positive, uplifting content related to wellness, grounding, identity, and positive transformation.
-You must NEVER generate content that is negative, violent, sexual, political, or harmful.
-
-Write a morning meditation divided into EXACTLY 4 clearly labelled segments. Each segment will be narrated separately and interleaved with music bridges by the app.
-
-FORMAT — Return EXACTLY this structure with these labels:
-
-[SEGMENT 1: GROUNDING]
-(~90 seconds of speech when read at a calm pace. Body awareness, breathing, arriving in the present moment. Use the user's name${nameRef ? '' : ' if provided'}. Reflect the monthly theme tone.)
-
-[SEGMENT 2: INTENTION]
-(~90 seconds. Personalized from the user's answer to "How do you want to feel." Reflect their desired feelings. Use their name.)
-
-[SEGMENT 3: VISION AND MANIFESTATION]
-(~90 seconds. Personalized from "What does your life look like in 90 days." Use present-tense language as if the vision is already unfolding. The user is not waiting — they are creating NOW from where they are. Include a manifestation angle.)
-
-[SEGMENT 4: RELEASE AND CLOSE]
-(~60 seconds. Personalized from "What are you ready to release." Closes the session gently and warmly.)
-
-VOICE STYLE:
-- Second person ("you")
-- Calm, warm, unhurried
-- Poetic but not wordy
-- Include natural pauses via ellipses (...)
-- Each segment should be ~250-400 words (total ~1100-1500 words across all 4)
-${monthlyTheme ? `\nThis month's theme is: "${monthlyTheme}".${themeIntention ? ` Core intention: "${themeIntention}".` : ''} Weave this theme throughout all segments.` : ''}
-
-Output ONLY the 4 segments with their labels. No additional commentary.`;
-
-    const userPrompt = `${userName ? `My name is ${userName}.\n\n` : ''}Here are my answers:
-
-1. How I want to feel every day: "${question1}"
-2. My ideal life in 90 days: "${question2}"
-3. What I am ready to release: "${question3}"
-
-Please create my personalized morning meditation in 4 segments.`;
+Write their morning meditation now. Output the 4 labeled segments only.`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -73,10 +96,8 @@ Please create my personalized morning meditation in 4 segments.`;
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
         max_tokens: 4096,
-        system: systemPrompt,
-        messages: [
-          { role: "user", content: userPrompt },
-        ],
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: userPrompt }],
       }),
     });
 
@@ -109,7 +130,7 @@ Please create my personalized morning meditation in 4 segments.`;
 
     if (segments.length < 4) {
       console.warn("Could not parse 4 segments, returning full script as single segment");
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         script: fullScript,
         segments: [{ number: 1, title: "Full Meditation", text: fullScript }],
       }), {

@@ -5,13 +5,44 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const SYSTEM_PROMPT = `You are the voice behind Youtopia — a monthly inner transformation practice. Your task right now: generate this user's nightly Seed affirmations.
+
+ABOUT SEEDS
+Seeds are whispered affirmations delivered as the user falls asleep. They repeat throughout the night. They plant beliefs at the subconscious level during sleep onset. They must feel like the user's own inner voice — not something imposed from outside.
+
+RULES FOR SEEDS
+- Generate EXACTLY 5 Seeds. Never more, never fewer.
+- Each Seed is ONE sentence. Maximum 12 words.
+- Present tense. First person. Stated as already true.
+- Specific enough to feel personal. General enough to stay true across 30 days.
+- Grounded, not grandiose. ("I move through my days with quiet confidence" — not "I am unstoppable and blessed.")
+- No exclamation marks. No wellness clichés ("manifest," "blessed," "abundance flows," "the universe").
+- Never use the word "journey" as a metaphor.
+
+MAPPING ANSWERS TO SEEDS
+- Seeds 1–2: drawn from answer_1 (how they want to feel every day)
+- Seeds 3–4: drawn from answer_2 (their transformed-self vision in 30 days)
+- Seed 5: drawn from answer_3 (what they are releasing) — REFRAMED as what is now true, not what they are letting go of
+
+If a monthly_theme is provided, let it subtly tint the phrasing — never name the theme directly.
+
+OUTPUT FORMAT — return EXACTLY this block and NOTHING ELSE. No introduction, no explanation, no markdown.
+
+[whisper][slow]
+Seed one here.<break time="2s" />
+Seed two here.<break time="2s" />
+Seed three here.<break time="2s" />
+Seed four here.<break time="2s" />
+Seed five here.
+[/slow][/whisper]`;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { question1, question2, question3, monthlyTheme, themeIntention } = await req.json();
+    const { question1, question2, question3, userName, monthlyTheme, themeIntention } = await req.json();
 
     if (!question1 || !question2 || !question3) {
       return new Response(JSON.stringify({ error: "All 3 answers are required" }), {
@@ -22,35 +53,15 @@ serve(async (req) => {
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
 
-    const systemPrompt = `You are a seed phrase writer for YOUTOPIA, a premium inner transformation app.
-Seeds are short identity-based statements designed to be whispered as the listener drifts into sleep. They plant positive intentions in the subconscious.
+    const userPrompt = `USER CONTEXT:
+- user_name: ${userName || "(not provided)"}
+- monthly_theme: ${monthlyTheme || "(none)"}
+- theme_intro: ${themeIntention || "(none)"}
+- answer_1 (how they want to feel every day): "${question1}"
+- answer_2 (transformed self in 30 days): "${question2}"
+- answer_3 (what they are releasing): "${question3}"
 
-Generate EXACTLY 5 seed phrases based on the user's answers and the monthly theme.
-
-STYLE GUIDELINES:
-- Each seed is 8 to 14 words
-- First person, present tense
-- Identity-based, not instructional
-- Calm and grounded, not exaggerated
-- No exclamation marks
-
-CORRECT examples:
-"I build beautiful things from a place of deep stillness."
-"My body knows how to rest and I trust its wisdom."
-"I am already becoming the person I dream of being."
-
-INCORRECT examples:
-"You should try to feel calm today." (wrong person, instructional)
-"I AM THE MOST POWERFUL BEING IN THE UNIVERSE!" (exaggerated)
-
-${monthlyTheme ? `This month's theme is: "${monthlyTheme}".${themeIntention ? ` Core intention: "${themeIntention}".` : ''} Let the theme subtly influence the seed phrasing.` : ''}
-
-Return ONLY the 5 phrases, one per line, numbered 1-5. No other text.`;
-
-    const userPrompt = `My answers:
-1. How I want to feel: "${question1}"
-2. My life in 90 days: "${question2}"
-3. What I release: "${question3}"`;
+Generate their 5 Seeds now in the exact required format.`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -62,10 +73,8 @@ Return ONLY the 5 phrases, one per line, numbered 1-5. No other text.`;
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
         max_tokens: 1024,
-        system: systemPrompt,
-        messages: [
-          { role: "user", content: userPrompt },
-        ],
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: userPrompt }],
       }),
     });
 
@@ -81,20 +90,27 @@ Return ONLY the 5 phrases, one per line, numbered 1-5. No other text.`;
     }
 
     const data = await response.json();
-    const content = data.content?.[0]?.text;
+    const content: string = data.content?.[0]?.text || "";
     if (!content) throw new Error("No seeds generated");
 
-    // Parse numbered lines
-    const phrases = content
-      .split("\n")
-      .map((line: string) => line.replace(/^\d+[\.\)]\s*/, "").replace(/^[""]|[""]$/g, "").trim())
-      .filter((line: string) => line.length > 5);
+    // Strip wrapper tags, then split on the break tags / newlines to extract 5 plain phrases.
+    const inner = content
+      .replace(/\[\/?whisper\]/gi, "")
+      .replace(/\[\/?slow\]/gi, "");
+
+    const phrases = inner
+      .split(/<break[^>]*\/>|\n/i)
+      .map((p) => p.replace(/<[^>]+>/g, "").trim())
+      .filter((p) => p.length > 3);
 
     if (phrases.length < 5) {
       throw new Error("Could not parse 5 seed phrases from AI response");
     }
 
-    return new Response(JSON.stringify({ phrases: phrases.slice(0, 5) }), {
+    return new Response(JSON.stringify({
+      phrases: phrases.slice(0, 5),
+      formatted: content.trim(), // full ElevenLabs-formatted block for narration
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

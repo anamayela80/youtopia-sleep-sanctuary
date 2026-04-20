@@ -169,6 +169,7 @@ export async function generateSeeds(params: {
   question1: string;
   question2: string;
   question3: string;
+  userName?: string;
   monthlyTheme?: string;
   themeIntention?: string;
 }): Promise<string[]> {
