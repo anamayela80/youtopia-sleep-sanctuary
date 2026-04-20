@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, Moon, Settings, Headphones, SkipForward, SkipBack, Shield, ChevronDown, Home as HomeIcon } from "lucide-react";
+import { Play, Pause, Moon, Settings, Headphones, SkipForward, SkipBack, Shield, ChevronDown, Home as HomeIcon, Plus } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { useSegmentedMixer } from "@/hooks/useSegmentedMixer";
@@ -475,6 +475,14 @@ const Home = () => {
           >
             <Settings size={20} />
             <span className="text-[10px] font-body">Settings</span>
+          </button>
+          <button
+            onClick={() => navigate("/onboarding")}
+            className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
+            title="Re-run onboarding (testing)"
+          >
+            <Plus size={20} />
+            <span className="text-[10px] font-body">New</span>
           </button>
           {isAdmin && (
             <button
