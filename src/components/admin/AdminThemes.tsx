@@ -40,16 +40,27 @@ export const AdminThemes = () => {
   const load = async () => {
     const { data } = await supabase
       .from("monthly_themes")
-      .select("id, month_key, month, theme, description, status, intro_orienting, intro_settling, intro_established")
+      .select("id, month_key, month, theme, description, status, intro_orienting, intro_settling, intro_established, questions")
       .not("month_key", "is", null);
     if (data) {
       const sorted = [...data].sort((a, b) => ORDER.indexOf(a.month_key!) - ORDER.indexOf(b.month_key!));
-      setThemes(sorted as Theme[]);
+      setThemes(sorted.map((t) => ({ ...t, questions: parseQuestions((t as any).questions) })) as Theme[]);
     }
   };
 
   const update = (id: string, patch: Partial<Theme>) => {
     setThemes((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+  };
+
+  const updateQuestion = (id: string, idx: number, value: string) => {
+    setThemes((prev) =>
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        const qs = [...t.questions];
+        qs[idx] = value;
+        return { ...t, questions: qs };
+      })
+    );
   };
 
   const save = async (t: Theme) => {
@@ -63,6 +74,7 @@ export const AdminThemes = () => {
         intro_orienting: t.intro_orienting,
         intro_settling: t.intro_settling,
         intro_established: t.intro_established,
+        questions: t.questions,
       })
       .eq("id", t.id);
     setSavingId(null);
