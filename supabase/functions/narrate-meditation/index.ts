@@ -29,18 +29,19 @@ serve(async (req) => {
     console.log(`Narrating segment ${segmentNumber || 'full'} with voice ${elevenLabsVoiceId}, text length: ${script.length}`);
 
     const doTTS = async (vid: string, text: string, prev?: string, next?: string) => {
-      // eleven_multilingual_v2 = stable, supports stitching & ElevenLabs <break> tags.
-      // We do NOT wrap with [slow]/[breathe] — those are not valid v2/v3 SSML and cause 400 errors.
+      // eleven_multilingual_v2 = "Robust" model — best for Professional Voice Clones.
+      // Wrap with [soft][slow] for calm meditation delivery.
       const modelId = "eleven_multilingual_v2";
+      const wrapped = `[soft][slow]${text}[/slow][/soft]`;
       const body: Record<string, unknown> = {
-        text,
+        text: wrapped,
         model_id: modelId,
         voice_settings: {
-          stability: 0.82,
-          similarity_boost: 0.72,
-          style: 0.05,
+          stability: 0.85,
+          similarity_boost: 0.85,
+          style: 0.0,
           use_speaker_boost: false,
-          speed: 0.84,
+          speed: 0.82,
         },
       };
       if (prev) body.previous_text = prev;
