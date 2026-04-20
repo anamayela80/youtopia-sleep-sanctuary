@@ -18,6 +18,7 @@ type Theme = {
   science: string | null;
   practice: string | null;
   questions: string[];
+  guide_voice_id: string | null;
 };
 
 const parseQuestions = (q: any): string[] => {
@@ -43,7 +44,7 @@ export const AdminThemes = () => {
   const load = async () => {
     const { data } = await supabase
       .from("monthly_themes")
-      .select("id, month_key, month, theme, description, status, intro_orienting, intro_settling, intro_established, about, science, practice, questions")
+      .select("id, month_key, month, theme, description, status, intro_orienting, intro_settling, intro_established, about, science, practice, questions, guide_voice_id")
       .not("month_key", "is", null);
     if (data) {
       const sorted = [...data].sort((a, b) => ORDER.indexOf(a.month_key!) - ORDER.indexOf(b.month_key!));
@@ -81,6 +82,7 @@ export const AdminThemes = () => {
         science: t.science,
         practice: t.practice,
         questions: t.questions,
+        guide_voice_id: (t.guide_voice_id || "").trim() || null,
       })
       .eq("id", t.id);
     setSavingId(null);
@@ -123,6 +125,17 @@ export const AdminThemes = () => {
             placeholder="Theme intro / tagline (passed to Claude as context)"
             className="w-full h-20 px-3 py-2 rounded-lg bg-background border border-border font-body text-sm text-foreground resize-none"
           />
+
+          <div className="space-y-1 pt-2 border-t border-border">
+            <p className="text-[11px] uppercase tracking-wider font-body text-accent">Guide voice (ElevenLabs voice ID)</p>
+            <p className="text-[11px] font-body text-muted-foreground">Used to narrate this month's morning meditation. Leave blank to use the global default.</p>
+            <input
+              value={t.guide_voice_id || ""}
+              onChange={(e) => update(t.id, { guide_voice_id: e.target.value })}
+              placeholder="e.g. EXAVITQu4vr4xnSDxMaL"
+              className="w-full px-3 py-2 rounded-lg bg-background border border-border font-mono text-xs text-foreground"
+            />
+          </div>
 
           <div className="space-y-2 pt-2 border-t border-border">
             <p className="text-[11px] uppercase tracking-wider font-body text-accent">This month's practice — by tenure</p>

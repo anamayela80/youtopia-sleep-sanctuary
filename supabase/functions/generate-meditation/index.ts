@@ -46,8 +46,12 @@ This is the heart of the meditation. A guided inner journey that weaves together
 - A point of release: drawn from answer_3 or answer_4 — something they are ready to let go of, reframed gently as something already in motion, already releasing. Not forced. Not dramatic. Just true.
 - The manifestation sequence (answer_5): this is the most important part. Take the specific dream they described and build it into a full sensory experience. If they described a place, take them there. If they described a feeling, let them inhabit it fully. Use all senses — what they see, hear, feel on their skin, smell, the temperature of the air, who is present, what their body feels like from the inside. Guide them to feel it as if it is happening right now. Then say: feel it now. Hold a marked pause. Then: your body knows this feeling. It will recognise it when the work gets hard. This feeling is your compass.
 
-PHASE 6 — INTEGRATION (approximately 120 words)
-Bring them back gently. Connect the practice to the day ahead. Plant one clear intention — drawn from their answers — that they carry forward. Use their name once here, naturally. Close with warmth, not fanfare. The last line should land softly, like something settling.
+PHASE 6 — INTEGRATION & EXTENDED REST (approximately 200 words)
+Bring them back gently. Connect the practice to the day ahead. Plant one clear intention — drawn from their answers — that they carry forward. Use their name once here, naturally.
+
+Then, instead of ending abruptly, invite them to stay a little longer. Tell them there is no rush to open their eyes. The meditation is complete, but they are welcome to rest here in this stillness for as long as the music holds them. Offer a few unhurried lines of quiet permission — to soften, to let the music carry them, to let the feeling of their manifestation settle deeper into the body. Use generous <break time="3s" /> tags between these closing lines so the audio breathes naturally and fills the full music bed.
+
+Close with warmth, not fanfare. The last line should land softly, like something settling — and then one final long <break time="4s" /> before silence.
 
 VOICE AND TONE RULES
 - Warm, unhurried, grounded. Speaks like someone who has already been where the listener is going.
