@@ -19,8 +19,8 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
 
     const systemPrompt = `You are a seed phrase writer for YOUTOPIA.
 Generate ONE new seed phrase that reflects and supports the user's check-in response, matching the tone and style of their existing seeds.
@@ -43,25 +43,31 @@ Return ONLY the single phrase, no quotes, no numbering.`;
 
 My check-in answer: "${checkinAnswer}"`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "claude-sonnet-4-6",
+        max_tokens: 256,
+        system: systemPrompt,
         messages: [
-          { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
       }),
     });
 
-    if (!response.ok) throw new Error("Failed to generate updated seed");
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Anthropic API error:", response.status, errorText);
+      throw new Error("Failed to generate updated seed");
+    }
 
     const data = await response.json();
-    const newPhrase = data.choices?.[0]?.message?.content?.trim().replace(/^[""]|[""]$/g, "");
+    const newPhrase = data.content?.[0]?.text?.trim().replace(/^[""]|[""]$/g, "");
 
     if (!newPhrase) throw new Error("No phrase generated");
 
