@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -18,80 +18,129 @@ import {
   narrateSeed,
   uploadSeedAudio,
   saveSeeds,
-  getActiveTheme,
 } from "@/services/meditationService";
+import {
+  hasEverCompletedIntake,
+  getNextThemeForUser,
+  saveIntake,
+} from "@/services/intakeService";
+import WelcomeStep from "@/components/onboarding/WelcomeStep";
+import ScienceStep from "@/components/onboarding/ScienceStep";
 import ThemeIntroStep from "@/components/onboarding/ThemeIntroStep";
 import QuestionsStep from "@/components/onboarding/QuestionsStep";
 import VoiceCaptureStep from "@/components/onboarding/VoiceCaptureStep";
 import GeneratingStep from "@/components/onboarding/GeneratingStep";
+import FolderUnlockStep from "@/components/onboarding/FolderUnlockStep";
 
-const DEFAULT_QUESTIONS = [
-  "How do you want to feel every day this month?",
-  "What would a transformed version of you look like in 30 days?",
-  "What is one thing you are ready to release this month?",
-];
-
+/**
+ * Monthly Intake Flow.
+ *
+ * Step layout (dynamic — Welcome + Science only on first-ever intake):
+ *   firstEver:  [Welcome, Science, ThemeReveal, Q1..Q5, Voice, FolderUnlock]
+ *   returning:  [ThemeReveal, Q1..Q5, Voice, FolderUnlock]
+ *
+ * "Generating" is shown as a full-screen overlay while we build the meditation.
+ */
 const Onboarding = () => {
-  const [step, setStep] = useState(1);
-  const [themeQuestions, setThemeQuestions] = useState<string[]>(DEFAULT_QUESTIONS);
-  const [answers, setAnswers] = useState<string[]>(["", "", ""]);
+  const [searchParams] = useSearchParams();
+  const forceFull = searchParams.get("full") === "1"; // for testing the full flow
+
+  const [step, setStep] = useState(0);
+  const [isFirstEver, setIsFirstEver] = useState<boolean | null>(null);
+  const [theme, setTheme] = useState<any>(null);
+  const [questions, setQuestions] = useState<string[]>([]);
+  const [answers, setAnswers] = useState<string[]>([]);
+  const [userFirstName, setUserFirstName] = useState<string>("");
+  const [hasExistingClone, setHasExistingClone] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStatus, setGenerationStatus] = useState("");
-  const [hasExistingClone, setHasExistingClone] = useState(false);
-  const [theme, setTheme] = useState<any>(null);
-  const [userFirstName, setUserFirstName] = useState<string>("");
+  const [unlockArtwork, setUnlockArtwork] = useState<string | null>(null);
+  const [showUnlock, setShowUnlock] = useState(false);
   const voiceRecordingRef = useRef<Blob | null>(null);
   const [hasRecording, setHasRecording] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Step 1 = theme intro; Steps 2..(N+1) = questions; last = voice capture
-  const questionCount = themeQuestions.length;
-  const totalSteps = 2 + questionCount;
-  const voiceStep = totalSteps;
-
   useEffect(() => {
-    loadInitialData();
-  }, []);
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { navigate("/auth?mode=login"); return; }
 
-  const loadInitialData = async () => {
-    const activeTheme = await getActiveTheme();
-    if (activeTheme) {
-      setTheme(activeTheme);
-      if (activeTheme.questions) {
-        try {
-          const qs = typeof activeTheme.questions === "string"
-            ? JSON.parse(activeTheme.questions)
-            : activeTheme.questions;
-          if (Array.isArray(qs)) {
-            const cleaned = qs
-              .map((q: any) => (typeof q === "string" ? q.trim() : ""))
-              .filter((s: string) => s.length > 0)
-              .slice(0, 5);
-            if (cleaned.length > 0) {
-              setThemeQuestions(cleaned);
-              setAnswers(new Array(cleaned.length).fill(""));
-            }
-          }
-        } catch {}
-      }
-    }
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
       setUserFirstName((user.user_metadata?.full_name || "").split(" ")[0] || "");
-      const voiceId = await getUserVoiceClone(user.id);
-      if (voiceId) setHasExistingClone(true);
-    }
-  };
 
-  const progress = (step / totalSteps) * 100;
+      const [everCompleted, nextTheme, voiceId] = await Promise.all([
+        hasEverCompletedIntake(user.id),
+        getNextThemeForUser(user.id),
+        getUserVoiceClone(user.id),
+      ]);
 
+      setIsFirstEver(forceFull ? true : !everCompleted);
+      setHasExistingClone(!!voiceId);
 
-  const handleQuestionAnswer = (questionIndex: number, answer: string) => {
-    const newAnswers = [...answers];
-    newAnswers[questionIndex] = answer;
-    setAnswers(newAnswers);
+      if (!nextTheme) {
+        toast({
+          variant: "destructive",
+          title: "No theme available",
+          description: "An admin needs to publish a theme first.",
+        });
+        return;
+      }
+
+      setTheme(nextTheme);
+
+      // Parse questions from theme
+      let qs: string[] = [];
+      try {
+        const raw = nextTheme.questions;
+        const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+        if (Array.isArray(parsed)) {
+          qs = parsed
+            .map((q: any) => (typeof q === "string" ? q.trim() : ""))
+            .filter((s: string) => s.length > 0)
+            .slice(0, 5);
+        }
+      } catch {}
+      if (qs.length === 0) {
+        qs = [
+          "How do you want to feel every day this month?",
+          "What would a transformed version of you look like in 30 days?",
+          "What is one thing you are ready to release this month?",
+        ];
+      }
+      setQuestions(qs);
+      setAnswers(new Array(qs.length).fill(""));
+      setStep(0);
+    })();
+  }, [navigate, toast, forceFull]);
+
+  // Build the dynamic step list once we know the gating
+  const stepList: Array<"welcome" | "science" | "theme" | "question" | "voice"> = (() => {
+    if (isFirstEver === null) return [];
+    const list: Array<"welcome" | "science" | "theme" | "question" | "voice"> = [];
+    if (isFirstEver) list.push("welcome", "science");
+    list.push("theme");
+    for (let i = 0; i < questions.length; i++) list.push("question");
+    list.push("voice");
+    return list;
+  })();
+  const totalSteps = stepList.length;
+  const currentKind = stepList[step];
+
+  // Index of the question currently shown (if applicable)
+  const questionIndex = (() => {
+    if (currentKind !== "question") return -1;
+    const firstQ = stepList.indexOf("question");
+    return step - firstQ;
+  })();
+
+  const progress = totalSteps > 0 ? ((step + 1) / totalSteps) * 100 : 0;
+
+  const handleQuestionAnswer = (idx: number, val: string) => {
+    setAnswers((prev) => {
+      const next = [...prev];
+      next[idx] = val;
+      return next;
+    });
   };
 
   const handleVoiceRecording = (blob: Blob) => {
@@ -99,37 +148,53 @@ const Onboarding = () => {
     setHasRecording(true);
   };
 
+  const canProceed = () => {
+    if (currentKind === "welcome" || currentKind === "science" || currentKind === "theme") return true;
+    if (currentKind === "question") return (answers[questionIndex] || "").trim().length > 0;
+    if (currentKind === "voice") return hasExistingClone || hasRecording;
+    return false;
+  };
+
+  const handleBack = () => {
+    if (step > 0) setStep(step - 1);
+  };
+
+  const handleNext = () => {
+    if (step < totalSteps - 1) setStep(step + 1);
+    else handleGenerate();
+  };
+
   const handleGenerate = async () => {
     setIsGenerating(true);
-
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
-        toast({ variant: "destructive", title: "Not logged in", description: "Please sign in first." });
+        toast({ variant: "destructive", title: "Not logged in" });
         navigate("/auth?mode=login");
         return;
       }
       const user = session.user;
       const userName = user.user_metadata?.full_name || "";
 
-      // 1. Save answers (DB stores first 3 question slots)
-      setGenerationStatus("Saving your intentions...");
+      // 1. Save raw answers (legacy table — keeps first 3)
+      setGenerationStatus("Reading your answers…");
       const padded = [answers[0] || "", answers[1] || "", answers[2] || ""];
       await saveUserAnswers(user.id, padded);
 
-      // 2. Clone voice if new recording provided
+      // 2. Voice clone (if new recording given). Otherwise fall back to theme guide voice for Seeds.
       let userVoiceId = await getUserVoiceClone(user.id);
       if (voiceRecordingRef.current) {
-        setGenerationStatus("Creating your personal voice...");
+        setGenerationStatus("Creating your personal voice…");
         const clonedId = await cloneVoice(voiceRecordingRef.current);
         await saveVoiceClone(user.id, clonedId);
         userVoiceId = clonedId;
-        voiceRecordingRef.current = null; // Delete raw recording reference
+        voiceRecordingRef.current = null;
       }
-
-      // 3. Generate meditation script (4 segments)
-      setGenerationStatus("Writing your morning meditation...");
       const guideVoiceId = theme?.guide_voice_id || "9BDgg2Q7WSrW0x8naPLw";
+      const seedVoiceId = userVoiceId || guideVoiceId; // Serena fallback = theme guide voice
+
+      // 3. Meditation script
+      setGenerationStatus("Writing your meditation…");
       const { script, segments } = await generateMeditationScript({
         question1: answers[0],
         question2: answers[1],
@@ -139,74 +204,68 @@ const Onboarding = () => {
         themeIntention: theme?.intention,
       });
 
-      // 4. Narrate each segment with guide voice
-      const currentMonth = new Date().toLocaleString("default", { month: "long", year: "numeric" });
-      const monthSlug = currentMonth.replace(/\s/g, "-");
-
-      setGenerationStatus("Creating voice narration (segment 1 of 4)...");
+      // 4. Narrate segments
+      const themeSlug = (theme?.theme || "practice").toLowerCase().replace(/\s+/g, "-");
       const segmentAudioUrls: string[] = [];
       for (let i = 0; i < segments.length && i < 4; i++) {
-        setGenerationStatus(`Creating voice narration (segment ${i + 1} of 4)...`);
+        setGenerationStatus(`Recording your meditation (${i + 1} of ${Math.min(segments.length, 4)})…`);
         const audioBlob = await narrateSegment(segments[i].text, guideVoiceId, i + 1);
         if (!audioBlob || audioBlob.size === 0) throw new Error(`Segment ${i + 1} narration failed`);
-        const audioUrl = await uploadSegmentAudio(user.id, audioBlob, monthSlug, i + 1);
+        const audioUrl = await uploadSegmentAudio(user.id, audioBlob, themeSlug, i + 1);
         segmentAudioUrls.push(audioUrl);
       }
 
-      // 5. Save meditation row (name/message/artwork prompt filled by monthly-package)
-      setGenerationStatus("Saving your meditation...");
+      // 5. Persist meditation row
+      setGenerationStatus("Saving your meditation…");
+      const monthLabel = new Date().toLocaleString("default", { month: "long", year: "numeric" });
       const meditationId = await saveMeditation({
         userId: user.id,
-        title: `${currentMonth} Meditation`,
+        title: `${theme?.theme || "Monthly"} Meditation`,
         script,
         voiceId: guideVoiceId,
         musicMood: "theme",
-        month: currentMonth,
+        month: monthLabel,
         themeId: theme?.id,
         meditationName: null,
         messageForYou: null,
         meditationArtworkUrl: null,
       });
-
       for (let i = 0; i < segmentAudioUrls.length; i++) {
         await saveMeditationSegment(meditationId, i + 1, segmentAudioUrls[i]);
       }
 
-      // 6. Generate seeds if user has a voice clone
-      if (userVoiceId) {
-        setGenerationStatus("Creating your personal seeds...");
-        const phrases = await generateSeeds({
-          question1: answers[0],
-          question2: answers[1],
-          question3: answers[2],
-          monthlyTheme: theme?.theme,
-          themeIntention: theme?.intention,
-        });
-
-        const seedAudioUrls: string[] = [];
-        for (let i = 0; i < phrases.length && i < 5; i++) {
-          setGenerationStatus(`Planting seed ${i + 1} of 5...`);
-          try {
-            const seedBlob = await narrateSeed(phrases[i], userVoiceId);
-            const seedUrl = await uploadSeedAudio(user.id, seedBlob, monthSlug, i + 1);
-            seedAudioUrls.push(seedUrl);
-          } catch (e: any) {
-            console.error(`Seed ${i + 1} narration failed:`, e);
-            seedAudioUrls.push("");
-          }
+      // 6. Seeds
+      setGenerationStatus("Planting your Seeds…");
+      const phrases = await generateSeeds({
+        question1: answers[0],
+        question2: answers[1],
+        question3: answers[2],
+        monthlyTheme: theme?.theme,
+        themeIntention: theme?.intention,
+      });
+      const seedAudioUrls: string[] = [];
+      for (let i = 0; i < phrases.length && i < 5; i++) {
+        setGenerationStatus(`Planting Seed ${i + 1} of 5…`);
+        try {
+          const seedBlob = await narrateSeed(phrases[i], seedVoiceId);
+          const seedUrl = await uploadSeedAudio(user.id, seedBlob, themeSlug, i + 1);
+          seedAudioUrls.push(seedUrl);
+        } catch (e) {
+          console.error(`Seed ${i + 1} failed:`, e);
+          seedAudioUrls.push("");
         }
-
-        await saveSeeds({
-          userId: user.id,
-          month: currentMonth,
-          themeId: theme?.id,
-          phrases,
-          audioUrls: seedAudioUrls,
-        });
       }
+      await saveSeeds({
+        userId: user.id,
+        month: monthLabel,
+        themeId: theme?.id,
+        phrases,
+        audioUrls: seedAudioUrls,
+      });
 
-      // 7. Generate monthly package (name, message, image prompt) and persist
-      setGenerationStatus("Composing your monthly message...");
+      // 7. Monthly package (name, message, artwork prompt)
+      setGenerationStatus("Composing your monthly message…");
+      let artwork: string | null = null;
       try {
         await generateMonthlyPackage({
           meditationId,
@@ -215,12 +274,28 @@ const Onboarding = () => {
           themeIntention: theme?.intention,
           answers: answers.filter((a) => a.trim().length > 0),
         });
+        const { data: med } = await supabase
+          .from("meditations")
+          .select("meditation_artwork_url")
+          .eq("id", meditationId)
+          .maybeSingle();
+        artwork = med?.meditation_artwork_url || null;
       } catch (e) {
-        console.error("Monthly package generation failed (non-blocking):", e);
+        console.error("Monthly package failed (non-blocking):", e);
       }
 
-      toast({ title: "Your meditation is ready! 🧘", description: "Your morning meditation and seeds are waiting." });
-      navigate("/home");
+      // 8. Save the intake row — locks in the user's 30-day cycle
+      await saveIntake({
+        userId: user.id,
+        themeId: theme.id,
+        answers,
+        meditationId,
+      });
+
+      // 9. Show folder unlock screen
+      setUnlockArtwork(artwork);
+      setIsGenerating(false);
+      setShowUnlock(true);
     } catch (err: any) {
       console.error("Generation error:", err);
       toast({
@@ -232,74 +307,100 @@ const Onboarding = () => {
     }
   };
 
-  const handleNext = () => {
-    if (step < totalSteps) {
-      setStep(step + 1);
-    } else {
-      handleGenerate();
-    }
-  };
-
-  const handleBack = () => {
-    if (step > 1) setStep(step - 1);
-  };
-
-  const canProceed = () => {
-    if (step === 1) return true;
-    if (step >= 2 && step <= 1 + questionCount) {
-      return (answers[step - 2] || "").trim().length > 0;
-    }
-    if (step === voiceStep) return hasExistingClone || hasRecording;
-    return false;
-  };
-
-  if (isGenerating) {
-    return <GeneratingStep status={generationStatus} />;
+  // Loading initial data
+  if (isFirstEver === null || stepList.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <motion.div
+          className="w-10 h-10 rounded-full bg-primary/20"
+          animate={{ scale: [1, 1.2, 1] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        />
+      </div>
+    );
   }
 
+  if (isGenerating) {
+    return <GeneratingStep status={generationStatus} themeName={theme?.theme} />;
+  }
+
+  if (showUnlock) {
+    return (
+      <FolderUnlockStep
+        userFirstName={userFirstName}
+        themeName={theme?.theme || "monthly"}
+        artworkUrl={unlockArtwork}
+      />
+    );
+  }
+
+  const continueLabel =
+    currentKind === "welcome"
+      ? "I'm ready"
+      : currentKind === "science"
+      ? "Begin"
+      : currentKind === "theme"
+      ? "I'm ready for my questions"
+      : currentKind === "voice"
+      ? "Create my practice ✨"
+      : "Continue";
+
+  // Theme intro and welcome/science screens hide the progress bar for cleaner reveal
+  const showProgress = currentKind === "question" || currentKind === "voice";
+
   return (
-    <div className="min-h-screen bg-background flex flex-col px-6 pt-8 pb-8">
-      {/* Progress bar */}
-      <div className="flex items-center gap-3 mb-8">
-        {step > 1 && (
-          <button onClick={handleBack} className="text-accent">
+    <div className="min-h-screen bg-background flex flex-col px-6 pt-6 pb-8">
+      {/* Top bar */}
+      <div className="flex items-center gap-3 mb-6 min-h-[24px]">
+        {step > 0 && (
+          <button onClick={handleBack} className="text-accent" aria-label="Back">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           </button>
         )}
-        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-          <motion.div
-            className="h-full bg-primary rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.4 }}
-          />
-        </div>
-        <span className="text-xs font-body text-muted-foreground">{step}/{totalSteps}</span>
+        {showProgress && (
+          <>
+            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-primary rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.4 }}
+              />
+            </div>
+            <span className="text-xs font-body text-muted-foreground">{step + 1}/{totalSteps}</span>
+          </>
+        )}
       </div>
 
-      {/* Content */}
+      {/* Body */}
       <div className="flex-1 flex flex-col">
         <AnimatePresence mode="wait">
-          {step === 1 && (
+          {currentKind === "welcome" && (
+            <WelcomeStep key="welcome" userFirstName={userFirstName} />
+          )}
+          {currentKind === "science" && <ScienceStep key="science" />}
+          {currentKind === "theme" && (
             <ThemeIntroStep
               key="theme"
-              themeName={theme?.theme || "Your Journey Begins"}
-              description={theme?.description || "Each month brings a new focus for your inner transformation. Answer a few questions and we'll create your personalized meditation and seeds."}
-              intention={theme?.intention || "Creating your everyday utopia"}
+              themeName={theme?.theme || "Your Practice"}
+              description={theme?.description || ""}
+              intention={theme?.intention || ""}
+              monthLabel={new Date().toLocaleString("default", { month: "long", year: "numeric" })}
             />
           )}
-          {step >= 2 && step <= 1 + questionCount && (
+          {currentKind === "question" && (
             <QuestionsStep
-              key={`q-${step}`}
-              questionIndex={step - 2}
-              answer={answers[step - 2] || ""}
-              onAnswer={(a) => handleQuestionAnswer(step - 2, a)}
-              question={themeQuestions[step - 2] || ""}
+              key={`q-${questionIndex}`}
+              questionIndex={questionIndex}
+              totalQuestions={questions.length}
+              answer={answers[questionIndex] || ""}
+              onAnswer={(a) => handleQuestionAnswer(questionIndex, a)}
+              question={questions[questionIndex] || ""}
               userFirstName={userFirstName}
               themeName={theme?.theme}
             />
           )}
-          {step === voiceStep && (
+          {currentKind === "voice" && (
             <VoiceCaptureStep
               key="voice"
               onRecordingComplete={handleVoiceRecording}
@@ -309,19 +410,30 @@ const Onboarding = () => {
         </AnimatePresence>
       </div>
 
-      {/* Continue button */}
+      {/* Continue */}
       <motion.button
         onClick={handleNext}
         disabled={!canProceed()}
         className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-body font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed mt-6"
         whileTap={{ scale: 0.98 }}
       >
-        {step === 1
-          ? "Begin"
-          : step === totalSteps
-          ? "Create My Meditation ✨"
-          : "Continue"}
+        {continueLabel}
       </motion.button>
+
+      {/* Voice fallback link */}
+      {currentKind === "voice" && !hasExistingClone && !hasRecording && (
+        <button
+          onClick={() => {
+            // Mark as "use guide voice" — handled via seedVoiceId fallback in handleGenerate
+            setHasRecording(true);
+            voiceRecordingRef.current = null;
+            setTimeout(handleGenerate, 0);
+          }}
+          className="mt-3 text-sm font-body text-accent underline hover:opacity-80"
+        >
+          Use Serena's voice for now
+        </button>
+      )}
     </div>
   );
 };

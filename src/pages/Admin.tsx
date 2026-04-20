@@ -5,17 +5,15 @@ import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { AdminThemes } from "@/components/admin/AdminThemes";
-import { AdminOnboarding } from "@/components/admin/AdminOnboarding";
 import { AdminMusic } from "@/components/admin/AdminMusic";
 import { AdminVoice } from "@/components/admin/AdminVoice";
 import { AdminCheckins } from "@/components/admin/AdminCheckins";
 
-type Tab = "dashboard" | "themes" | "onboarding" | "music" | "voice" | "checkins";
+type Tab = "dashboard" | "themes" | "music" | "voice" | "checkins";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "dashboard", label: "Dashboard" },
   { id: "themes", label: "Themes" },
-  { id: "onboarding", label: "Onboarding" },
   { id: "music", label: "Music" },
   { id: "voice", label: "Voice" },
   { id: "checkins", label: "Check-ins" },
@@ -77,7 +75,6 @@ const Admin = () => {
 
       {tab === "dashboard" && <AdminDashboard />}
       {tab === "themes" && <AdminThemes />}
-      {tab === "onboarding" && <AdminOnboarding />}
       {tab === "music" && <AdminMusic />}
       {tab === "voice" && <AdminVoice />}
       {tab === "checkins" && <AdminCheckins />}
