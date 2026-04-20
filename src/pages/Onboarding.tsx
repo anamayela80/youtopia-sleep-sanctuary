@@ -25,21 +25,30 @@ import QuestionsStep from "@/components/onboarding/QuestionsStep";
 import VoiceCaptureStep from "@/components/onboarding/VoiceCaptureStep";
 import GeneratingStep from "@/components/onboarding/GeneratingStep";
 
+const DEFAULT_QUESTIONS = [
+  "How do you want to feel every day this month?",
+  "What would a transformed version of you look like in 30 days?",
+  "What is one thing you are ready to release this month?",
+];
+
 const Onboarding = () => {
   const [step, setStep] = useState(1);
+  const [themeQuestions, setThemeQuestions] = useState<string[]>(DEFAULT_QUESTIONS);
   const [answers, setAnswers] = useState<string[]>(["", "", ""]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStatus, setGenerationStatus] = useState("");
   const [hasExistingClone, setHasExistingClone] = useState(false);
   const [theme, setTheme] = useState<any>(null);
-  const [themeQuestions, setThemeQuestions] = useState<string[] | undefined>();
+  const [userFirstName, setUserFirstName] = useState<string>("");
   const voiceRecordingRef = useRef<Blob | null>(null);
   const [hasRecording, setHasRecording] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const totalSteps = 5; // theme intro + 3 questions + voice capture
-  // Step 1: theme intro, Steps 2-4: questions, Step 5: voice capture
+  // Step 1 = theme intro; Steps 2..(N+1) = questions; last = voice capture
+  const questionCount = themeQuestions.length;
+  const totalSteps = 2 + questionCount;
+  const voiceStep = totalSteps;
 
   useEffect(() => {
     loadInitialData();
@@ -54,19 +63,30 @@ const Onboarding = () => {
           const qs = typeof activeTheme.questions === "string"
             ? JSON.parse(activeTheme.questions)
             : activeTheme.questions;
-          if (Array.isArray(qs) && qs.length >= 3) setThemeQuestions(qs);
+          if (Array.isArray(qs)) {
+            const cleaned = qs
+              .map((q: any) => (typeof q === "string" ? q.trim() : ""))
+              .filter((s: string) => s.length > 0)
+              .slice(0, 5);
+            if (cleaned.length > 0) {
+              setThemeQuestions(cleaned);
+              setAnswers(new Array(cleaned.length).fill(""));
+            }
+          }
         } catch {}
       }
     }
 
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      setUserFirstName((user.user_metadata?.full_name || "").split(" ")[0] || "");
       const voiceId = await getUserVoiceClone(user.id);
       if (voiceId) setHasExistingClone(true);
     }
   };
 
   const progress = (step / totalSteps) * 100;
+
 
   const handleQuestionAnswer = (questionIndex: number, answer: string) => {
     const newAnswers = [...answers];
