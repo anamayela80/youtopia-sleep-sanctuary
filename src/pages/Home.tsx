@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, Moon, Settings, Headphones, SkipForward, SkipBack, Shield, ChevronDown, Home as HomeIcon } from "lucide-react";
+import { Play, Pause, Moon, Settings, Headphones, SkipForward, SkipBack, Shield, ChevronDown, Home as HomeIcon, Plus } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { useSegmentedMixer } from "@/hooks/useSegmentedMixer";
