@@ -1,0 +1,98 @@
+import { useEffect, useState } from "react";
+import { Save } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
+
+type Theme = {
+  id: string;
+  month_key: string;
+  month: string;
+  theme: string;
+  description: string | null;
+  status: string;
+};
+
+const ORDER = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+
+export const AdminThemes = () => {
+  const [themes, setThemes] = useState<Theme[]>([]);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  useEffect(() => { load(); }, []);
+
+  const load = async () => {
+    const { data } = await supabase
+      .from("monthly_themes")
+      .select("id, month_key, month, theme, description, status")
+      .not("month_key", "is", null);
+    if (data) {
+      const sorted = [...data].sort((a, b) => ORDER.indexOf(a.month_key!) - ORDER.indexOf(b.month_key!));
+      setThemes(sorted as Theme[]);
+    }
+  };
+
+  const update = (id: string, patch: Partial<Theme>) => {
+    setThemes((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+  };
+
+  const save = async (t: Theme) => {
+    setSavingId(t.id);
+    const { error } = await supabase
+      .from("monthly_themes")
+      .update({ theme: t.theme, description: t.description, status: t.status })
+      .eq("id", t.id);
+    setSavingId(null);
+    if (error) toast({ variant: "destructive", title: "Save failed", description: error.message });
+    else toast({ title: `${t.month} saved ✨` });
+  };
+
+  const togglePublish = async (t: Theme, published: boolean) => {
+    const status = published ? "published" : "draft";
+    update(t.id, { status });
+    const { error } = await supabase.from("monthly_themes").update({ status }).eq("id", t.id);
+    if (error) toast({ variant: "destructive", title: "Error", description: error.message });
+  };
+
+  return (
+    <div className="space-y-3">
+      {themes.map((t) => (
+        <div key={t.id} className="bg-cream-light rounded-2xl p-4 border border-border space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-heading text-lg text-secondary">{t.month}</h3>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-body ${t.status === "published" ? "text-primary" : "text-muted-foreground"}`}>
+                {t.status === "published" ? "Published" : "Draft"}
+              </span>
+              <Switch
+                checked={t.status === "published"}
+                onCheckedChange={(v) => togglePublish(t, v)}
+              />
+            </div>
+          </div>
+          <input
+            value={t.theme || ""}
+            onChange={(e) => update(t.id, { theme: e.target.value })}
+            placeholder="Theme title"
+            className="w-full px-3 py-2 rounded-lg bg-background border border-border font-body text-sm text-foreground"
+          />
+          <textarea
+            value={t.description || ""}
+            onChange={(e) => update(t.id, { description: e.target.value })}
+            placeholder="Theme intro (passed to Claude as context)"
+            className="w-full h-20 px-3 py-2 rounded-lg bg-background border border-border font-body text-sm text-foreground resize-none"
+          />
+          <button
+            onClick={() => save(t)}
+            disabled={savingId === t.id}
+            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-body text-sm font-medium flex items-center gap-2 disabled:opacity-50"
+          >
+            <Save size={14} />
+            {savingId === t.id ? "Saving..." : "Save"}
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+};

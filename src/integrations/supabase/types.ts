@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          checkin_question_1: string
+          checkin_question_2: string
+          created_at: string
+          default_voice_id: string
+          default_voice_model: string
+          default_voice_stability: number
+          default_voice_style: number
+          id: string
+          onboarding_question_1: string
+          onboarding_question_2: string
+          onboarding_question_3: string
+          singleton: boolean
+          updated_at: string
+        }
+        Insert: {
+          checkin_question_1?: string
+          checkin_question_2?: string
+          created_at?: string
+          default_voice_id?: string
+          default_voice_model?: string
+          default_voice_stability?: number
+          default_voice_style?: number
+          id?: string
+          onboarding_question_1?: string
+          onboarding_question_2?: string
+          onboarding_question_3?: string
+          singleton?: boolean
+          updated_at?: string
+        }
+        Update: {
+          checkin_question_1?: string
+          checkin_question_2?: string
+          created_at?: string
+          default_voice_id?: string
+          default_voice_model?: string
+          default_voice_stability?: number
+          default_voice_style?: number
+          id?: string
+          onboarding_question_1?: string
+          onboarding_question_2?: string
+          onboarding_question_3?: string
+          singleton?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       checkin_responses: {
         Row: {
           answer: string
@@ -130,44 +178,71 @@ export type Database = {
         Row: {
           checkin_count: number | null
           checkin_question: string | null
+          checkin_question_2: string | null
           created_at: string
           description: string | null
+          evening_music_url: string | null
           guide_voice_id: string | null
           id: string
           intention: string | null
           is_active: boolean | null
           month: string
+          month_key: string | null
+          morning_music_url: string | null
           music_file_url: string | null
           questions: Json | null
+          status: string
           theme: string
+          voice_id: string | null
+          voice_model: string | null
+          voice_stability: number | null
+          voice_style: number | null
         }
         Insert: {
           checkin_count?: number | null
           checkin_question?: string | null
+          checkin_question_2?: string | null
           created_at?: string
           description?: string | null
+          evening_music_url?: string | null
           guide_voice_id?: string | null
           id?: string
           intention?: string | null
           is_active?: boolean | null
           month: string
+          month_key?: string | null
+          morning_music_url?: string | null
           music_file_url?: string | null
           questions?: Json | null
+          status?: string
           theme: string
+          voice_id?: string | null
+          voice_model?: string | null
+          voice_stability?: number | null
+          voice_style?: number | null
         }
         Update: {
           checkin_count?: number | null
           checkin_question?: string | null
+          checkin_question_2?: string | null
           created_at?: string
           description?: string | null
+          evening_music_url?: string | null
           guide_voice_id?: string | null
           id?: string
           intention?: string | null
           is_active?: boolean | null
           month?: string
+          month_key?: string | null
+          morning_music_url?: string | null
           music_file_url?: string | null
           questions?: Json | null
+          status?: string
           theme?: string
+          voice_id?: string | null
+          voice_model?: string | null
+          voice_stability?: number | null
+          voice_style?: number | null
         }
         Relationships: []
       }
