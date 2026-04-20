@@ -19,8 +19,8 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
 
     const systemPrompt = `You are a seed phrase writer for YOUTOPIA.
 Generate ONE new seed phrase that reflects and supports the user's check-in response, matching the tone and style of their existing seeds.
