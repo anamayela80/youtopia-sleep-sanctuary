@@ -196,9 +196,7 @@ const Onboarding = () => {
       // 3. Meditation script
       setGenerationStatus("Writing your meditation…");
       const { script, segments } = await generateMeditationScript({
-        question1: answers[0],
-        question2: answers[1],
-        question3: answers[2],
+        answers,
         userName,
         monthlyTheme: theme?.theme,
         themeIntention: theme?.intention,
