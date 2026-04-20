@@ -71,10 +71,10 @@ export async function narrateSegment(segmentText: string, voiceId: string, segme
 }
 
 export async function uploadSegmentAudio(userId: string, audioBlob: Blob, month: string, segmentNumber: number): Promise<string> {
-  const fileName = `${userId}/segments/${month}-seg${segmentNumber}-${Date.now()}.wav`;
+  const fileName = `${userId}/segments/${month}-seg${segmentNumber}-${Date.now()}.mp3`;
   const { error: uploadError } = await supabase.storage
     .from("meditations")
-    .upload(fileName, audioBlob, { contentType: audioBlob.type || "audio/wav" });
+    .upload(fileName, audioBlob, { contentType: audioBlob.type || "audio/mpeg" });
   if (uploadError) throw uploadError;
   const { data: urlData } = supabase.storage.from("meditations").getPublicUrl(fileName);
   return urlData.publicUrl;

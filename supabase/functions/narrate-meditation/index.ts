@@ -46,7 +46,7 @@ serve(async (req) => {
       if (prev) body.previous_text = prev;
       if (next) body.next_text = next;
       return await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${vid}?output_format=pcm_44100`,
+        `https://api.elevenlabs.io/v1/text-to-speech/${vid}?output_format=mp3_44100_128`,
         {
           method: "POST",
           headers: {
@@ -58,37 +58,17 @@ serve(async (req) => {
       );
     };
 
-    const encodeWavFromPcm = (chunks: Uint8Array[], sampleRate = 44100, channels = 1, bitsPerSample = 16) => {
-      const dataLength = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
-      const buffer = new ArrayBuffer(44 + dataLength);
-      const view = new DataView(buffer);
-      const bytes = new Uint8Array(buffer);
-
-      const writeString = (offset: number, value: string) => {
-        for (let i = 0; i < value.length; i++) view.setUint8(offset + i, value.charCodeAt(i));
-      };
-
-      writeString(0, "RIFF");
-      view.setUint32(4, 36 + dataLength, true);
-      writeString(8, "WAVE");
-      writeString(12, "fmt ");
-      view.setUint32(16, 16, true);
-      view.setUint16(20, 1, true);
-      view.setUint16(22, channels, true);
-      view.setUint32(24, sampleRate, true);
-      view.setUint32(28, sampleRate * channels * (bitsPerSample / 8), true);
-      view.setUint16(32, channels * (bitsPerSample / 8), true);
-      view.setUint16(34, bitsPerSample, true);
-      writeString(36, "data");
-      view.setUint32(40, dataLength, true);
-
-      let offset = 44;
-      for (const chunk of chunks) {
-        bytes.set(chunk, offset);
-        offset += chunk.byteLength;
-      }
-
-      return new Uint8Array(buffer);
+    const stripId3Tag = (buffer: Uint8Array) => {
+      if (buffer.length < 10) return buffer;
+      if (buffer[0] !== 0x49 || buffer[1] !== 0x44 || buffer[2] !== 0x33) return buffer;
+      const size =
+        ((buffer[6] & 0x7f) << 21) |
+        ((buffer[7] & 0x7f) << 14) |
+        ((buffer[8] & 0x7f) << 7) |
+        (buffer[9] & 0x7f);
+      const footerSize = (buffer[5] & 0x10) !== 0 ? 10 : 0;
+      const offset = Math.min(buffer.length, 10 + size + footerSize);
+      return buffer.slice(offset);
     };
 
     // Chunk script into ≤4500 char pieces, splitting at paragraph/sentence boundaries
@@ -177,15 +157,22 @@ serve(async (req) => {
         throw new Error(`ElevenLabs TTS failed: ${response.status}`);
       }
 
-      audioBuffers.push(new Uint8Array(await response.arrayBuffer()));
+      const rawAudio = new Uint8Array(await response.arrayBuffer());
+      audioBuffers.push(audioBuffers.length === 0 ? rawAudio : stripId3Tag(rawAudio));
     }
 
-    const audioBuffer = encodeWavFromPcm(audioBuffers);
+    const totalLength = audioBuffers.reduce((sum, b) => sum + b.byteLength, 0);
+    const audioBuffer = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const buf of audioBuffers) {
+      audioBuffer.set(buf, offset);
+      offset += buf.byteLength;
+    }
 
     return new Response(audioBuffer, {
       headers: {
         ...corsHeaders,
-        "Content-Type": "audio/wav",
+        "Content-Type": "audio/mpeg",
         "Content-Length": audioBuffer.byteLength.toString(),
       },
     });
