@@ -112,9 +112,10 @@ const Onboarding = () => {
       const user = session.user;
       const userName = user.user_metadata?.full_name || "";
 
-      // 1. Save answers
+      // 1. Save answers (DB stores first 3 question slots)
       setGenerationStatus("Saving your intentions...");
-      await saveUserAnswers(user.id, answers);
+      const padded = [answers[0] || "", answers[1] || "", answers[2] || ""];
+      await saveUserAnswers(user.id, padded);
 
       // 2. Clone voice if new recording provided
       let userVoiceId = await getUserVoiceClone(user.id);
