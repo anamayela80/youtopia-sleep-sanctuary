@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import logo from "@/assets/youtopia-logo.png";
 import SplashScreen from "@/components/SplashScreen";
+import { supabase } from "@/integrations/supabase/client";
+import { getCurrentIntake, isIntakeExpired } from "@/services/intakeService";
 
 const Index = () => {
   const [showSplash, setShowSplash] = useState(true);
+  const [checking, setChecking] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -13,7 +16,20 @@ const Index = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  if (showSplash) {
+  // If user is logged in, route them based on intake state
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setChecking(false); return; }
+      const intake = await getCurrentIntake(user.id);
+      // Has a valid (non-expired) intake → straight to home
+      // Expired or no intake → home (which now shows banner / empty state)
+      // The intake flow itself is reachable via the home CTA / banner / "New" button
+      navigate(intake && !isIntakeExpired(intake) ? "/home" : "/home");
+    })();
+  }, [navigate]);
+
+  if (showSplash || checking) {
     return <SplashScreen />;
   }
 

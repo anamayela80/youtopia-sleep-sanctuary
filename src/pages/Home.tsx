@@ -14,14 +14,18 @@ import {
   getUserAnswers,
   getTenureBand,
 } from "@/services/meditationService";
+import { getCurrentIntake, isIntakeExpired, type UserIntake } from "@/services/intakeService";
+import { supabase as sb } from "@/integrations/supabase/client";
 import logo from "@/assets/youtopia-logo.png";
 
 const Home = () => {
   const [meditation, setMeditation] = useState<any>(null);
   const [seeds, setSeeds] = useState<any>(null);
   const [theme, setTheme] = useState<any>(null);
+  const [intake, setIntake] = useState<UserIntake | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [answers, setAnswers] = useState<any>(null);
+  const [intakeQuestions, setIntakeQuestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [practiceExpanded, setPracticeExpanded] = useState(false);
@@ -57,18 +61,43 @@ const Home = () => {
 
     setUserFirstName((user.user_metadata?.full_name || "").split(" ")[0] || "");
 
-    const [med, seedData, activeTheme, roleRes, prof, ans] = await Promise.all([
+    const [med, seedData, currentIntake, roleRes, prof, ans] = await Promise.all([
       getLatestMeditation(user.id),
       getLatestSeeds(user.id),
-      getActiveTheme(),
+      getCurrentIntake(user.id),
       supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle(),
       getUserProfile(user.id),
       getUserAnswers(user.id),
     ]);
 
+    setIntake(currentIntake);
+
+    // Theme: prefer the snapshotted theme from the user's current intake, else active theme
+    let displayTheme: any = null;
+    let qs: string[] = [];
+    if (currentIntake?.theme_id) {
+      const { data: snap } = await sb
+        .from("monthly_themes")
+        .select("*")
+        .eq("id", currentIntake.theme_id)
+        .maybeSingle();
+      displayTheme = snap;
+      try {
+        const raw = snap?.questions;
+        const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+        if (Array.isArray(parsed)) {
+          qs = parsed.map((q: any) => (typeof q === "string" ? q.trim() : "")).filter(Boolean).slice(0, 5);
+        }
+      } catch {}
+    }
+    if (!displayTheme) {
+      displayTheme = await getActiveTheme();
+    }
+
     setMeditation(med);
     setSeeds(seedData);
-    setTheme(activeTheme);
+    setTheme(displayTheme);
+    setIntakeQuestions(qs);
     setIsAdmin(!!roleRes.data);
     setProfile(prof);
     setAnswers(ans);
@@ -133,23 +162,34 @@ const Home = () => {
     ? [seeds.phrase_1, seeds.phrase_2, seeds.phrase_3, seeds.phrase_4, seeds.phrase_5].filter(Boolean)
     : [];
 
-  // Onboarding answers list
-  const ONBOARDING_QS = [
-    "How do you want to feel every day this month?",
-    "What does a transformed version of you look like in 30 days?",
-    "What is one thing you are ready to release this month?",
-  ];
-  const answerList = answers
-    ? [
-        { q: ONBOARDING_QS[0], a: answers.question_1 },
-        { q: ONBOARDING_QS[1], a: answers.question_2 },
-        { q: ONBOARDING_QS[2], a: answers.question_3 },
-      ].filter((x) => x.a)
-    : [];
+  // What you shared — pulled from the intake snapshot when available, else legacy answers
+  const intakeAnswers: string[] = Array.isArray(intake?.answers) ? intake!.answers : [];
+  const answerList: { q: string; a: string }[] = (() => {
+    if (intakeAnswers.length > 0 && intakeQuestions.length > 0) {
+      return intakeQuestions
+        .map((q, i) => ({ q, a: intakeAnswers[i] || "" }))
+        .filter((x) => x.a);
+    }
+    if (answers) {
+      const legacyQs = [
+        "How do you want to feel every day this month?",
+        "What does a transformed version of you look like in 30 days?",
+        "What is one thing you are ready to release this month?",
+      ];
+      return [
+        { q: legacyQs[0], a: answers.question_1 },
+        { q: legacyQs[1], a: answers.question_2 },
+        { q: legacyQs[2], a: answers.question_3 },
+      ].filter((x) => x.a);
+    }
+    return [];
+  })();
 
   const messageForYou = meditation?.message_for_you;
   const meditationName = meditation?.meditation_name || meditation?.title || "Morning Meditation";
   const artworkUrl = meditation?.meditation_artwork_url;
+  const themeName = theme?.theme || "Your";
+  const expired = isIntakeExpired(intake);
 
   return (
     <div className="min-h-screen bg-background flex flex-col pb-24">
@@ -168,19 +208,36 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Beta banner */}
-      <div className="mx-6 mb-6">
-        <div className="bg-teal-light/40 rounded-xl px-4 py-2.5 text-center">
-          <p className="text-xs font-body text-teal-dark">
-            ✨ Welcome to the YOUTOPIA beta — full experience, completely free while we grow
-          </p>
+      {/* Soft-expiry banner — old practice stays accessible */}
+      {expired ? (
+        <div className="mx-6 mb-6">
+          <div className="bg-coral-light/50 rounded-2xl px-4 py-3.5 flex items-center justify-between gap-3 border border-coral/20">
+            <p className="text-sm font-body text-foreground/85 leading-snug">
+              Your <span className="font-semibold">{themeName}</span> practice has completed.
+              Your next theme is waiting whenever you're ready.
+            </p>
+            <button
+              onClick={() => navigate("/onboarding")}
+              className="flex-shrink-0 px-4 py-2 rounded-xl bg-coral-dark text-primary-foreground font-body text-xs font-semibold whitespace-nowrap hover:opacity-90 active:scale-95 transition-all"
+            >
+              Begin
+            </button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="mx-6 mb-6">
+          <div className="bg-teal-light/40 rounded-xl px-4 py-2.5 text-center">
+            <p className="text-xs font-body text-teal-dark">
+              ✨ Welcome to the YOUTOPIA beta — full experience, completely free while we grow
+            </p>
+          </div>
+        </div>
+      )}
 
-      {/* 1. Month header */}
+      {/* 1. Theme header (theme title primary, calendar month secondary) */}
       <div className="px-6 mb-8 text-center">
         <h1 className="font-heading text-4xl text-coral-dark leading-tight">
-          {theme?.theme || "Your Month"}
+          {themeName}
         </h1>
         {theme?.intention && (
           <p className="font-body text-base text-accent/80 italic mt-2">
@@ -188,7 +245,7 @@ const Home = () => {
           </p>
         )}
         <p className="font-body text-xs text-muted-foreground mt-2 tracking-wide uppercase">
-          {monthYear}
+          {now.toLocaleString("default", { month: "long", year: "numeric" })}
         </p>
       </div>
 
