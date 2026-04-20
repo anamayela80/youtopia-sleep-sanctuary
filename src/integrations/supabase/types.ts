@@ -205,6 +205,7 @@ export type Database = {
           month_key: string | null
           morning_music_url: string | null
           music_file_url: string | null
+          published_at: string | null
           questions: Json | null
           status: string
           theme: string
@@ -231,6 +232,7 @@ export type Database = {
           month_key?: string | null
           morning_music_url?: string | null
           music_file_url?: string | null
+          published_at?: string | null
           questions?: Json | null
           status?: string
           theme: string
@@ -257,6 +259,7 @@ export type Database = {
           month_key?: string | null
           morning_music_url?: string | null
           music_file_url?: string | null
+          published_at?: string | null
           questions?: Json | null
           status?: string
           theme?: string
@@ -270,6 +273,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          current_intake_id: string | null
           full_name: string | null
           id: string
           membership_start_date: string
@@ -280,6 +284,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          current_intake_id?: string | null
           full_name?: string | null
           id?: string
           membership_start_date?: string
@@ -290,6 +295,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          current_intake_id?: string | null
           full_name?: string | null
           id?: string
           membership_start_date?: string
@@ -298,7 +304,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_current_intake_id_fkey"
+            columns: ["current_intake_id"]
+            isOneToOne: false
+            referencedRelation: "user_monthly_intakes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       seeds: {
         Row: {
@@ -388,6 +402,57 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_monthly_intakes: {
+        Row: {
+          answers: Json
+          completed_at: string
+          created_at: string
+          id: string
+          intake_end_date: string
+          intake_start_date: string
+          meditation_id: string | null
+          theme_id: string
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          completed_at?: string
+          created_at?: string
+          id?: string
+          intake_end_date?: string
+          intake_start_date?: string
+          meditation_id?: string | null
+          theme_id: string
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          completed_at?: string
+          created_at?: string
+          id?: string
+          intake_end_date?: string
+          intake_start_date?: string
+          meditation_id?: string | null
+          theme_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_monthly_intakes_meditation_id_fkey"
+            columns: ["meditation_id"]
+            isOneToOne: false
+            referencedRelation: "meditations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_monthly_intakes_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_themes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
