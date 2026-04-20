@@ -1,16 +1,38 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Mic, Square, RotateCcw, Check, Shield } from "lucide-react";
+import { Mic, Square, RotateCcw, Check, Shield, Sparkles } from "lucide-react";
 
 interface VoiceCaptureStepProps {
   onRecordingComplete: (blob: Blob) => void;
+  /** Called when the user explicitly chooses to skip recording and use the preset voice. */
+  onUsePresetVoice?: () => void;
   hasExistingClone: boolean;
+  /** Whether voice cloning is allowed for this month's theme. */
+  allowVoiceClone?: boolean;
+  /** Whether a preset (Serena) voice is configured for this month. */
+  hasPresetVoice?: boolean;
 }
 
-const VoiceCaptureStep = ({ onRecordingComplete, hasExistingClone }: VoiceCaptureStepProps) => {
-  const [state, setState] = useState<"intro" | "recording" | "active" | "done">(
-    hasExistingClone ? "done" : "intro"
-  );
+const VoiceCaptureStep = ({
+  onRecordingComplete,
+  onUsePresetVoice,
+  hasExistingClone,
+  allowVoiceClone = true,
+  hasPresetVoice = false,
+}: VoiceCaptureStepProps) => {
+  // If cloning isn't allowed, force the preset path.
+  const presetOnly = !allowVoiceClone && hasPresetVoice;
+  const cloneOnly = allowVoiceClone && !hasPresetVoice;
+
+  type CaptureState = "choose" | "intro" | "recording" | "active" | "done";
+  const initialState: CaptureState =
+    hasExistingClone ? "done"
+      : presetOnly ? "choose"
+      : cloneOnly ? "intro"
+      : "choose"; // both available → let user decide
+
+  const [state, setState] = useState<CaptureState>(initialState);
+  const [presetSelected, setPresetSelected] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [audioLevel, setAudioLevel] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -114,6 +136,11 @@ const VoiceCaptureStep = ({ onRecordingComplete, hasExistingClone }: VoiceCaptur
     }
   };
 
+  const choosePreset = () => {
+    setPresetSelected(true);
+    onUsePresetVoice?.();
+  };
+
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
     const sec = s % 60;
@@ -122,6 +149,7 @@ const VoiceCaptureStep = ({ onRecordingComplete, hasExistingClone }: VoiceCaptur
 
   const bars = 32;
 
+  // === Existing clone — same as before ===
   if (hasExistingClone && state === "done" && !audioBlobRef.current) {
     return (
       <motion.div
@@ -136,12 +164,77 @@ const VoiceCaptureStep = ({ onRecordingComplete, hasExistingClone }: VoiceCaptur
         <p className="font-body text-sm text-muted-foreground mb-6 max-w-xs">
           Your voice clone is ready. Your seeds will be whispered in your own voice.
         </p>
-        <button
-          onClick={() => setState("intro")}
-          className="font-body text-sm text-primary underline"
-        >
-          Re-record my voice
-        </button>
+        {allowVoiceClone && (
+          <button
+            onClick={() => setState("intro")}
+            className="font-body text-sm text-primary underline"
+          >
+            Re-record my voice
+          </button>
+        )}
+      </motion.div>
+    );
+  }
+
+  // === Choice screen — record or use preset Serena voice ===
+  if (state === "choose") {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        className="flex flex-col items-center text-center flex-1 justify-center"
+      >
+        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+          <Mic className="text-primary" size={32} />
+        </div>
+
+        <h2 className="font-heading text-2xl text-secondary mb-3 leading-snug">
+          How would you like<br />your seeds to sound?
+        </h2>
+
+        <p className="font-body text-sm text-muted-foreground mb-8 max-w-xs">
+          Your seeds are whispered to you each night while you sleep. Choose the voice that feels right.
+        </p>
+
+        <div className="w-full space-y-3 mb-6">
+          {allowVoiceClone && (
+            <button
+              onClick={() => setState("intro")}
+              className="w-full p-5 rounded-2xl bg-cream-light border border-primary/30 text-left transition-all hover:border-primary active:scale-[0.99]"
+            >
+              <div className="flex items-start gap-3">
+                <Mic size={20} className="text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-body font-semibold text-foreground mb-1">My own voice</p>
+                  <p className="font-body text-xs text-muted-foreground leading-relaxed">
+                    Record 60 seconds of yourself. Your seeds will be whispered back to you in your own voice.
+                  </p>
+                </div>
+              </div>
+            </button>
+          )}
+
+          {hasPresetVoice && (
+            <button
+              onClick={choosePreset}
+              disabled={presetSelected}
+              className="w-full p-5 rounded-2xl bg-cream-light border border-border text-left transition-all hover:border-accent active:scale-[0.99] disabled:opacity-60"
+            >
+              <div className="flex items-start gap-3">
+                <Sparkles size={20} className="text-accent mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-body font-semibold text-foreground mb-1">
+                    Serena's voice {presetSelected && "✓"}
+                  </p>
+                  <p className="font-body text-xs text-muted-foreground leading-relaxed">
+                    A warm, calming preset voice — chosen for you. Skip the recording.
+                  </p>
+                </div>
+              </div>
+            </button>
+          )}
+        </div>
       </motion.div>
     );
   }
@@ -188,6 +281,15 @@ const VoiceCaptureStep = ({ onRecordingComplete, hasExistingClone }: VoiceCaptur
         >
           Start Recording
         </button>
+
+        {hasPresetVoice && (
+          <button
+            onClick={() => setState("choose")}
+            className="mt-4 font-body text-sm text-muted-foreground underline"
+          >
+            Use Serena's voice instead
+          </button>
+        )}
       </motion.div>
     );
   }
@@ -206,9 +308,9 @@ const VoiceCaptureStep = ({ onRecordingComplete, hasExistingClone }: VoiceCaptur
 
         <div className="w-full p-5 rounded-2xl bg-cream-light border border-border mb-8">
           <p className="font-body text-accent leading-relaxed italic">
-            "Tell us something you're looking forward to this month. 
+            "Tell us something you're looking forward to this month.
             Speak naturally, as if you're talking to a close friend.
-            Share what excites you, what brings you peace, 
+            Share what excites you, what brings you peace,
             or what you're hoping to create in the days ahead."
           </p>
         </div>
