@@ -179,7 +179,7 @@ export function useSeedsPlayer({
     setIsPaused(false);
     setHasStarted(true);
     rafRef.current = requestAnimationFrame(tick);
-  }, [musicVolume, musicFadeInDuration, musicFadeOutDuration, buildTimeline, tick]);
+  }, [musicVolume, musicFadeInDuration, musicFadeOutDuration, seedVolume, buildTimeline, tick]);
 
   const play = useCallback(async () => {
     if (seedAudioUrls.filter(Boolean).length === 0) return;
