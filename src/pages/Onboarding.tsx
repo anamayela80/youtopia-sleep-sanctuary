@@ -296,6 +296,7 @@ const Onboarding = () => {
               onAnswer={(a) => handleQuestionAnswer(step - 2, a)}
               question={themeQuestions[step - 2] || ""}
               userFirstName={userFirstName}
+              themeName={theme?.theme}
             />
           )}
           {step === voiceStep && (
