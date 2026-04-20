@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { script, voiceId, segmentNumber } = await req.json();
+    const { script, voiceId, segmentNumber, model, stability, style, speed } = await req.json();
 
     if (!script) {
       return new Response(JSON.stringify({ error: "Script text is required" }), {
@@ -26,22 +26,23 @@ serve(async (req) => {
       ? voiceId.trim()
       : null;
     const elevenLabsVoiceId = requestedVoiceId || "9BDgg2Q7WSrW0x8naPLw";
-    console.log(`Narrating segment ${segmentNumber || 'full'} with voice ${elevenLabsVoiceId}, text length: ${script.length}`);
+    const modelId = typeof model === "string" && model.trim() ? model.trim() : "eleven_v3";
+    const stabilityVal = typeof stability === "number" ? stability : 0.0;
+    const styleVal = typeof style === "number" ? style : 0.0;
+    const speedVal = typeof speed === "number" ? speed : 0.85;
+    console.log(`Narrating segment ${segmentNumber || 'full'} voice=${elevenLabsVoiceId} model=${modelId} stab=${stabilityVal} style=${styleVal} speed=${speedVal}, len=${script.length}`);
 
     const doTTS = async (vid: string, text: string, prev?: string, next?: string) => {
-      // Eleven v3 with Creative stability — matches ElevenLabs studio settings for Serena.
-      // Wrap with [soft][slow] audio tags for calm meditation delivery.
-      const modelId = "eleven_v3";
       const wrapped = `[soft][slow]${text}[/slow][/soft]`;
       const body: Record<string, unknown> = {
         text: wrapped,
         model_id: modelId,
         voice_settings: {
-          stability: 0.0,        // Creative
+          stability: stabilityVal,
           similarity_boost: 0.85,
-          style: 0.0,
+          style: styleVal,
           use_speaker_boost: false,
-          speed: 0.85,
+          speed: speedVal,
         },
       };
       if (prev) body.previous_text = prev;

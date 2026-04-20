@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { phrase, voiceId } = await req.json();
+    const { phrase, voiceId, model, stability, style, speed } = await req.json();
 
     if (!phrase || !voiceId) {
       return new Response(JSON.stringify({ error: "phrase and voiceId are required" }), {
@@ -21,6 +21,11 @@ serve(async (req) => {
 
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     if (!ELEVENLABS_API_KEY) throw new Error("ELEVENLABS_API_KEY is not configured");
+
+    const modelId = typeof model === "string" && model.trim() ? model.trim() : "eleven_v3";
+    const stabilityVal = typeof stability === "number" ? stability : 0.0;
+    const styleVal = typeof style === "number" ? style : 0.0;
+    const speedVal = typeof speed === "number" ? speed : 0.8;
 
     const wrappedText = `[soft][slow][whisper]${phrase.trim()}[/whisper][/slow][/soft]`;
 
@@ -34,13 +39,13 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           text: wrappedText,
-          model_id: "eleven_v3",
+          model_id: modelId,
           voice_settings: {
-            stability: 0.0,        // Creative — matches ElevenLabs UI
+            stability: stabilityVal,
             similarity_boost: 0.85,
-            style: 0,
+            style: styleVal,
             use_speaker_boost: false,
-            speed: 0.8,
+            speed: speedVal,
           },
         }),
       }
