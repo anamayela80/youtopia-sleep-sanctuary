@@ -11,6 +11,9 @@ type Theme = {
   theme: string;
   description: string | null;
   status: string;
+  intro_orienting: string | null;
+  intro_settling: string | null;
+  intro_established: string | null;
 };
 
 const ORDER = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
@@ -25,7 +28,7 @@ export const AdminThemes = () => {
   const load = async () => {
     const { data } = await supabase
       .from("monthly_themes")
-      .select("id, month_key, month, theme, description, status")
+      .select("id, month_key, month, theme, description, status, intro_orienting, intro_settling, intro_established")
       .not("month_key", "is", null);
     if (data) {
       const sorted = [...data].sort((a, b) => ORDER.indexOf(a.month_key!) - ORDER.indexOf(b.month_key!));
@@ -41,7 +44,14 @@ export const AdminThemes = () => {
     setSavingId(t.id);
     const { error } = await supabase
       .from("monthly_themes")
-      .update({ theme: t.theme, description: t.description, status: t.status })
+      .update({
+        theme: t.theme,
+        description: t.description,
+        status: t.status,
+        intro_orienting: t.intro_orienting,
+        intro_settling: t.intro_settling,
+        intro_established: t.intro_established,
+      })
       .eq("id", t.id);
     setSavingId(null);
     if (error) toast({ variant: "destructive", title: "Save failed", description: error.message });
@@ -80,9 +90,32 @@ export const AdminThemes = () => {
           <textarea
             value={t.description || ""}
             onChange={(e) => update(t.id, { description: e.target.value })}
-            placeholder="Theme intro (passed to Claude as context)"
+            placeholder="Theme intro / tagline (passed to Claude as context)"
             className="w-full h-20 px-3 py-2 rounded-lg bg-background border border-border font-body text-sm text-foreground resize-none"
           />
+
+          <div className="space-y-2 pt-2 border-t border-border">
+            <p className="text-[11px] uppercase tracking-wider font-body text-accent">This month's practice — by tenure</p>
+            <textarea
+              value={t.intro_orienting || ""}
+              onChange={(e) => update(t.id, { intro_orienting: e.target.value })}
+              placeholder="Months 1–2 (orienting): for someone new"
+              className="w-full h-20 px-3 py-2 rounded-lg bg-background border border-border font-body text-sm text-foreground resize-none"
+            />
+            <textarea
+              value={t.intro_settling || ""}
+              onChange={(e) => update(t.id, { intro_settling: e.target.value })}
+              placeholder="Months 3–5 (settling): for someone finding their rhythm"
+              className="w-full h-20 px-3 py-2 rounded-lg bg-background border border-border font-body text-sm text-foreground resize-none"
+            />
+            <textarea
+              value={t.intro_established || ""}
+              onChange={(e) => update(t.id, { intro_established: e.target.value })}
+              placeholder="Months 6+ (established): for someone deeply in the practice"
+              className="w-full h-20 px-3 py-2 rounded-lg bg-background border border-border font-body text-sm text-foreground resize-none"
+            />
+          </div>
+
           <button
             onClick={() => save(t)}
             disabled={savingId === t.id}
