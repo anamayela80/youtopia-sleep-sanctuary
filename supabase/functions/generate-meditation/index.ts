@@ -81,7 +81,7 @@ serve(async (req) => {
 - answer_2 (what a transformed version of them looks like in 30 days): "${question2}"
 - answer_3 (what they are ready to release this month): "${question3}"
 
-Output the [MEDITATION_NAME], [MESSAGE_FOR_YOU], and 4 meditation segments now.`;
+Output the 4 meditation segments now.`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -113,14 +113,6 @@ Output the [MEDITATION_NAME], [MESSAGE_FOR_YOU], and 4 meditation segments now.`
     const fullScript = data.content?.[0]?.text;
     if (!fullScript) throw new Error("No script generated");
 
-    // Parse meditation name
-    const nameMatch = fullScript.match(/\[MEDITATION_NAME\]\s*([\s\S]*?)(?=\[MESSAGE_FOR_YOU\]|\[SEGMENT)/i);
-    const meditationName = nameMatch ? nameMatch[1].trim().replace(/^["']|["']$/g, "") : null;
-
-    // Parse message for you
-    const msgMatch = fullScript.match(/\[MESSAGE_FOR_YOU\]\s*([\s\S]*?)(?=\[SEGMENT)/i);
-    const messageForYou = msgMatch ? msgMatch[1].trim() : null;
-
     // Parse the 4 segments
     const segmentRegex = /\[SEGMENT\s+(\d+):\s*([^\]]+)\]\s*([\s\S]*?)(?=\[SEGMENT\s+\d+:|$)/gi;
     const segments: { number: number; title: string; text: string }[] = [];
@@ -137,15 +129,13 @@ Output the [MEDITATION_NAME], [MESSAGE_FOR_YOU], and 4 meditation segments now.`
       console.warn("Could not parse 4 segments, returning full script as single segment");
       return new Response(JSON.stringify({
         script: fullScript,
-        meditationName,
-        messageForYou,
         segments: [{ number: 1, title: "Full Meditation", text: fullScript }],
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(JSON.stringify({ script: fullScript, meditationName, messageForYou, segments }), {
+    return new Response(JSON.stringify({ script: fullScript, segments }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
