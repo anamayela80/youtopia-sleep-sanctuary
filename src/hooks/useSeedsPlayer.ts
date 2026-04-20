@@ -16,12 +16,12 @@ interface UseSeedsPlayerOptions {
 export function useSeedsPlayer({
   seedAudioUrls,
   musicUrl,
-  musicVolume = 0.18,
+  musicVolume = 0.2,
   pauseDuration = 35,
   totalDuration = 45 * 60,
   musicFadeInDuration = 60,
   musicFadeOutDuration = 120,
-  seedVolume = 0.45,
+  seedVolume = 0.18,
 }: UseSeedsPlayerOptions) {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);

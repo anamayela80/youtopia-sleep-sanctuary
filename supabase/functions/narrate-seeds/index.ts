@@ -22,8 +22,7 @@ serve(async (req) => {
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     if (!ELEVENLABS_API_KEY) throw new Error("ELEVENLABS_API_KEY is not configured");
 
-    // Wrap in whisper+slow tags for v3
-    const wrappedText = `[whisper][slow]${phrase}[/slow][/whisper]`;
+    const wrappedText = `[whisper][slow]${phrase.trim()}[/slow][/whisper]`;
 
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
@@ -37,10 +36,10 @@ serve(async (req) => {
           text: wrappedText,
           model_id: "eleven_v3",
           voice_settings: {
-            stability: 0.75,
-            similarity_boost: 0.85,
-            style: 0.05,
-            use_speaker_boost: true,
+            stability: 0.88,
+            similarity_boost: 0.78,
+            style: 0,
+            use_speaker_boost: false,
           },
         }),
       }
