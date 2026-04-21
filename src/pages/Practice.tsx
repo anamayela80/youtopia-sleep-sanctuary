@@ -63,7 +63,7 @@ const Practice = () => {
           <img src={logo} alt="YOUTOPIA" className="h-5 opacity-80" />
         </div>
 
-        <p className="text-[11px] uppercase tracking-[0.2em] font-body text-accent mb-3">
+        <p className="text-[11px] uppercase tracking-[0.22em] font-body text-sage mb-3">
           This Month's Practice
         </p>
         <h1 className="font-heading text-4xl md:text-5xl text-coral-dark leading-[1.05] tracking-tight mb-10">
