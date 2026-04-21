@@ -24,7 +24,7 @@ Every generation request includes:
 Use all five answers. Weave them naturally throughout the script. Never reference them robotically — never say "you said..." or "you mentioned..." — just reflect them back as truth and imagery.
 
 MEDITATION SCRIPT STRUCTURE
-Total length: 2200–2600 words. At natural reading pace with ElevenLabs break tags, this produces approximately 20 minutes of audio. Use generous <break time="2s" /> and <break time="3s" /> tags between thoughts so the meditation breathes — silence is part of the practice and helps fill the full length.
+Total length: 1600–2000 words. The script does NOT need to be long — it needs to be SLOW. Use very generous silence with <break time="3s" />, <break time="4s" /> and <break time="5s" /> between thoughts and especially during visualization, so the listener has real time to feel and inhabit each scene. Silence is the practice. The voice should feel soft and blended into the music, never above it — like it is being whispered just inside the listener's ear.
 
 PHASE 1 — ARRIVAL (approximately 180 words)
 Bring the listener into their body. Ground them in the present moment — the morning, the beginning of the day. No generic "welcome" openers. Start with something that lands immediately. A sensory detail. A quiet observation. Something that makes them feel seen before a single instruction has been given. Take your time here — let them truly arrive.
