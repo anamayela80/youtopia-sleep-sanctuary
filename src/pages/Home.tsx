@@ -2,23 +2,14 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Play, Pause, Moon, Settings as SettingsIcon, Headphones, SkipForward, SkipBack,
-  Shield, Sun, BookOpen, MessageCircle, ChevronDown, ChevronRight,
-  Home as HomeIcon, CalendarDays, User as UserIcon,
+  Settings as SettingsIcon, Shield, Sun, Moon, BookOpen, MessageCircle,
+  ChevronRight, Home as HomeIcon, CalendarDays, User as UserIcon, FolderOpen, Folder,
 } from "lucide-react";
-import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
-import { useSegmentedMixer } from "@/hooks/useSegmentedMixer";
-import { useSeedsPlayer } from "@/hooks/useSeedsPlayer";
 import {
-  getLatestMeditation,
-  getLatestSeeds,
-  getActiveTheme,
-  getUserProfile,
-  getUserAnswers,
-  getTenureBand,
+  getLatestMeditation, getLatestSeeds, getActiveTheme, getUserProfile,
 } from "@/services/meditationService";
-import { getCurrentIntake, isIntakeExpired, type UserIntake } from "@/services/intakeService";
+import { getCurrentIntake, type UserIntake } from "@/services/intakeService";
 import { supabase as sb } from "@/integrations/supabase/client";
 import logo from "@/assets/youtopia-logo.png";
 
@@ -31,13 +22,12 @@ const getGreeting = (name: string) => {
   return `Time to plant your seeds, ${n}.`;
 };
 
-// A quiet, gently-filled circle to indicate completion
 const StatusDot = ({ done }: { done: boolean }) => (
   <span
-    className={`inline-block w-3.5 h-3.5 rounded-full border ${
+    className={`inline-block w-3 h-3 rounded-full border ${
       done ? "bg-sage border-sage" : "bg-transparent border-border"
     }`}
-    aria-label={done ? "Completed today" : "Not yet"}
+    aria-label={done ? "Completed" : "Not yet"}
   />
 );
 
@@ -47,42 +37,29 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
   </p>
 );
 
+type MonthFolder = {
+  key: string;          // e.g. "2026-04"
+  monthLabel: string;   // "April"
+  yearLabel: string;    // "2026"
+  themeName: string;
+  hasMeditation: boolean;
+  hasSeeds: boolean;
+};
+
 const Home = () => {
-  const [meditation, setMeditation] = useState<any>(null);
-  const [seeds, setSeeds] = useState<any>(null);
   const [theme, setTheme] = useState<any>(null);
   const [intake, setIntake] = useState<UserIntake | null>(null);
   const [profile, setProfile] = useState<any>(null);
-  const [answers, setAnswers] = useState<any>(null);
-  const [intakeQuestions, setIntakeQuestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [openMonth, setOpenMonth] = useState<string | null>(null); // closed-folder UI for past months
+  const [openMonth, setOpenMonth] = useState<string | null>(null);
   const [userFirstName, setUserFirstName] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"home" | "month" | "journal" | "settings">("home");
+  const [currentMonth, setCurrentMonth] = useState<MonthFolder | null>(null);
+  const [pastMonths, setPastMonths] = useState<MonthFolder[]>([]);
   const navigate = useNavigate();
 
-  const segmentUrls = meditation?.meditation_segments
-    ?.sort((a: any, b: any) => a.segment_number - b.segment_number)
-    ?.map((s: any) => s.audio_url) || [];
-
-  const seedAudioUrls = seeds
-    ? [seeds.audio_url_1, seeds.audio_url_2, seeds.audio_url_3, seeds.audio_url_4, seeds.audio_url_5].filter(Boolean)
-    : [];
-
-  const meditationMixer = useSegmentedMixer({
-    segmentUrls,
-    musicUrl: theme?.morning_music_url || theme?.music_file_url || null,
-  });
-
-  const seedsPlayer = useSeedsPlayer({
-    seedAudioUrls,
-    musicUrl: theme?.evening_music_url || theme?.music_file_url || null,
-  });
-
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -90,52 +67,66 @@ const Home = () => {
 
     setUserFirstName((user.user_metadata?.full_name || "").split(" ")[0] || "");
 
-    const [med, seedData, currentIntake, roleRes, prof, ans] = await Promise.all([
+    const [med, seedData, currentIntake, roleRes, prof] = await Promise.all([
       getLatestMeditation(user.id),
       getLatestSeeds(user.id),
       getCurrentIntake(user.id),
       supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle(),
       getUserProfile(user.id),
-      getUserAnswers(user.id),
     ]);
 
     setIntake(currentIntake);
 
     let displayTheme: any = null;
-    let qs: string[] = [];
     if (currentIntake?.theme_id) {
-      const { data: snap } = await sb
-        .from("monthly_themes")
-        .select("*")
-        .eq("id", currentIntake.theme_id)
-        .maybeSingle();
+      const { data: snap } = await sb.from("monthly_themes").select("*").eq("id", currentIntake.theme_id).maybeSingle();
       displayTheme = snap;
-      try {
-        const raw = snap?.questions;
-        const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-        if (Array.isArray(parsed)) {
-          qs = parsed.map((q: any) => (typeof q === "string" ? q.trim() : "")).filter(Boolean).slice(0, 5);
-        }
-      } catch {}
     }
-    if (!displayTheme) {
-      displayTheme = await getActiveTheme();
-    }
+    if (!displayTheme) displayTheme = await getActiveTheme();
 
-    setMeditation(med);
-    setSeeds(seedData);
     setTheme(displayTheme);
-    setIntakeQuestions(qs);
     setIsAdmin(!!roleRes.data);
     setProfile(prof);
-    setAnswers(ans);
-    setLoading(false);
-  };
 
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `${m}:${s.toString().padStart(2, "0")}`;
+    // Build the current month folder
+    const now = new Date();
+    const cur: MonthFolder = {
+      key: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
+      monthLabel: now.toLocaleString("default", { month: "long" }),
+      yearLabel: String(now.getFullYear()),
+      themeName: displayTheme?.theme || "Your Practice",
+      hasMeditation: !!med && (med.meditation_segments?.length ?? 0) > 0,
+      hasSeeds: !!seedData && [seedData.audio_url_1, seedData.audio_url_2, seedData.audio_url_3, seedData.audio_url_4, seedData.audio_url_5].some(Boolean),
+    };
+    setCurrentMonth(cur);
+
+    // Pull past meditations for this user, group into month folders (excluding the current month)
+    const { data: history } = await sb
+      .from("meditations")
+      .select("month, theme_id, monthly_themes(theme)")
+      .eq("user_id", user.id)
+      .order("month", { ascending: false });
+
+    const seen = new Set<string>();
+    const past: MonthFolder[] = [];
+    (history || []).forEach((row: any) => {
+      const d = new Date(row.month);
+      if (isNaN(d.getTime())) return;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      if (key === cur.key || seen.has(key)) return;
+      seen.add(key);
+      past.push({
+        key,
+        monthLabel: d.toLocaleString("default", { month: "long" }),
+        yearLabel: String(d.getFullYear()),
+        themeName: row.monthly_themes?.theme || "Practice",
+        hasMeditation: true,
+        hasSeeds: false,
+      });
+    });
+    setPastMonths(past);
+
+    setLoading(false);
   };
 
   if (loading) {
@@ -150,20 +141,18 @@ const Home = () => {
     );
   }
 
-  const hasMeditation = meditation && segmentUrls.length > 0;
-  const hasSeeds = seedAudioUrls.length > 0;
-
-  if (!hasMeditation && !hasSeeds) {
+  // Empty state — no meditation yet
+  if (currentMonth && !currentMonth.hasMeditation && !currentMonth.hasSeeds && pastMonths.length === 0) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center">
         <div className="text-5xl mb-4">🧘</div>
-        <h2 className="font-heading text-xl text-secondary mb-2">Your journey begins</h2>
+        <h2 className="font-heading text-xl text-accent mb-2">Your library is waiting</h2>
         <p className="font-body text-sm text-muted-foreground mb-6">
-          Create your first personalized morning meditation and seeds
+          Create your first personalized monthly practice
         </p>
         <button
           onClick={() => navigate("/onboarding")}
-          className="px-8 py-4 rounded-2xl bg-primary text-primary-foreground font-body font-semibold transition-all hover:opacity-90 active:scale-[0.98]"
+          className="px-8 py-4 rounded-2xl bg-coral-dark text-primary-foreground font-body font-semibold transition-all hover:opacity-90 active:scale-[0.98]"
         >
           Get Started
         </button>
@@ -171,59 +160,15 @@ const Home = () => {
     );
   }
 
-  const tenure = getTenureBand(profile?.membership_start_date);
-  const rawTenureIntro =
-    (tenure === "orienting" && theme?.intro_orienting) ||
-    (tenure === "settling" && theme?.intro_settling) ||
-    (tenure === "established" && theme?.intro_established) ||
-    theme?.description ||
-    "";
-  const tenureIntro = rawTenureIntro
-    ? rawTenureIntro.replace(/\{name\}/gi, userFirstName || "friend")
-    : "";
-
-  const now = new Date();
-  const monthName = now.toLocaleString("default", { month: "long" });
-
-  const intakeAnswers: string[] = Array.isArray(intake?.answers) ? intake!.answers : [];
-  const answerList: { q: string; a: string }[] = (() => {
-    if (intakeQuestions.length > 0) {
-      return intakeQuestions.map((q, i) => ({ q, a: intakeAnswers[i] || "" }));
-    }
-    if (answers) {
-      const legacyQs = [
-        "How do you want to feel every day this month?",
-        "What does a transformed version of you look like in 30 days?",
-        "What is one thing you are ready to release this month?",
-      ];
-      return [
-        { q: legacyQs[0], a: answers.question_1 || "" },
-        { q: legacyQs[1], a: answers.question_2 || "" },
-        { q: legacyQs[2], a: answers.question_3 || "" },
-      ];
-    }
-    return [];
-  })();
-
-  const messageForYou = meditation?.message_for_you;
-  const meditationName = meditation?.meditation_name || meditation?.title || "Morning Meditation";
-  const artworkUrl = meditation?.meditation_artwork_url;
-  const themeName = theme?.theme || "Your Practice";
-  const expired = isIntakeExpired(intake);
-
-  // Mock previous months — keep visual structure; closed folders. (No new data layer required.)
-  const previousMonths: { month: string; theme: string }[] = [];
-
   return (
     <div className="min-h-screen bg-background flex flex-col pb-24">
-      {/* ───────── Greeting header with watermark logo ───────── */}
-      <div className="relative px-6 pt-10 pb-6 overflow-hidden">
-        {/* subtle watermark */}
+      {/* Header with watermark logo */}
+      <div className="relative px-6 pt-10 pb-8 overflow-hidden">
         <img
           src={logo}
           alt=""
           aria-hidden
-          className="absolute -right-8 -top-6 w-56 opacity-[0.07] pointer-events-none select-none"
+          className="absolute -right-10 -top-8 w-60 opacity-[0.07] pointer-events-none select-none"
         />
         <div className="flex items-start justify-between relative">
           <div className="flex-1">
@@ -231,7 +176,7 @@ const Home = () => {
               {getGreeting(userFirstName)}
             </h1>
             <p className="mt-3 text-[11px] uppercase tracking-[0.22em] font-body text-sage">
-              {monthName} · {themeName}
+              Your library of practices
             </p>
           </div>
           <div className="flex items-center gap-3 pt-1">
@@ -247,302 +192,98 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Soft expiry / beta banner */}
-      {expired ? (
-        <div className="mx-6 mb-6">
-          <div className="bg-coral-light/40 rounded-2xl px-4 py-3.5 flex items-center justify-between gap-3">
-            <p className="text-sm font-body text-foreground/85 leading-snug">
-              Your <span className="font-semibold">{themeName}</span> practice has completed.
-              Your next theme is waiting whenever you're ready.
-            </p>
+      {/* Current Month — open folder */}
+      {currentMonth && (
+        <div className="px-6 mb-8">
+          <SectionLabel>This Month</SectionLabel>
+
+          <div className="bg-card rounded-3xl p-5 shadow-[0_2px_12px_-6px_hsl(var(--accent)/0.22)]">
+            {/* Folder header */}
             <button
-              onClick={() => navigate("/onboarding")}
-              className="flex-shrink-0 px-4 py-2 rounded-xl bg-coral-dark text-primary-foreground font-body text-xs font-semibold whitespace-nowrap hover:opacity-90 active:scale-95 transition-all"
+              onClick={() => navigate("/month")}
+              className="w-full flex items-center gap-3 text-left mb-1 group"
             >
-              Begin
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      {/* ───────── Current month — open folder ───────── */}
-      <div className="px-6 mb-8">
-        <SectionLabel>This Month</SectionLabel>
-
-        <div className="space-y-3">
-          {/* Morning Meditation card */}
-          {hasMeditation && (
-            <FolderItem
-              icon={<Sun size={18} className="text-coral-dark" />}
-              title={meditationName}
-              subtitle="Morning Meditation"
-              done={meditationMixer.hasStarted}
-              expanded
-            >
-              {/* Artwork */}
-              <div className="w-[220px] h-[220px] mx-auto aspect-square rounded-2xl overflow-hidden mb-5 mt-2 relative shadow-[0_8px_24px_-12px_hsl(var(--accent)/0.25)]">
-                {artworkUrl ? (
-                  <img src={artworkUrl} alt={meditationName} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-cream via-coral-light to-coral/40 flex items-center justify-center">
-                    <motion.div
-                      className="w-16 h-16 rounded-full bg-gradient-to-br from-cream-light/60 to-coral/20 blur-xl"
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    />
-                  </div>
-                )}
-              </div>
-
-              <p className="font-body text-xs text-muted-foreground text-center flex items-center justify-center gap-1.5 mb-4">
-                <Headphones className="w-3.5 h-3.5" />
-                Best with headphones and eyes closed
-              </p>
-
-              {(meditationMixer.isPlaying || meditationMixer.isPaused || meditationMixer.hasStarted) && (
-                <div className="mb-4">
-                  <Slider
-                    value={[meditationMixer.currentTime]}
-                    max={meditationMixer.duration || 1}
-                    step={1}
-                    onValueChange={([v]) => meditationMixer.seekTo(v)}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between mt-1.5">
-                    <span className="text-xs font-body text-muted-foreground">{formatTime(meditationMixer.currentTime)}</span>
-                    <span className="text-xs font-body text-muted-foreground">{formatTime(meditationMixer.duration)}</span>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center justify-center gap-8">
-                <button
-                  onClick={() => meditationMixer.skipBackward()}
-                  disabled={!meditationMixer.hasStarted}
-                  className="text-accent transition-all active:scale-90 disabled:opacity-30"
-                  aria-label="Rewind 30 seconds"
-                >
-                  <div className="relative">
-                    <SkipBack size={22} />
-                    <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-[9px] font-body font-medium text-muted-foreground">30</span>
-                  </div>
-                </button>
-                <button
-                  onClick={() => {
-                    if (seedsPlayer.isPlaying) seedsPlayer.stop();
-                    meditationMixer.togglePlay();
-                  }}
-                  disabled={meditationMixer.isLoading}
-                  className="w-16 h-16 rounded-full bg-coral-dark flex items-center justify-center text-primary-foreground transition-all active:scale-95 disabled:opacity-50 shadow-[0_10px_24px_-10px_hsl(var(--coral)/0.5)]"
-                  aria-label={meditationMixer.isPlaying ? "Pause" : "Play"}
-                >
-                  {meditationMixer.isLoading ? (
-                    <motion.div className="w-5 h-5 rounded-full border-2 border-primary-foreground border-t-transparent" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
-                  ) : meditationMixer.isPlaying ? (
-                    <Pause size={26} />
-                  ) : (
-                    <Play size={26} className="ml-1" />
-                  )}
-                </button>
-                <button
-                  onClick={() => meditationMixer.skipForward()}
-                  disabled={!meditationMixer.hasStarted}
-                  className="text-accent transition-all active:scale-90 disabled:opacity-30"
-                  aria-label="Forward 30 seconds"
-                >
-                  <div className="relative">
-                    <SkipForward size={22} />
-                    <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-[9px] font-body font-medium text-muted-foreground">30</span>
-                  </div>
-                </button>
-              </div>
-            </FolderItem>
-          )}
-
-          {/* Evening Seeds card */}
-          {hasSeeds && (
-            <FolderItem
-              icon={<Moon size={18} className="text-coral-dark" />}
-              title="Plant the Seeds"
-              subtitle="Evening Seeds"
-              done={seedsPlayer.hasStarted}
-              expanded
-            >
-              <p className="font-body text-xs text-muted-foreground text-center flex items-center justify-center gap-1.5 mb-4 mt-1">
-                <Headphones className="w-3.5 h-3.5" />
-                Best with headphones and eyes closed
-              </p>
-
-              {(seedsPlayer.isPlaying || seedsPlayer.isPaused || seedsPlayer.hasStarted) && (
-                <div className="mb-4">
-                  <Slider
-                    value={[seedsPlayer.currentTime]}
-                    max={seedsPlayer.duration || 1}
-                    step={1}
-                    onValueChange={([v]) => seedsPlayer.seekTo(v)}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between mt-1.5">
-                    <span className="text-xs font-body text-muted-foreground">{formatTime(seedsPlayer.currentTime)}</span>
-                    <span className="text-xs font-body text-muted-foreground">{formatTime(seedsPlayer.duration)}</span>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center justify-center gap-8">
-                <button
-                  onClick={() => seedsPlayer.skipBackward()}
-                  disabled={!seedsPlayer.hasStarted}
-                  className="text-accent transition-all active:scale-90 disabled:opacity-30"
-                  aria-label="Rewind 30 seconds"
-                >
-                  <div className="relative">
-                    <SkipBack size={20} />
-                    <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-[9px] font-body font-medium text-muted-foreground">30</span>
-                  </div>
-                </button>
-                <button
-                  onClick={() => {
-                    if (meditationMixer.isPlaying) meditationMixer.stop();
-                    seedsPlayer.togglePlay();
-                  }}
-                  disabled={seedsPlayer.isLoading}
-                  className="w-14 h-14 rounded-full bg-coral-dark flex items-center justify-center text-primary-foreground transition-all active:scale-95 disabled:opacity-50 shadow-[0_10px_24px_-10px_hsl(var(--coral)/0.5)]"
-                  aria-label={seedsPlayer.isPlaying ? "Pause" : "Play"}
-                >
-                  {seedsPlayer.isLoading ? (
-                    <motion.div className="w-5 h-5 rounded-full border-2 border-primary-foreground border-t-transparent" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
-                  ) : seedsPlayer.isPlaying ? (
-                    <Pause size={22} />
-                  ) : (
-                    <Play size={22} className="ml-1" />
-                  )}
-                </button>
-                <button
-                  onClick={() => seedsPlayer.skipForward()}
-                  disabled={!seedsPlayer.hasStarted}
-                  className="text-accent transition-all active:scale-90 disabled:opacity-30"
-                  aria-label="Forward 30 seconds"
-                >
-                  <div className="relative">
-                    <SkipForward size={20} />
-                    <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-[9px] font-body font-medium text-muted-foreground">30</span>
-                  </div>
-                </button>
-              </div>
-            </FolderItem>
-          )}
-
-          {/* Journal */}
-          <button
-            onClick={() => setActiveTab("journal")}
-            className="w-full text-left bg-card rounded-2xl px-5 py-4 flex items-center gap-4 hover:bg-card/80 transition-colors shadow-[0_2px_10px_-6px_hsl(var(--accent)/0.2)]"
-          >
-            <span className="w-10 h-10 rounded-full bg-cream flex items-center justify-center">
-              <BookOpen size={18} className="text-coral-dark" />
-            </span>
-            <span className="flex-1">
-              <span className="block font-heading text-base text-accent">Journal</span>
-              <span className="block font-body text-xs text-muted-foreground">A quiet place to reflect</span>
-            </span>
-            <StatusDot done={false} />
-          </button>
-
-          {/* Daily check-in */}
-          <button
-            className="w-full text-left bg-card rounded-2xl px-5 py-4 flex items-center gap-4 hover:bg-card/80 transition-colors shadow-[0_2px_10px_-6px_hsl(var(--accent)/0.2)]"
-          >
-            <span className="w-10 h-10 rounded-full bg-cream flex items-center justify-center">
-              <MessageCircle size={18} className="text-coral-dark" />
-            </span>
-            <span className="flex-1">
-              <span className="block font-heading text-base text-accent">Daily Check-in</span>
-              <span className="block font-body text-xs text-muted-foreground">A small moment of honesty</span>
-            </span>
-            <StatusDot done={false} />
-          </button>
-        </div>
-      </div>
-
-      {/* ───────── A Message For You ───────── */}
-      {messageForYou && (
-        <div className="px-6 mb-8">
-          <SectionLabel>A Message For You</SectionLabel>
-          <div className="bg-card rounded-3xl p-6 shadow-[0_2px_10px_-6px_hsl(var(--accent)/0.2)]">
-            <p className="font-body text-base text-accent/90 leading-relaxed">
-              {messageForYou}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* ───────── This Month's Practice ───────── */}
-      {tenureIntro && (
-        <div className="px-6 mb-8">
-          <SectionLabel>This Month's Practice</SectionLabel>
-          <div className="bg-card rounded-3xl p-6 shadow-[0_2px_10px_-6px_hsl(var(--accent)/0.2)]">
-            <div className="font-body text-sm text-accent/85 leading-relaxed whitespace-pre-wrap line-clamp-3">
-              {tenureIntro}
-            </div>
-            <button
-              onClick={() => navigate("/practice")}
-              className="mt-3 text-xs font-body font-medium hover:opacity-80 text-secondary"
-            >
-              Read More →
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ───────── What You Shared — open journal cards ───────── */}
-      {answerList.length > 0 && (
-        <div className="px-6 mb-8">
-          <SectionLabel>What You Shared</SectionLabel>
-          <div className="space-y-3">
-            {answerList.map((item, i) => (
-              <div
-                key={i}
-                className="bg-card rounded-3xl px-5 py-5 shadow-[0_2px_10px_-6px_hsl(var(--accent)/0.2)]"
-              >
-                <p className="font-body text-sm text-accent leading-relaxed mb-2">
-                  {item.q}
+              <FolderOpen size={20} className="text-coral-dark flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <h2 className="font-heading text-2xl text-accent leading-tight truncate">
+                  {currentMonth.monthLabel}
+                </h2>
+                <p className="font-body text-[11px] uppercase tracking-[0.22em] text-sage mt-0.5 truncate">
+                  {currentMonth.themeName}
                 </p>
-                {item.a ? (
-                  <p className="font-body text-[15px] text-accent/75 leading-relaxed italic">
-                    {item.a}
-                  </p>
-                ) : (
-                  <p className="font-body text-sm text-muted-foreground/70 italic">
-                    Your answer will appear here
-                  </p>
-                )}
               </div>
-            ))}
+              <ChevronRight size={18} className="text-sage opacity-60 group-hover:opacity-100 transition-opacity" />
+            </button>
+
+            {/* Folder items */}
+            <div className="mt-4 space-y-2">
+              {currentMonth.hasMeditation && (
+                <FolderItem
+                  icon={<Sun size={16} className="text-coral-dark" />}
+                  title="Morning Meditation"
+                  subtitle="Listen with headphones, eyes closed"
+                  done={false}
+                  onClick={() => navigate("/month?play=morning")}
+                />
+              )}
+              {currentMonth.hasSeeds && (
+                <FolderItem
+                  icon={<Moon size={16} className="text-coral-dark" />}
+                  title="Evening Seeds"
+                  subtitle="Plant the seeds before sleep"
+                  done={false}
+                  onClick={() => navigate("/month?play=seeds")}
+                />
+              )}
+              <FolderItem
+                icon={<BookOpen size={16} className="text-coral-dark" />}
+                title="Journal"
+                subtitle="A quiet place to reflect"
+                done={false}
+                onClick={() => setActiveTab("journal")}
+              />
+              <FolderItem
+                icon={<MessageCircle size={16} className="text-coral-dark" />}
+                title="Daily Check-in"
+                subtitle="A small moment of honesty"
+                done={false}
+                onClick={() => {}}
+              />
+            </div>
           </div>
         </div>
       )}
 
-      {/* ───────── Previous months — closed folders ───────── */}
-      {previousMonths.length > 0 && (
+      {/* Previous months — closed folders */}
+      {pastMonths.length > 0 && (
         <div className="px-6 mb-8">
           <SectionLabel>Previous Months</SectionLabel>
           <div className="space-y-2.5">
-            {previousMonths.map((m) => {
-              const open = openMonth === m.month;
+            {pastMonths.map((m) => {
+              const open = openMonth === m.key;
               return (
-                <div key={m.month} className="bg-card rounded-2xl shadow-[0_2px_10px_-6px_hsl(var(--accent)/0.2)] overflow-hidden">
+                <div key={m.key} className="bg-card rounded-2xl shadow-[0_2px_10px_-6px_hsl(var(--accent)/0.2)] overflow-hidden">
                   <button
-                    onClick={() => setOpenMonth(open ? null : m.month)}
+                    onClick={() => setOpenMonth(open ? null : m.key)}
                     className="w-full px-5 py-4 flex items-center gap-3 text-left"
                   >
+                    {open ? (
+                      <FolderOpen size={18} className="text-sage flex-shrink-0" />
+                    ) : (
+                      <Folder size={18} className="text-sage flex-shrink-0" />
+                    )}
+                    <span className="flex-1 min-w-0">
+                      <span className="block font-heading text-base text-accent truncate">
+                        {m.monthLabel} <span className="text-accent/50 font-body text-sm">· {m.yearLabel}</span>
+                      </span>
+                      <span className="block font-body text-[11px] uppercase tracking-[0.22em] text-sage mt-0.5 truncate">
+                        {m.themeName}
+                      </span>
+                    </span>
                     <ChevronRight
                       size={16}
                       className={`text-sage flex-shrink-0 transition-transform ${open ? "rotate-90" : ""}`}
                     />
-                    <span className="flex-1">
-                      <span className="block font-heading text-base text-accent">{m.month}</span>
-                      <span className="block font-body text-xs text-sage uppercase tracking-[0.18em] mt-0.5">{m.theme}</span>
-                    </span>
                   </button>
                   <AnimatePresence initial={false}>
                     {open && (
@@ -553,9 +294,15 @@ const Home = () => {
                         transition={{ duration: 0.25 }}
                         className="overflow-hidden"
                       >
-                        <p className="px-5 pb-5 font-body text-sm text-muted-foreground italic">
-                          Past content from {m.month} will appear here.
-                        </p>
+                        <div className="px-5 pb-5 space-y-2">
+                          <FolderItem
+                            icon={<Sun size={16} className="text-coral-dark" />}
+                            title="Morning Meditation"
+                            subtitle="Revisit this practice"
+                            done
+                            onClick={() => navigate(`/month?key=${m.key}`)}
+                          />
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -566,11 +313,11 @@ const Home = () => {
         </div>
       )}
 
-      {/* ───────── Bottom nav ───────── */}
+      {/* Bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 bg-card/85 backdrop-blur-lg px-6 py-3 border-t border-border/40">
         <div className="flex justify-around max-w-sm mx-auto">
           <NavBtn icon={<HomeIcon size={20} />} label="Home" active={activeTab === "home"} onClick={() => setActiveTab("home")} />
-          <NavBtn icon={<CalendarDays size={20} />} label="My Month" active={activeTab === "month"} onClick={() => setActiveTab("month")} />
+          <NavBtn icon={<CalendarDays size={20} />} label="My Month" active={activeTab === "month"} onClick={() => navigate("/month")} />
           <NavBtn icon={<BookOpen size={20} />} label="Journal" active={activeTab === "journal"} onClick={() => setActiveTab("journal")} />
           <NavBtn icon={<UserIcon size={20} />} label="Settings" active={activeTab === "settings"} onClick={() => navigate("/settings")} />
         </div>
@@ -579,33 +326,29 @@ const Home = () => {
   );
 };
 
-/* ───────── Sub-components ───────── */
-
 const FolderItem = ({
-  icon, title, subtitle, done, expanded, children,
+  icon, title, subtitle, done, onClick,
 }: {
   icon: React.ReactNode;
   title: string;
   subtitle: string;
   done: boolean;
-  expanded?: boolean;
-  children?: React.ReactNode;
+  onClick: () => void;
 }) => (
-  <div className="bg-card rounded-3xl p-5 shadow-[0_2px_12px_-6px_hsl(var(--accent)/0.22)]">
-    <div className="flex items-center gap-4">
-      <span className="w-10 h-10 rounded-full bg-cream flex items-center justify-center flex-shrink-0">
-        {icon}
-      </span>
-      <div className="flex-1 min-w-0">
-        <h3 className="font-heading text-lg text-accent leading-tight truncate">{title}</h3>
-        <p className="font-body text-[11px] uppercase tracking-[0.18em] text-sage mt-0.5">
-          {subtitle}
-        </p>
-      </div>
-      <StatusDot done={done} />
-    </div>
-    {expanded && children && <div className="mt-5">{children}</div>}
-  </div>
+  <button
+    onClick={onClick}
+    className="w-full text-left bg-cream rounded-2xl px-4 py-3.5 flex items-center gap-3 hover:bg-cream/70 transition-colors"
+  >
+    <span className="w-9 h-9 rounded-full bg-card flex items-center justify-center flex-shrink-0">
+      {icon}
+    </span>
+    <span className="flex-1 min-w-0">
+      <span className="block font-heading text-base text-accent leading-tight truncate">{title}</span>
+      <span className="block font-body text-xs text-accent/60 mt-0.5 truncate">{subtitle}</span>
+    </span>
+    <StatusDot done={done} />
+    <ChevronRight size={16} className="text-sage/60 flex-shrink-0" />
+  </button>
 );
 
 const NavBtn = ({
