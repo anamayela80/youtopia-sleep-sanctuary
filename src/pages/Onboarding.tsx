@@ -287,12 +287,19 @@ const Onboarding = () => {
           themeIntention: theme?.intention,
           answers: answers.filter((a) => a.trim().length > 0),
         });
-        const { data: med } = await supabase
-          .from("meditations")
-          .select("meditation_artwork_url")
-          .eq("id", meditationId)
-          .maybeSingle();
-        artwork = med?.meditation_artwork_url || null;
+        // Generate the meditation artwork from the prompt the package just stored
+        setGenerationStatus("Painting your meditation artwork…");
+        try {
+          artwork = await generateMeditationArtwork({ meditationId });
+        } catch (imgErr) {
+          console.error("Artwork generation failed (non-blocking):", imgErr);
+          const { data: med } = await supabase
+            .from("meditations")
+            .select("meditation_artwork_url")
+            .eq("id", meditationId)
+            .maybeSingle();
+          artwork = med?.meditation_artwork_url || null;
+        }
       } catch (e) {
         console.error("Monthly package failed (non-blocking):", e);
       }

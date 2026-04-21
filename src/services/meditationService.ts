@@ -51,6 +51,18 @@ export async function generateMonthlyPackage(params: {
   };
 }
 
+export async function generateMeditationArtwork(params: {
+  meditationId: string;
+  imagePrompt?: string;
+}): Promise<string | null> {
+  const { data, error } = await supabase.functions.invoke("generate-meditation-artwork", {
+    body: params,
+  });
+  if (error) throw new Error(error.message || "Failed to generate artwork");
+  if (data?.error) throw new Error(data.error);
+  return data?.artworkUrl ?? null;
+}
+
 async function getVoiceSettings() {
   const { data } = await supabase.from("app_settings").select("*").maybeSingle();
   return {
