@@ -162,7 +162,10 @@ const MyMonth = () => {
         {hasMeditation && (
           <section className="mb-8">
             <SectionLabel>Morning Meditation</SectionLabel>
-            <div className="bg-card rounded-3xl p-6 shadow-[0_2px_12px_-6px_hsl(var(--accent)/0.22)]">
+            <div
+              className="rounded-3xl p-6"
+              style={{ background: TONE_FOLDER, border: SOFT_BORDER }}
+            >
               <div className="w-[220px] h-[220px] mx-auto aspect-square rounded-2xl overflow-hidden mb-5 relative shadow-[0_8px_24px_-12px_hsl(var(--accent)/0.25)]">
                 {artworkUrl ? (
                   <img src={artworkUrl} alt={meditationName} className="w-full h-full object-cover" />
@@ -248,7 +251,10 @@ const MyMonth = () => {
         {hasSeeds && (
           <section className="mb-8">
             <SectionLabel>Evening Seeds</SectionLabel>
-            <div className="bg-card rounded-3xl p-6 shadow-[0_2px_12px_-6px_hsl(var(--accent)/0.22)]">
+            <div
+              className="rounded-3xl p-6"
+              style={{ background: TONE_PAGE, border: "1px solid rgba(160, 120, 70, 0.18)" }}
+            >
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 rounded-2xl bg-cream flex items-center justify-center">
                   <Moon size={20} className="text-coral-dark" />
@@ -327,7 +333,10 @@ const MyMonth = () => {
         {messageForYou && (
           <section className="mb-8">
             <SectionLabel>A Message For You</SectionLabel>
-            <div className="bg-card rounded-3xl p-6 shadow-[0_2px_10px_-6px_hsl(var(--accent)/0.2)]">
+            <div
+              className="rounded-3xl p-6"
+              style={{ background: TONE_FOLDER, border: SOFT_BORDER }}
+            >
               <p className="font-body text-base text-accent/90 leading-relaxed">{messageForYou}</p>
             </div>
           </section>
@@ -337,7 +346,10 @@ const MyMonth = () => {
         {tenureIntro && (
           <section className="mb-8">
             <SectionLabel>This Month's Practice</SectionLabel>
-            <div className="bg-card rounded-3xl p-6 shadow-[0_2px_10px_-6px_hsl(var(--accent)/0.2)]">
+            <div
+              className="rounded-3xl p-6"
+              style={{ background: TONE_PAGE, border: "1px solid rgba(160, 120, 70, 0.18)" }}
+            >
               <div className="font-body text-sm text-accent/85 leading-relaxed whitespace-pre-wrap line-clamp-3">
                 {tenureIntro}
               </div>
@@ -357,7 +369,11 @@ const MyMonth = () => {
             <SectionLabel>What You Shared</SectionLabel>
             <div className="space-y-3">
               {answerList.map((item, i) => (
-                <div key={i} className="bg-card rounded-3xl px-5 py-5 shadow-[0_2px_10px_-6px_hsl(var(--accent)/0.2)]">
+                <div
+                  key={i}
+                  className="rounded-3xl px-5 py-5"
+                  style={{ background: TONE_FOLDER, border: SOFT_BORDER }}
+                >
                   <p className="font-body text-sm text-accent leading-relaxed mb-2">{item.q}</p>
                   {item.a ? (
                     <p className="font-body text-[15px] text-accent/75 leading-relaxed italic">{item.a}</p>
