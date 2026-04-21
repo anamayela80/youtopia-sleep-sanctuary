@@ -106,7 +106,56 @@ Write the meditation script now. 800–900 spoken words. Use the bracket pause m
     const fullScript: string = data.content?.[0]?.text;
     if (!fullScript) throw new Error("No script generated");
 
-    const segments = [{ number: 1, title: "Morning Meditation", text: fullScript.trim() }];
+    // Split the script into 4 segments so the audio mixer can insert long
+    // music-only silences between major beats. The mixer wraps the segments
+    // with a 60s fade-in, 120s fade-out, and ~120-150s bridges between
+    // each segment, which is what brings the meditation to ~20 minutes and
+    // gives the user time to actually FEEL each section before the next
+    // arrives. Without this split, narration plays straight through and
+    // feels rushed and bullet-point-y.
+    //
+    // We split on paragraph boundaries (the model writes one paragraph per
+    // section) and group them into 4 roughly-balanced chunks:
+    //   seg 1 → opening breath + metaphor (sections 1-2)
+    //   seg 2 → personal gratitude (section 3)
+    //   seg 3 → induction + vision (sections 4-5, the heart)
+    //   seg 4 → identity anchor + return (section 6)
+    const splitIntoSegments = (text: string): string[] => {
+      const paras = text.split(/\n\s*\n+/).map((p) => p.trim()).filter(Boolean);
+      if (paras.length <= 1) {
+        // Fallback: split by sentences into 4 roughly equal chunks
+        const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean);
+        const per = Math.ceil(sentences.length / 4);
+        return [
+          sentences.slice(0, per).join(" "),
+          sentences.slice(per, per * 2).join(" "),
+          sentences.slice(per * 2, per * 3).join(" "),
+          sentences.slice(per * 3).join(" "),
+        ].filter((s) => s.trim().length > 0);
+      }
+      // Group paragraphs into 4 segments by approximate equal length
+      const totalLen = paras.reduce((s, p) => s + p.length, 0);
+      const target = totalLen / 4;
+      const groups: string[][] = [[], [], [], []];
+      let groupIdx = 0;
+      let runningLen = 0;
+      for (const p of paras) {
+        groups[groupIdx].push(p);
+        runningLen += p.length;
+        if (runningLen >= target * (groupIdx + 1) && groupIdx < 3) {
+          groupIdx++;
+        }
+      }
+      return groups.filter((g) => g.length > 0).map((g) => g.join("\n\n"));
+    };
+
+    const segmentTexts = splitIntoSegments(fullScript.trim());
+    const titles = ["Arrival", "Gratitude", "Vision", "Return"];
+    const segments = segmentTexts.map((text, i) => ({
+      number: i + 1,
+      title: titles[i] || `Segment ${i + 1}`,
+      text,
+    }));
 
     return new Response(JSON.stringify({ script: fullScript, segments }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
