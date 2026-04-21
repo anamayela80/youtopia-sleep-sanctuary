@@ -126,6 +126,17 @@ const Home = () => {
   const [activeTab, setActiveTab] = useState<"home" | "month" | "journal" | "settings">("home");
   const [currentChapter, setCurrentChapter] = useState<ChapterFolder | null>(null);
   const [pastChapters, setPastChapters] = useState<ChapterFolder[]>([]);
+
+  // Mid-month check-in card state
+  const [checkinPrompt, setCheckinPrompt] = useState<{
+    questionNumber: 1 | 2;
+    questionText: string;
+    intakeId: string;
+  } | null>(null);
+  const [checkinAnswer, setCheckinAnswer] = useState("");
+  const [checkinSubmitting, setCheckinSubmitting] = useState(false);
+  const [checkinDismissedThisSession, setCheckinDismissedThisSession] = useState(false);
+
   const navigate = useNavigate();
 
   useEffect(() => { loadData(); }, []);
@@ -186,7 +197,104 @@ const Home = () => {
     });
     setPastChapters(past);
 
+    // ===== Mid-month check-in trigger =====
+    // Question 1 after 10 daily mood checkins, Question 2 after 22.
+    if (currentIntake?.id) {
+      const { data: checkinCountData } = await sb
+        .from("checkins")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("checkin_date", currentIntake.intake_start_date);
+      // Note: head:true returns count via a different mechanism; use explicit count instead
+      const { count: doneCount } = await sb
+        .from("checkins")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("checkin_date", currentIntake.intake_start_date);
+
+      let triggerNumber: 1 | 2 | null = null;
+      if ((doneCount ?? 0) >= 22) triggerNumber = 2;
+      else if ((doneCount ?? 0) >= 10) triggerNumber = 1;
+
+      if (triggerNumber) {
+        // Check if already answered or permanently dismissed
+        const { data: state } = await sb
+          .from("intake_checkin_state")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("intake_id", currentIntake.id)
+          .eq("question_number", triggerNumber)
+          .maybeSingle();
+
+        const alreadyDone = state?.answered_at || state?.dismissed_permanently;
+        if (!alreadyDone) {
+          // Pull question text from app_settings + theme override
+          const { data: appSet } = await sb.from("app_settings").select("checkin_question_1, checkin_question_2").maybeSingle();
+          const themeQ1 = displayTheme?.checkin_question;
+          const themeQ2 = displayTheme?.checkin_question_2;
+          const text = triggerNumber === 1
+            ? (themeQ1 || appSet?.checkin_question_1 || "What is shifting inside you right now?")
+            : (themeQ2 || appSet?.checkin_question_2 || "What is shifting inside you right now?");
+          setCheckinPrompt({ questionNumber: triggerNumber, questionText: text, intakeId: currentIntake.id });
+        }
+      }
+    }
+
     setLoading(false);
+  };
+
+  const dismissCheckin = async () => {
+    if (!checkinPrompt) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    if (checkinDismissedThisSession) {
+      // Second dismissal in same session = permanent
+      await sb.from("intake_checkin_state").upsert(
+        {
+          user_id: user.id,
+          intake_id: checkinPrompt.intakeId,
+          question_number: checkinPrompt.questionNumber,
+          dismissed_permanently: true,
+        },
+        { onConflict: "user_id,intake_id,question_number" }
+      );
+      setCheckinPrompt(null);
+    } else {
+      // First dismissal: postpone, will reappear next open
+      await sb.from("intake_checkin_state").upsert(
+        {
+          user_id: user.id,
+          intake_id: checkinPrompt.intakeId,
+          question_number: checkinPrompt.questionNumber,
+        },
+        { onConflict: "user_id,intake_id,question_number" }
+      );
+      setCheckinDismissedThisSession(true);
+      setCheckinPrompt(null);
+    }
+  };
+
+  const submitCheckin = async () => {
+    if (!checkinPrompt || !checkinAnswer.trim()) return;
+    setCheckinSubmitting(true);
+    try {
+      const { error } = await supabase.functions.invoke("regenerate-seed-5", {
+        body: {
+          question: checkinPrompt.questionText,
+          answer: checkinAnswer.trim(),
+          questionNumber: checkinPrompt.questionNumber,
+          intakeId: checkinPrompt.intakeId,
+        },
+      });
+      if (error) console.error("regenerate-seed-5 error:", error);
+      setCheckinPrompt(null);
+      setCheckinAnswer("");
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setCheckinSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -393,23 +501,7 @@ const Home = () => {
         </div>
       )}
 
-      {/* Bottom navigation */}
-      <nav
-        className="fixed bottom-0 left-0 right-0"
-        style={{
-          background: "hsl(var(--background))",
-          borderTop: "1px solid rgba(160, 120, 70, 0.15)",
-          paddingTop: "13px",
-          paddingBottom: "22px",
-        }}
-      >
-        <div className="flex justify-around max-w-sm mx-auto px-6">
-          <NavBtn icon={<HomeIcon size={20} strokeWidth={1.6} />} label="Home" active={activeTab === "home"} onClick={() => setActiveTab("home")} />
-          <NavBtn icon={<CalendarDays size={20} strokeWidth={1.6} />} label="My Month" active={activeTab === "month"} onClick={() => navigate("/month")} />
-          <NavBtn icon={<BookOpen size={20} strokeWidth={1.6} />} label="Journal" active={activeTab === "journal"} onClick={() => setActiveTab("journal")} />
-          <NavBtn icon={<UserIcon size={20} strokeWidth={1.6} />} label="Settings" active={activeTab === "settings"} onClick={() => navigate("/settings")} />
-        </div>
-      </nav>
+      <BottomNav />
     </div>
   );
 };
