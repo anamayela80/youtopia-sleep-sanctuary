@@ -435,7 +435,86 @@ const Home = () => {
         </div>
       )}
 
-      {/* Previous chapters */}
+      {/* Mid-month check-in question card */}
+      {checkinPrompt && (
+        <div
+          className="mb-8 mx-4"
+          style={{
+            background: "#DDD0EE",
+            borderRadius: "18px",
+            padding: "18px",
+            border: "1px solid rgba(155, 123, 212, 0.2)",
+          }}
+        >
+          <p
+            className="uppercase mb-3"
+            style={{
+              fontSize: "10px",
+              letterSpacing: "0.2em",
+              color: "#9B7BD4",
+              fontFamily: "Georgia, serif",
+            }}
+          >
+            a question for you
+          </p>
+          <p
+            className="italic mb-4"
+            style={{
+              fontSize: "17px",
+              color: "#3D2E1E",
+              fontFamily: "Georgia, serif",
+              lineHeight: 1.5,
+            }}
+          >
+            {checkinPrompt.questionText}
+          </p>
+          <textarea
+            value={checkinAnswer}
+            onChange={(e) => setCheckinAnswer(e.target.value)}
+            placeholder="take your time..."
+            rows={3}
+            className="w-full bg-transparent outline-none resize-none italic mb-3"
+            style={{
+              fontSize: "14px",
+              color: "#3D2E1E",
+              fontFamily: "Georgia, serif",
+              borderBottom: "1px solid rgba(155, 123, 212, 0.2)",
+              padding: "6px 2px",
+              lineHeight: 1.6,
+            }}
+          />
+          <div className="flex justify-end mb-2">
+            <button
+              onClick={submitCheckin}
+              disabled={!checkinAnswer.trim() || checkinSubmitting}
+              className="lowercase transition-opacity"
+              style={{
+                fontSize: "13px",
+                color: "#9B7BD4",
+                fontFamily: "Georgia, serif",
+                opacity: !checkinAnswer.trim() || checkinSubmitting ? 0.4 : 1,
+                padding: "6px 14px",
+              }}
+            >
+              {checkinSubmitting ? "sharing..." : "share"}
+            </button>
+          </div>
+          <div className="flex justify-center">
+            <button
+              onClick={dismissCheckin}
+              className="lowercase"
+              style={{
+                fontSize: "11px",
+                color: "#C8B090",
+                fontFamily: "Georgia, serif",
+              }}
+            >
+              maybe later
+            </button>
+          </div>
+        </div>
+      )}
+
       {pastChapters.length > 0 && (
         <div className="mb-8">
           <SectionLabel>Previous Chapters</SectionLabel>
