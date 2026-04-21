@@ -139,62 +139,54 @@ serve(async (req) => {
     const chunks = chunkScript(ssmlScript);
     console.log(`Split into ${chunks.length} chunk(s)`);
 
-    const audioBuffers: Uint8Array[] = [];
-
-    for (let i = 0; i < chunks.length; i++) {
-      let response = await doTTS(elevenLabsVoiceId, chunks[i]);
-
-      if (response.status === 404 && requestedVoiceId) {
-        return new Response(JSON.stringify({
-          error: "Configured voice was not found in ElevenLabs. Please re-save the theme voice or paste a valid voice ID.",
-        }), {
-          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    const processChunk = async (chunkText: string, idx: number): Promise<Uint8Array> => {
+      let response = await doTTS(elevenLabsVoiceId, chunkText);
 
       if (response.status === 404 && elevenLabsVoiceId !== fallbackVoiceId) {
         console.warn(`Voice ${elevenLabsVoiceId} not found, falling back to default`);
-        response = await doTTS(fallbackVoiceId, chunks[i]);
+        response = await doTTS(fallbackVoiceId, chunkText);
       }
 
-      // If SSML is rejected (400) try plain text fallback for this chunk
       if (response.status === 400) {
         const errBody = await response.text();
-        console.warn(`SSML rejected on chunk ${i + 1}, retrying as plain text:`, errBody);
-        const plain = stripSSML(chunks[i]);
+        console.warn(`SSML rejected on chunk ${idx + 1}, retrying as plain text:`, errBody);
+        const plain = stripSSML(chunkText);
         response = await doTTS(elevenLabsVoiceId, plain);
       }
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`ElevenLabs error chunk ${i + 1}:`, response.status, errorText);
-
-        if (response.status === 401) {
-          return new Response(JSON.stringify({ error: "ElevenLabs authentication failed" }), {
-            status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        if (response.status === 429) {
-          return new Response(JSON.stringify({ error: "ElevenLabs rate limit. Please try again shortly." }), {
-            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
+        console.error(`ElevenLabs error chunk ${idx + 1}:`, response.status, errorText);
         try {
           const parsed = JSON.parse(errorText);
           if (parsed?.detail?.status === "quota_exceeded") {
-            return new Response(JSON.stringify({
-              error: "Your ElevenLabs credits are too low. Please top up credits.",
-            }), {
-              status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
+            throw new Error("QUOTA_EXCEEDED");
           }
-        } catch {}
+        } catch (e) {
+          if (e instanceof Error && e.message === "QUOTA_EXCEEDED") throw e;
+        }
         throw new Error(`ElevenLabs TTS failed: ${response.status}`);
       }
 
-      const rawAudio = new Uint8Array(await response.arrayBuffer());
-      audioBuffers.push(audioBuffers.length === 0 ? rawAudio : stripId3Tag(rawAudio));
+      return new Uint8Array(await response.arrayBuffer());
+    };
+
+    // Run all chunks in parallel to stay under the edge function timeout
+    let rawBuffers: Uint8Array[];
+    try {
+      rawBuffers = await Promise.all(chunks.map((c, i) => processChunk(c, i)));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown";
+      if (msg === "QUOTA_EXCEEDED") {
+        return new Response(JSON.stringify({
+          error: "Your ElevenLabs credits are too low. Please top up credits.",
+        }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      throw err;
     }
+
+    const audioBuffers = rawBuffers.map((b, i) => i === 0 ? b : stripId3Tag(b));
+
 
     const totalLength = audioBuffers.reduce((sum, b) => sum + b.byteLength, 0);
     const audioBuffer = new Uint8Array(totalLength);
