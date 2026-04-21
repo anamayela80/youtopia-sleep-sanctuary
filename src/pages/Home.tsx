@@ -463,9 +463,9 @@ const Home = () => {
               )}
               <button
                 onClick={() => navigate("/practice")}
-                className="text-xs font-body font-medium text-coral-dark hover:opacity-80"
+                className="text-xs font-body font-medium hover:opacity-80 text-secondary"
               >
-                Open full practice →
+                Read More →
               </button>
             </div>
           </div>
