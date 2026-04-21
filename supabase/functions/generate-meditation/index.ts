@@ -38,20 +38,20 @@ Move attention slowly through the body from head to feet. Not clinical — warm,
 PHASE 4 — DEEPENING (approximately 200 words)
 A single visual anchor that signals the mind to go further inward. Stairs descending slowly. A door opening onto stillness. A path leading downward into warmth. Simple, clear, unhurried. Count down from 10 to 1 with each step going deeper, naming a sensation or release at each number. By the time you reach 1, the listener is ready.
 
-PHASE 5 — THE JOURNEY (approximately 1000 words)
+PHASE 5 — THE JOURNEY (approximately 700 words, but heavily paced with silence)
 This is the heart of the meditation. A guided inner journey that weaves together:
 
-- The theme: introduce it through the lens of their specific answers — particularly answer_1 (how they want to feel) and answer_2 (their transformed vision). Make the theme feel personally chosen for them, not imposed. Spend time here.
+- The theme: introduce it through the lens of their specific answers — particularly answer_1 (how they want to feel) and answer_2 (their transformed vision). Make the theme feel personally chosen for them, not imposed.
 - Their specific language and images: if they used a particular word or metaphor in their answers, use it. The meditation should feel like it was built from their own inner world, not delivered from outside it.
-- A point of release: drawn from answer_3 or answer_4 — something they are ready to let go of, reframed gently as something already in motion, already releasing. Not forced. Not dramatic. Just true. Linger here so the release lands.
-- The manifestation sequence (answer_5): this is the most important part and should take at least 400 words on its own. Take the specific dream they described and build it into a full sensory experience. If they described a place, take them there slowly, room by room, detail by detail. If they described a feeling, let them inhabit it fully. Use all senses — what they see, hear, feel on their skin, smell, taste, the temperature of the air, who is present, what their body feels like from the inside, what their breath is like, what their face is doing. Guide them to feel it as if it is happening right now. Then say: feel it now. Hold a marked pause. Then: your body knows this feeling. It will recognise it when the work gets hard. This feeling is your compass.
+- A point of release: drawn from answer_3 or answer_4 — something they are ready to let go of, reframed gently as something already in motion, already releasing. Linger here so the release lands.
+- The manifestation sequence (answer_5): this is the most important part. Take the specific dream they described and build it into a full sensory experience, ONE detail at a time, with a long <break time="4s" /> or <break time="5s" /> between each sensory detail so the listener actually feels each scenario before moving to the next. If they described a place, take them there slowly — one room, pause, one texture, pause, one sound, pause, one smell, pause, one person, pause. Use all senses — what they see, hear, feel on their skin, smell, taste, the temperature of the air, who is present, what their body feels like from the inside, what their breath is like, what their face is doing. Guide them to feel it as if it is happening right now. Then say: feel it now. Hold a marked <break time="6s" /> pause. Then: your body knows this feeling. It will recognise it when the work gets hard. This feeling is your compass.
 
-PHASE 6 — INTEGRATION & EXTENDED REST (approximately 400 words)
-Bring them back gently. Connect the practice to the day ahead. Plant one clear intention — drawn from their answers — that they carry forward. Use their name once here, naturally.
+PHASE 6 — RETURN & INTEGRATION (approximately 250 words)
+Bring them back gently. Use their name once here, naturally.
 
-Then, instead of ending abruptly, invite them to stay a long while longer. Tell them there is no rush to open their eyes. The meditation is complete, but they are welcome to rest here in this stillness for as long as the music holds them. Offer many unhurried lines of quiet permission — to soften, to let the music carry them, to let the feeling of their manifestation settle deeper into the body. Use generous <break time="4s" /> tags between these closing lines so the audio breathes naturally and fills the full music bed.
+Do NOT say the meditation is over, do not say "this practice is complete," do not announce the ending. Instead, welcome them back to a new reality — language like "welcome back to a new reality" — and remind them to remember this feeling and carry it with them through the rest of the day. Connect their manifestation to the day ahead as something already true inside them.
 
-Close with warmth, not fanfare. The last line should land softly, like something settling — and then one final long <break time="5s" /> before silence.
+Use generous <break time="4s" /> tags between these closing lines so the audio breathes. The last line should land softly, like something settling — and then one final long <break time="5s" /> before silence.
 
 VOICE AND TONE RULES
 - Warm, unhurried, grounded. Speaks like someone who has already been where the listener is going.
