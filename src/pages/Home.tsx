@@ -113,18 +113,7 @@ const PracticeItem = ({
   </button>
 );
 
-const NavBtn = ({
-  icon, label, active, onClick,
-}: { icon: React.ReactNode; label: string; active: boolean; onClick: () => void }) => (
-  <button
-    onClick={onClick}
-    className="flex flex-col items-center gap-1 transition-colors"
-    style={{ color: active ? "hsl(var(--sage))" : "#C0A880" }}
-  >
-    {icon}
-    <span className="text-[10px] font-body font-medium" style={{ letterSpacing: "0.06em" }}>{label}</span>
-  </button>
-);
+// Bottom nav has been moved to <BottomNav /> shared component.
 
 // ====== Page ======
 const Home = () => {
@@ -240,9 +229,14 @@ const Home = () => {
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 pt-6 pb-2">
         <SpiralLogo />
-        <button onClick={() => navigate("/settings")} aria-label="Menu" className="p-1">
-          <Menu size={22} style={{ color: "hsl(var(--subtitle))" }} strokeWidth={1.6} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => navigate("/settings")} aria-label="Settings" className="p-1.5">
+            <SettingsIcon size={20} style={{ color: "hsl(var(--subtitle))" }} strokeWidth={1.6} />
+          </button>
+          <button aria-label="Menu" className="p-1.5">
+            <Menu size={22} style={{ color: "hsl(var(--subtitle))" }} strokeWidth={1.6} />
+          </button>
+        </div>
       </div>
 
       {/* Greeting */}
@@ -323,18 +317,10 @@ const Home = () => {
               <PracticeItem
                 icon={<JournalGlyph />}
                 iconBg="#C8DED8"
-                title="Journal"
-                subtitle="A quiet place to reflect"
+                title="Reflect"
+                subtitle="your daily moment of honesty"
                 done={false}
-                onClick={() => setActiveTab("journal")}
-              />
-              <PracticeItem
-                icon={<FaceGlyph />}
-                iconBg="#F0D4C8"
-                title="Daily Check-in"
-                subtitle="A small moment of honesty"
-                done={false}
-                onClick={() => {}}
+                onClick={() => navigate("/reflect")}
               />
             </div>
           </div>
