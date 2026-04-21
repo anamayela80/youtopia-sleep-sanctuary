@@ -453,14 +453,6 @@ const Home = () => {
               {tenureIntro}
             </div>
             <div className="mt-3 flex items-center gap-4">
-              {tenureIntro.length > 180 && (
-                <button
-                  onClick={() => setPracticeExpanded((v) => !v)}
-                  className="text-xs font-body font-medium text-coral-dark hover:opacity-80"
-                >
-                  {practiceExpanded ? "Show less" : "Read more"}
-                </button>
-              )}
               <button
                 onClick={() => navigate("/practice")}
                 className="text-xs font-body font-medium hover:opacity-80 text-secondary"
