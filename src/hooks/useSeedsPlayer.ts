@@ -29,9 +29,11 @@ const GAP_NORMAL = 90;
 const GAP_DEEP = 100;
 const FINAL_FADE_SECONDS = 90;
 
-const CYCLE_SEED_VOLUMES = [1.0, 0.95, 0.85, 0.70];
-const CYCLE_MUSIC_UNDER  = [0.20, 0.20, 0.20, 0.15]; // music ducked while seed is playing
-const CYCLE_MUSIC_GAP    = [0.35, 0.35, 0.35, 0.28]; // music in the silence between seeds
+// Seeds are subliminal — they should sit BENEATH the music, never spike above it.
+// Voice stays low; music barely ducks so the whisper feels like part of the soundscape.
+const CYCLE_SEED_VOLUMES = [0.45, 0.40, 0.35, 0.28];
+const CYCLE_MUSIC_UNDER  = [0.30, 0.30, 0.28, 0.25]; // music level while seed plays (only slight duck)
+const CYCLE_MUSIC_GAP    = [0.40, 0.40, 0.38, 0.32]; // music level between seeds
 const CYCLE_GAP_SECONDS  = [GAP_NORMAL, GAP_NORMAL, GAP_NORMAL, GAP_DEEP];
 
 type SeedEvent = {
