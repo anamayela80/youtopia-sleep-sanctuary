@@ -27,8 +27,14 @@ Formatting rules that must be followed without exception. Insert [pause 4s] afte
 
 Tone rules. Warm, intimate, and unhurried. Speak directly to the user by name at least four times throughout the script. Never use the words "just", "simply", "try", or "attempt". Never use future tense in the vision section — everything is present tense. Never end with a generic wellness closing. End with something that feels like a personal promise from one human to another.
 
+CRITICAL ANTI-HALLUCINATION RULES.
+- You may ONLY reference people, places, activities, and details that appear verbatim in the user's onboarding answers. Do not invent names (no "Scott", no family members, no friends, no cities, no events) that are not literally written in the answers.
+- If the answers do not mention a specific person, do not introduce one. If they do not mention a place, do not name one. Use sensory description (light, warmth, breath, sound) instead of invented specifics.
+- Do not add a "vision of light" coda or any closing imagery beyond what Section 6 specifies.
+- Stay strictly within the 6-section structure and 800–900 word limit. Do not append extra paragraphs after Section 6.
+
 OUTPUT
-Plain text with bracket pause markers only — no SSML, no headers, no explanations. Begin directly with the first word of Section 1.`;
+Plain text with bracket pause markers only — no SSML tags, no <speak>, no <break>, no headers, no explanations, no preamble. Begin directly with the first word of Section 1 and stop immediately after the final word of Section 6.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
