@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Settings as SettingsIcon, Shield, Sun, Moon, BookOpen, MessageCircle,
-  ChevronRight, Home as HomeIcon, CalendarDays, User as UserIcon, FolderOpen, Folder,
-} from "lucide-react";
+import { Menu, Home as HomeIcon, CalendarDays, BookOpen, User as UserIcon, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getLatestMeditation, getLatestSeeds, getActiveTheme, getUserProfile,
@@ -13,50 +10,132 @@ import { getCurrentIntake, type UserIntake } from "@/services/intakeService";
 import { supabase as sb } from "@/integrations/supabase/client";
 import logo from "@/assets/youtopia-logo.png";
 
-const getGreeting = (name: string) => {
+const getGreeting = () => {
   const h = new Date().getHours();
-  const n = name || "friend";
-  if (h >= 5 && h < 12) return `Good morning, ${n}.`;
-  if (h >= 12 && h < 18) return `Good afternoon, ${n}.`;
-  if (h >= 18 && h < 22) return `Good evening, ${n}.`;
-  return `Time to plant your seeds, ${n}.`;
+  if (h < 12) return "good morning";
+  if (h < 18) return "good afternoon";
+  return "good evening";
 };
 
-const StatusDot = ({ done }: { done: boolean }) => (
-  <span
-    className={`inline-block w-3 h-3 rounded-full border ${
-      done ? "bg-sage border-sage" : "bg-transparent border-border"
-    }`}
-    aria-label={done ? "Completed" : "Not yet"}
-  />
-);
-
-const SectionLabel = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-[11px] uppercase tracking-[0.22em] font-body text-sage mb-3 px-1">
-    {children}
-  </p>
-);
-
-type MonthFolder = {
-  key: string;          // e.g. "2026-04"
-  monthLabel: string;   // "April"
-  yearLabel: string;    // "2026"
+type ChapterFolder = {
+  key: string;
   themeName: string;
   hasMeditation: boolean;
   hasSeeds: boolean;
 };
 
+// ====== Custom icons (per spec) ======
+const SunGlyph = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="hsl(var(--gold))" strokeWidth="1.7" strokeLinecap="round">
+    <circle cx="12" cy="12" r="3.6" fill="hsl(var(--gold))" stroke="none" />
+    <line x1="12" y1="2.5" x2="12" y2="5" />
+    <line x1="12" y1="19" x2="12" y2="21.5" />
+    <line x1="2.5" y1="12" x2="5" y2="12" />
+    <line x1="19" y1="12" x2="21.5" y2="12" />
+    <line x1="5.2" y1="5.2" x2="6.9" y2="6.9" />
+    <line x1="17.1" y1="17.1" x2="18.8" y2="18.8" />
+    <line x1="5.2" y1="18.8" x2="6.9" y2="17.1" />
+    <line x1="17.1" y1="6.9" x2="18.8" y2="5.2" />
+  </svg>
+);
+
+const MoonGlyph = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20">
+    <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" fill="hsl(var(--moon))" opacity="0.85" />
+  </svg>
+);
+
+const JournalGlyph = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="hsl(var(--sage-soft))" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 4h11a1 1 0 0 1 1 1v15H7a1 1 0 0 1-1-1V4z" />
+    <line x1="9" y1="8.5" x2="15" y2="8.5" />
+    <line x1="9" y1="12" x2="15" y2="12" />
+    <line x1="9" y1="15.5" x2="13" y2="15.5" />
+  </svg>
+);
+
+const FaceGlyph = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="hsl(var(--coral))" strokeWidth="1.6" strokeLinecap="round">
+    <circle cx="12" cy="12" r="7.5" />
+    <circle cx="9.3" cy="10.5" r="0.8" fill="hsl(var(--coral))" stroke="none" />
+    <circle cx="14.7" cy="10.5" r="0.8" fill="hsl(var(--coral))" stroke="none" />
+    <path d="M9 14.2c1 1.1 2 1.6 3 1.6s2-.5 3-1.6" />
+  </svg>
+);
+
+const SpiralLogo = () => (
+  <img src={logo} alt="" aria-hidden className="w-[26px] h-[26px] opacity-30" style={{ filter: "sepia(1) hue-rotate(-10deg) saturate(2) brightness(0.55)" }} />
+);
+
+// ====== Building blocks ======
+const SectionLabel = ({ children }: { children: React.ReactNode }) => (
+  <p className="text-[10px] uppercase font-body mb-3 px-6" style={{ letterSpacing: "0.22em", color: "hsl(var(--label))" }}>
+    {children}
+  </p>
+);
+
+const CompletionCircle = ({ done }: { done: boolean }) => (
+  <span
+    className="inline-flex items-center justify-center w-5 h-5 rounded-full flex-shrink-0"
+    style={{
+      border: done ? "1.5px solid hsl(var(--sage))" : "1.5px solid #C8B090",
+      background: done ? "hsl(var(--sage))" : "transparent",
+    }}
+    aria-label={done ? "Completed" : "Not yet"}
+  >
+    {done && <Check size={12} strokeWidth={3} className="text-white" />}
+  </span>
+);
+
+const PracticeItem = ({
+  icon, iconBg, title, subtitle, done, onClick,
+}: {
+  icon: React.ReactNode; iconBg: string;
+  title: string; subtitle: string; done: boolean; onClick: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    className="w-full text-left rounded-2xl px-4 py-3.5 flex items-center gap-3 transition-colors hover:brightness-[0.99]"
+    style={{
+      background: "hsl(var(--background))",
+      border: "1px solid rgba(160, 120, 70, 0.08)",
+    }}
+  >
+    <span className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: iconBg }}>
+      {icon}
+    </span>
+    <span className="flex-1 min-w-0">
+      <span className="block font-heading text-[15px] leading-tight truncate" style={{ color: "hsl(var(--foreground))" }}>{title}</span>
+      <span className="block text-[11px] italic mt-0.5 truncate" style={{ color: "hsl(var(--subtitle))" }}>{subtitle}</span>
+    </span>
+    <CompletionCircle done={done} />
+  </button>
+);
+
+const NavBtn = ({
+  icon, label, active, onClick,
+}: { icon: React.ReactNode; label: string; active: boolean; onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    className="flex flex-col items-center gap-1 transition-colors"
+    style={{ color: active ? "hsl(var(--sage))" : "#C0A880" }}
+  >
+    {icon}
+    <span className="text-[10px] font-body font-medium" style={{ letterSpacing: "0.06em" }}>{label}</span>
+  </button>
+);
+
+// ====== Page ======
 const Home = () => {
-  const [theme, setTheme] = useState<any>(null);
   const [intake, setIntake] = useState<UserIntake | null>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [theme, setTheme] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [openMonth, setOpenMonth] = useState<string | null>(null);
+  const [openChapter, setOpenChapter] = useState<string | null>(null);
   const [userFirstName, setUserFirstName] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"home" | "month" | "journal" | "settings">("home");
-  const [currentMonth, setCurrentMonth] = useState<MonthFolder | null>(null);
-  const [pastMonths, setPastMonths] = useState<MonthFolder[]>([]);
+  const [currentChapter, setCurrentChapter] = useState<ChapterFolder | null>(null);
+  const [pastChapters, setPastChapters] = useState<ChapterFolder[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => { loadData(); }, []);
@@ -67,11 +146,10 @@ const Home = () => {
 
     setUserFirstName((user.user_metadata?.full_name || "").split(" ")[0] || "");
 
-    const [med, seedData, currentIntake, roleRes, prof] = await Promise.all([
+    const [med, seedData, currentIntake, prof] = await Promise.all([
       getLatestMeditation(user.id),
       getLatestSeeds(user.id),
       getCurrentIntake(user.id),
-      supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle(),
       getUserProfile(user.id),
     ]);
 
@@ -83,24 +161,18 @@ const Home = () => {
       displayTheme = snap;
     }
     if (!displayTheme) displayTheme = await getActiveTheme();
-
     setTheme(displayTheme);
-    setIsAdmin(!!roleRes.data);
     setProfile(prof);
 
-    // Build the current month folder
     const now = new Date();
-    const cur: MonthFolder = {
+    const cur: ChapterFolder = {
       key: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
-      monthLabel: now.toLocaleString("default", { month: "long" }),
-      yearLabel: String(now.getFullYear()),
       themeName: displayTheme?.theme || "Your Practice",
       hasMeditation: !!med && (med.meditation_segments?.length ?? 0) > 0,
       hasSeeds: !!seedData && [seedData.audio_url_1, seedData.audio_url_2, seedData.audio_url_3, seedData.audio_url_4, seedData.audio_url_5].some(Boolean),
     };
-    setCurrentMonth(cur);
+    setCurrentChapter(cur);
 
-    // Pull past meditations for this user, group into month folders (excluding the current month)
     const { data: history } = await sb
       .from("meditations")
       .select("month, theme_id, monthly_themes(theme)")
@@ -108,7 +180,7 @@ const Home = () => {
       .order("month", { ascending: false });
 
     const seen = new Set<string>();
-    const past: MonthFolder[] = [];
+    const past: ChapterFolder[] = [];
     (history || []).forEach((row: any) => {
       const d = new Date(row.month);
       if (isNaN(d.getTime())) return;
@@ -117,14 +189,12 @@ const Home = () => {
       seen.add(key);
       past.push({
         key,
-        monthLabel: d.toLocaleString("default", { month: "long" }),
-        yearLabel: String(d.getFullYear()),
         themeName: row.monthly_themes?.theme || "Practice",
         hasMeditation: true,
         hasSeeds: false,
       });
     });
-    setPastMonths(past);
+    setPastChapters(past);
 
     setLoading(false);
   };
@@ -133,7 +203,7 @@ const Home = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <motion.div
-          className="w-12 h-12 rounded-full bg-primary/20"
+          className="w-12 h-12 rounded-full bg-sage/30"
           animate={{ scale: [1, 1.2, 1] }}
           transition={{ duration: 1.5, repeat: Infinity }}
         />
@@ -141,18 +211,19 @@ const Home = () => {
     );
   }
 
-  // Empty state — no meditation yet
-  if (currentMonth && !currentMonth.hasMeditation && !currentMonth.hasSeeds && pastMonths.length === 0) {
+  // Empty state
+  if (currentChapter && !currentChapter.hasMeditation && !currentChapter.hasSeeds && pastChapters.length === 0) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center">
         <div className="text-5xl mb-4">🧘</div>
-        <h2 className="font-heading text-xl text-accent mb-2">Your library is waiting</h2>
-        <p className="font-body text-sm text-muted-foreground mb-6">
-          Create your first personalized monthly practice
+        <h2 className="font-heading text-xl mb-2" style={{ color: "hsl(var(--foreground))" }}>Your library is waiting</h2>
+        <p className="font-body text-sm mb-6" style={{ color: "hsl(var(--subtitle))" }}>
+          Create your first personalized chapter
         </p>
         <button
           onClick={() => navigate("/onboarding")}
-          className="px-8 py-4 rounded-2xl bg-coral-dark text-primary-foreground font-body font-semibold transition-all hover:opacity-90 active:scale-[0.98]"
+          className="px-8 py-4 rounded-2xl text-primary-foreground font-body font-semibold transition-all hover:opacity-90 active:scale-[0.98]"
+          style={{ background: "hsl(var(--coral))" }}
         >
           Get Started
         </button>
@@ -160,90 +231,105 @@ const Home = () => {
     );
   }
 
+  const greeting = getGreeting();
+  const displayName = userFirstName || "friend";
+
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-24">
-      {/* Header with watermark logo */}
-      <div className="relative px-6 pt-10 pb-8 overflow-hidden">
-        <img
-          src={logo}
-          alt=""
-          aria-hidden
-          className="absolute -right-10 -top-8 w-60 opacity-[0.07] pointer-events-none select-none"
-        />
-        <div className="flex items-start justify-between relative">
-          <div className="flex-1">
-            <h1 className="font-heading text-3xl md:text-4xl text-coral-dark leading-tight">
-              {getGreeting(userFirstName)}
-            </h1>
-            <p className="mt-3 text-[11px] uppercase tracking-[0.22em] font-body text-sage">
-              Your library of practices
-            </p>
-          </div>
-          <div className="flex items-center gap-3 pt-1">
-            {isAdmin && (
-              <button onClick={() => navigate("/admin")} className="text-accent/70 hover:text-accent" aria-label="Admin">
-                <Shield size={18} />
-              </button>
-            )}
-            <button onClick={() => navigate("/settings")} className="text-accent/70 hover:text-accent" aria-label="Settings">
-              <SettingsIcon size={18} />
-            </button>
-          </div>
-        </div>
+    <div className="min-h-screen bg-background flex flex-col pb-28">
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-6 pt-6 pb-2">
+        <SpiralLogo />
+        <button onClick={() => navigate("/settings")} aria-label="Menu" className="p-1">
+          <Menu size={22} style={{ color: "hsl(var(--subtitle))" }} strokeWidth={1.6} />
+        </button>
       </div>
 
-      {/* Current Month — open folder */}
-      {currentMonth && (
-        <div className="px-6 mb-8">
-          <SectionLabel>This Month</SectionLabel>
+      {/* Greeting */}
+      <div className="px-[26px] pt-4 pb-6">
+        <p
+          className="italic mb-2 lowercase"
+          style={{ fontSize: "12px", letterSpacing: "0.14em", color: "hsl(var(--sage))" }}
+        >
+          {greeting}
+        </p>
+        <h1
+          className="font-heading leading-tight"
+          style={{ fontSize: "36px", color: "hsl(var(--foreground))", fontFamily: "Georgia, serif" }}
+        >
+          {displayName}<span style={{ color: "hsl(var(--coral))" }}>.</span>
+        </h1>
 
-          <div className="bg-card rounded-3xl p-5 shadow-[0_2px_12px_-6px_hsl(var(--accent)/0.22)]">
-            {/* Folder header */}
-            <button
-              onClick={() => navigate("/month")}
-              className="w-full flex items-center gap-3 text-left mb-1 group"
+        {currentChapter && (
+          <div className="mt-4">
+            <span
+              className="inline-block italic"
+              style={{
+                background: "rgba(107, 158, 143, 0.12)",
+                border: "1px solid rgba(107, 158, 143, 0.35)",
+                color: "#4E8C7A",
+                fontSize: "11px",
+                padding: "5px 14px",
+                borderRadius: "20px",
+              }}
             >
-              <FolderOpen size={20} className="text-coral-dark flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <h2 className="font-heading text-2xl text-accent leading-tight truncate">
-                  {currentMonth.monthLabel}
-                </h2>
-                <p className="font-body text-[11px] uppercase tracking-[0.22em] text-sage mt-0.5 truncate">
-                  {currentMonth.themeName}
-                </p>
-              </div>
-              <ChevronRight size={18} className="text-sage opacity-60 group-hover:opacity-100 transition-opacity" />
-            </button>
+              {currentChapter.themeName}
+            </span>
+          </div>
+        )}
+      </div>
 
-            {/* Folder items */}
-            <div className="mt-4 space-y-2">
-              {currentMonth.hasMeditation && (
-                <FolderItem
-                  icon={<Sun size={16} className="text-coral-dark" />}
-                  title="Morning Meditation"
-                  subtitle="Listen with headphones, eyes closed"
-                  done={false}
-                  onClick={() => navigate("/month?play=morning")}
-                />
-              )}
-              {currentMonth.hasSeeds && (
-                <FolderItem
-                  icon={<Moon size={16} className="text-coral-dark" />}
-                  title="Evening Seeds"
-                  subtitle="Plant the seeds before sleep"
-                  done={false}
-                  onClick={() => navigate("/month?play=seeds")}
-                />
-              )}
-              <FolderItem
-                icon={<BookOpen size={16} className="text-coral-dark" />}
+      {/* Divider */}
+      <div className="mx-6 mb-6" style={{ height: "1px", background: "rgba(120, 90, 60, 0.12)" }} />
+
+      {/* Current chapter folder */}
+      {currentChapter && (
+        <div className="mb-8">
+          <SectionLabel>Current Chapter</SectionLabel>
+
+          <div
+            className="mx-4"
+            style={{
+              background: "hsl(var(--folder))",
+              border: "1px solid rgba(160, 120, 70, 0.15)",
+              borderRadius: "22px",
+              padding: "20px 16px 16px",
+            }}
+          >
+            <h2
+              className="font-heading mb-4 px-1"
+              style={{ fontSize: "20px", lineHeight: 1.3, color: "hsl(var(--foreground))", fontFamily: "Georgia, serif" }}
+            >
+              {currentChapter.themeName}
+            </h2>
+
+            <div className="space-y-2">
+              <PracticeItem
+                icon={<SunGlyph />}
+                iconBg="#F5E4C0"
+                title="Morning Meditation"
+                subtitle="Listen with headphones, eyes closed"
+                done={false}
+                onClick={() => navigate("/month?play=morning")}
+              />
+              <PracticeItem
+                icon={<MoonGlyph />}
+                iconBg="#DDD0EE"
+                title="Evening Seeds"
+                subtitle="Plant the seeds before sleep"
+                done={false}
+                onClick={() => navigate("/month?play=seeds")}
+              />
+              <PracticeItem
+                icon={<JournalGlyph />}
+                iconBg="#C8DED8"
                 title="Journal"
                 subtitle="A quiet place to reflect"
                 done={false}
                 onClick={() => setActiveTab("journal")}
               />
-              <FolderItem
-                icon={<MessageCircle size={16} className="text-coral-dark" />}
+              <PracticeItem
+                icon={<FaceGlyph />}
+                iconBg="#F0D4C8"
                 title="Daily Check-in"
                 subtitle="A small moment of honesty"
                 done={false}
@@ -254,37 +340,43 @@ const Home = () => {
         </div>
       )}
 
-      {/* Previous months — closed folders */}
-      {pastMonths.length > 0 && (
-        <div className="px-6 mb-8">
-          <SectionLabel>Previous Months</SectionLabel>
-          <div className="space-y-2.5">
-            {pastMonths.map((m) => {
-              const open = openMonth === m.key;
+      {/* Previous chapters */}
+      {pastChapters.length > 0 && (
+        <div className="mb-8">
+          <SectionLabel>Previous Chapters</SectionLabel>
+          <div>
+            {pastChapters.map((c) => {
+              const open = openChapter === c.key;
               return (
-                <div key={m.key} className="bg-card rounded-2xl shadow-[0_2px_10px_-6px_hsl(var(--accent)/0.2)] overflow-hidden">
+                <div
+                  key={c.key}
+                  className="mx-4 mb-2"
+                  style={{
+                    background: "hsl(var(--folder-past))",
+                    border: "1px solid rgba(160, 120, 70, 0.1)",
+                    borderRadius: "16px",
+                    opacity: 0.85,
+                    overflow: "hidden",
+                  }}
+                >
                   <button
-                    onClick={() => setOpenMonth(open ? null : m.key)}
-                    className="w-full px-5 py-4 flex items-center gap-3 text-left"
+                    onClick={() => setOpenChapter(open ? null : c.key)}
+                    className="w-full flex items-center gap-3 text-left"
+                    style={{ padding: "14px 18px" }}
                   >
-                    {open ? (
-                      <FolderOpen size={18} className="text-sage flex-shrink-0" />
-                    ) : (
-                      <Folder size={18} className="text-sage flex-shrink-0" />
-                    )}
-                    <span className="flex-1 min-w-0">
-                      <span className="block font-heading text-base text-accent truncate">
-                        {m.monthLabel} <span className="text-accent/50 font-body text-sm">· {m.yearLabel}</span>
-                      </span>
-                      <span className="block font-body text-[11px] uppercase tracking-[0.22em] text-sage mt-0.5 truncate">
-                        {m.themeName}
-                      </span>
+                    <span
+                      className="flex-1 min-w-0 italic font-heading truncate"
+                      style={{ fontSize: "15px", color: "hsl(var(--foreground))", fontFamily: "Georgia, serif" }}
+                    >
+                      {c.themeName}
                     </span>
-                    <ChevronRight
-                      size={16}
-                      className={`text-sage flex-shrink-0 transition-transform ${open ? "rotate-90" : ""}`}
+                    <span
+                      className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ background: "hsl(var(--sage))" }}
+                      aria-label="Completed chapter"
                     />
                   </button>
+
                   <AnimatePresence initial={false}>
                     {open && (
                       <motion.div
@@ -294,13 +386,14 @@ const Home = () => {
                         transition={{ duration: 0.25 }}
                         className="overflow-hidden"
                       >
-                        <div className="px-5 pb-5 space-y-2">
-                          <FolderItem
-                            icon={<Sun size={16} className="text-coral-dark" />}
+                        <div className="px-4 pb-4 space-y-2">
+                          <PracticeItem
+                            icon={<SunGlyph />}
+                            iconBg="#F5E4C0"
                             title="Morning Meditation"
                             subtitle="Revisit this practice"
                             done
-                            onClick={() => navigate(`/month?key=${m.key}`)}
+                            onClick={() => navigate(`/month?key=${c.key}`)}
                           />
                         </div>
                       </motion.div>
@@ -313,56 +406,25 @@ const Home = () => {
         </div>
       )}
 
-      {/* Bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-card/85 backdrop-blur-lg px-6 py-3 border-t border-border/40">
-        <div className="flex justify-around max-w-sm mx-auto">
-          <NavBtn icon={<HomeIcon size={20} />} label="Home" active={activeTab === "home"} onClick={() => setActiveTab("home")} />
-          <NavBtn icon={<CalendarDays size={20} />} label="My Month" active={activeTab === "month"} onClick={() => navigate("/month")} />
-          <NavBtn icon={<BookOpen size={20} />} label="Journal" active={activeTab === "journal"} onClick={() => setActiveTab("journal")} />
-          <NavBtn icon={<UserIcon size={20} />} label="Settings" active={activeTab === "settings"} onClick={() => navigate("/settings")} />
+      {/* Bottom navigation */}
+      <nav
+        className="fixed bottom-0 left-0 right-0"
+        style={{
+          background: "hsl(var(--background))",
+          borderTop: "1px solid rgba(160, 120, 70, 0.15)",
+          paddingTop: "13px",
+          paddingBottom: "22px",
+        }}
+      >
+        <div className="flex justify-around max-w-sm mx-auto px-6">
+          <NavBtn icon={<HomeIcon size={20} strokeWidth={1.6} />} label="Home" active={activeTab === "home"} onClick={() => setActiveTab("home")} />
+          <NavBtn icon={<CalendarDays size={20} strokeWidth={1.6} />} label="My Month" active={activeTab === "month"} onClick={() => navigate("/month")} />
+          <NavBtn icon={<BookOpen size={20} strokeWidth={1.6} />} label="Journal" active={activeTab === "journal"} onClick={() => setActiveTab("journal")} />
+          <NavBtn icon={<UserIcon size={20} strokeWidth={1.6} />} label="Settings" active={activeTab === "settings"} onClick={() => navigate("/settings")} />
         </div>
       </nav>
     </div>
   );
 };
-
-const FolderItem = ({
-  icon, title, subtitle, done, onClick,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-  done: boolean;
-  onClick: () => void;
-}) => (
-  <button
-    onClick={onClick}
-    className="w-full text-left bg-cream rounded-2xl px-4 py-3.5 flex items-center gap-3 hover:bg-cream/70 transition-colors"
-  >
-    <span className="w-9 h-9 rounded-full bg-card flex items-center justify-center flex-shrink-0">
-      {icon}
-    </span>
-    <span className="flex-1 min-w-0">
-      <span className="block font-heading text-base text-accent leading-tight truncate">{title}</span>
-      <span className="block font-body text-xs text-accent/60 mt-0.5 truncate">{subtitle}</span>
-    </span>
-    <StatusDot done={done} />
-    <ChevronRight size={16} className="text-sage/60 flex-shrink-0" />
-  </button>
-);
-
-const NavBtn = ({
-  icon, label, active, onClick,
-}: { icon: React.ReactNode; label: string; active: boolean; onClick: () => void }) => (
-  <button
-    onClick={onClick}
-    className={`flex flex-col items-center gap-1 transition-colors ${
-      active ? "text-sage" : "text-accent/50 hover:text-accent/80"
-    }`}
-  >
-    {icon}
-    <span className="text-[10px] font-body font-medium">{label}</span>
-  </button>
-);
 
 export default Home;

@@ -69,6 +69,16 @@ export default {
           DEFAULT: "hsl(var(--sage))",
           soft: "hsl(var(--sage-soft))",
         },
+        folder: {
+          DEFAULT: "hsl(var(--folder))",
+          past: "hsl(var(--folder-past))",
+        },
+        moon: {
+          DEFAULT: "hsl(var(--moon))",
+          soft: "hsl(var(--moon-soft))",
+        },
+        label: "hsl(var(--label))",
+        subtitle: "hsl(var(--subtitle))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
