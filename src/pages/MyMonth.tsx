@@ -256,8 +256,8 @@ const MyMonth = () => {
               style={{ background: TONE_PAGE, border: "1px solid rgba(160, 120, 70, 0.18)" }}
             >
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-2xl bg-cream flex items-center justify-center">
-                  <Moon size={20} className="text-coral-dark" />
+                <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "#DDD0EE" }}>
+                  <Moon size={20} style={{ color: "hsl(var(--moon))" }} />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-heading text-lg text-accent">Plant the Seeds Tonight</h3>
