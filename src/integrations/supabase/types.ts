@@ -65,26 +65,125 @@ export type Database = {
       checkin_responses: {
         Row: {
           answer: string
+          chapter_id: string | null
           created_at: string
           id: string
           month: string
+          mood_context: number | null
           question: string
+          question_number: number | null
           user_id: string
         }
         Insert: {
           answer: string
+          chapter_id?: string | null
           created_at?: string
           id?: string
           month: string
+          mood_context?: number | null
           question: string
+          question_number?: number | null
           user_id: string
         }
         Update: {
           answer?: string
+          chapter_id?: string | null
           created_at?: string
           id?: string
           month?: string
+          mood_context?: number | null
           question?: string
+          question_number?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      checkins: {
+        Row: {
+          chapter_id: string | null
+          checkin_date: string
+          created_at: string
+          id: string
+          mood_note: string | null
+          mood_score: number
+          user_id: string
+        }
+        Insert: {
+          chapter_id?: string | null
+          checkin_date?: string
+          created_at?: string
+          id?: string
+          mood_note?: string | null
+          mood_score: number
+          user_id: string
+        }
+        Update: {
+          chapter_id?: string | null
+          checkin_date?: string
+          created_at?: string
+          id?: string
+          mood_note?: string | null
+          mood_score?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      intake_checkin_state: {
+        Row: {
+          answered_at: string | null
+          created_at: string
+          dismissed_permanently: boolean
+          id: string
+          intake_id: string
+          postponed_count: number
+          question_number: number
+          user_id: string
+        }
+        Insert: {
+          answered_at?: string | null
+          created_at?: string
+          dismissed_permanently?: boolean
+          id?: string
+          intake_id: string
+          postponed_count?: number
+          question_number: number
+          user_id: string
+        }
+        Update: {
+          answered_at?: string | null
+          created_at?: string
+          dismissed_permanently?: boolean
+          id?: string
+          intake_id?: string
+          postponed_count?: number
+          question_number?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      journal_entries: {
+        Row: {
+          chapter_id: string | null
+          chapter_theme: string | null
+          created_at: string
+          entry_text: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          chapter_id?: string | null
+          chapter_theme?: string | null
+          created_at?: string
+          entry_text: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          chapter_id?: string | null
+          chapter_theme?: string | null
+          created_at?: string
+          entry_text?: string
+          id?: string
           user_id?: string
         }
         Relationships: []
