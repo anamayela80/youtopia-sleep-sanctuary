@@ -137,7 +137,7 @@ serve(async (req) => {
       return chunks;
     };
 
-    const chunks = chunkScript(narrationText).map(wrapV3);
+    const chunks = chunkScript(narrationText).map((c, i) => wrapV3(c, i === 0));
     console.log(`Split into ${chunks.length} chunk(s)`);
 
     const processChunk = async (chunkText: string, idx: number): Promise<Uint8Array> => {
