@@ -165,21 +165,26 @@ const Reflect = () => {
     }
   };
 
-  // Build constellation grid: every day from intake_start to intake_end (or today)
+  // Build constellation grid: every day of the current calendar month (1 → last day).
+  // A circle is filled only if a check-in exists for that date AND the date is not in the future.
   const constellation = useMemo(() => {
-    if (!intakeStart) return [];
-    const start = new Date(intakeStart);
-    const end = intakeEnd ? new Date(intakeEnd) : new Date();
-    const days: { date: string; mood: number | null }[] = [];
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const todayDay = now.getDate();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
     const checkinMap = new Map(chapterCheckins.map((c) => [c.checkin_date, c.mood_score]));
-    const cursor = new Date(start);
-    while (cursor <= end) {
-      const iso = cursor.toISOString().slice(0, 10);
-      days.push({ date: iso, mood: checkinMap.get(iso) ?? null });
-      cursor.setDate(cursor.getDate() + 1);
+    const days: { date: string; mood: number | null; isFuture: boolean }[] = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const iso = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      days.push({
+        date: iso,
+        mood: checkinMap.get(iso) ?? null,
+        isFuture: d > todayDay,
+      });
     }
     return days;
-  }, [intakeStart, intakeEnd, chapterCheckins]);
+  }, [chapterCheckins]);
 
   const isEmpty = !todaysCheckin && pastEntries.length === 0 && chapterCheckins.length === 0 && !justSubmittedMood;
 
