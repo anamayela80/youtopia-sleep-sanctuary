@@ -418,16 +418,6 @@ const Home = () => {
               </button>
             </div>
 
-            {/* Seed phrases */}
-            {seedPhrases.length > 0 && (
-              <div className="mt-6 space-y-2.5">
-                {seedPhrases.map((phrase: string, i: number) => (
-                  <p key={i} className="font-body text-sm text-foreground/70 italic text-center leading-relaxed">
-                    {phrase}
-                  </p>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       )}
