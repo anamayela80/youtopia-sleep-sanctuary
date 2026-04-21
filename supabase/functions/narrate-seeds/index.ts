@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { phrase, voiceId, model, stability, style, speed } = await req.json();
+    const { phrase, voiceId, model, stability, style, speed, index } = await req.json();
 
     if (!phrase || !voiceId) {
       return new Response(JSON.stringify({ error: "phrase and voiceId are required" }), {
@@ -25,9 +25,14 @@ serve(async (req) => {
     const modelId = typeof model === "string" && model.trim() ? model.trim() : "eleven_v3";
     const stabilityVal = typeof stability === "number" ? stability : 0.0;
     const styleVal = typeof style === "number" ? style : 0.0;
-    const speedVal = typeof speed === "number" ? speed : 0.8;
+    const speedVal = typeof speed === "number" ? speed : 0.78;
 
-    const wrappedText = `[soft][slow][whisper]${phrase.trim()}[/whisper][/slow][/soft]`;
+    // Vary delivery: whisper some seeds, speak others softly. Alternate by index when provided.
+    const idx = typeof index === "number" ? index : Math.floor(Math.random() * 5);
+    const isWhisper = idx % 2 === 0;
+    const wrappedText = isWhisper
+      ? `[soft][slow][whisper]${phrase.trim()}[/whisper][/slow][/soft]`
+      : `[soft][slow]${phrase.trim()}[/slow][/soft]`;
 
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,

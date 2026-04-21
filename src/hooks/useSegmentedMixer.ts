@@ -15,8 +15,8 @@ export function useSegmentedMixer({
   musicBridgeDurations = [60, 60, 75, 60],
   musicFadeInDuration = 60,
   musicFadeOutDuration = 120,
-  musicVolume = 0.45,
-  narrationVolume = 0.7,
+  musicVolume = 0.5,
+  narrationVolume = 0.55,
 }: UseSegmentedMixerOptions & { narrationVolume?: number }) {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const segmentBuffersRef = useRef<AudioBuffer[]>([]);
