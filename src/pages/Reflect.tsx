@@ -4,8 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentIntake } from "@/services/intakeService";
 import { BottomNav } from "@/components/BottomNav";
+import { MoodOrb, MOODS } from "@/components/reflect/MoodOrb";
 
-const MOOD_COLORS = ["#A8B4C0", "#B8A8C8", "#C8B090", "#D4A855", "#C4705A"];
+const MOOD_COLORS = MOODS.map((m) => m.color);
 const SOFT_BORDER = "1px solid rgba(160, 120, 70, 0.08)";
 const DIVIDER = "rgba(120, 90, 60, 0.1)";
 
@@ -219,16 +220,18 @@ const Reflect = () => {
 
         {todaysCheckin && !justSubmittedMood ? (
           <div className="flex flex-col items-center py-4">
-            <div
-              className="rounded-full mb-3"
-              style={{
-                width: "56px",
-                height: "56px",
-                background: MOOD_COLORS[todaysCheckin.mood_score - 1],
-                boxShadow: `0 0 24px ${MOOD_COLORS[todaysCheckin.mood_score - 1]}55`,
-              }}
-            />
-            <p className="italic text-center" style={{ fontSize: "13px", color: "#9A7B5A" }}>
+            <div className="flex justify-between items-start w-full px-2 mb-4">
+              {MOODS.map((m, i) => (
+                <MoodOrb
+                  key={m.key}
+                  mood={m}
+                  selected={false}
+                  glowing={todaysCheckin.mood_score === i + 1}
+                  disabled
+                />
+              ))}
+            </div>
+            <p className="italic text-center mt-2" style={{ fontSize: "13px", color: "#9A7B5A" }}>
               you checked in today
             </p>
           </div>
@@ -241,28 +244,15 @@ const Reflect = () => {
           </p>
         ) : (
           <>
-            <div className="flex justify-between items-center px-2 mb-6">
-              {MOOD_COLORS.map((color, i) => {
-                const score = i + 1;
-                const isSelected = selectedMood === score;
-                return (
-                  <motion.button
-                    key={score}
-                    onClick={() => setSelectedMood(score)}
-                    className="rounded-full"
-                    style={{
-                      width: "48px",
-                      height: "48px",
-                      background: isSelected ? color : "transparent",
-                      border: `2px solid ${color}`,
-                      opacity: isSelected ? 1 : 0.3,
-                    }}
-                    animate={{ scale: isSelected ? 1.15 : 1 }}
-                    transition={{ duration: 0.2 }}
-                    aria-label={`Mood ${score}`}
-                  />
-                );
-              })}
+            <div className="flex justify-between items-start px-2 mb-6">
+              {MOODS.map((m, i) => (
+                <MoodOrb
+                  key={m.key}
+                  mood={m}
+                  selected={selectedMood === i + 1}
+                  onSelect={() => setSelectedMood(i + 1)}
+                />
+              ))}
             </div>
 
             <div className="px-2 mb-4">
