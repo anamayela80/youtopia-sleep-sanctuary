@@ -12,7 +12,11 @@ interface UseSegmentedMixerOptions {
 export function useSegmentedMixer({
   segmentUrls,
   musicUrl,
-  musicBridgeDurations = [60, 60, 75, 60],
+  // Long music-only silences between segments are intentional — they give
+  // the user time to feel each section land before the next begins. Total
+  // target with 4 narration segments (~7-8 min total speech) is ~20 min:
+  // 60s fade-in + speech + 3×~135s bridges + 120s fade-out.
+  musicBridgeDurations = [0, 135, 150, 135],
   musicFadeInDuration = 60,
   musicFadeOutDuration = 120,
   musicVolume = 0.55,
