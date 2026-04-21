@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Home as HomeIcon, CalendarDays, BookOpen, User as UserIcon, Check } from "lucide-react";
+import { Menu, Settings as SettingsIcon, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getLatestMeditation, getLatestSeeds, getActiveTheme, getUserProfile,
 } from "@/services/meditationService";
 import { getCurrentIntake, type UserIntake } from "@/services/intakeService";
 import { supabase as sb } from "@/integrations/supabase/client";
+import { BottomNav } from "@/components/BottomNav";
 import spiralLogo from "@/assets/youtopia-sun.png";
 
 const getGreeting = () => {
@@ -112,18 +113,7 @@ const PracticeItem = ({
   </button>
 );
 
-const NavBtn = ({
-  icon, label, active, onClick,
-}: { icon: React.ReactNode; label: string; active: boolean; onClick: () => void }) => (
-  <button
-    onClick={onClick}
-    className="flex flex-col items-center gap-1 transition-colors"
-    style={{ color: active ? "hsl(var(--sage))" : "#C0A880" }}
-  >
-    {icon}
-    <span className="text-[10px] font-body font-medium" style={{ letterSpacing: "0.06em" }}>{label}</span>
-  </button>
-);
+// Bottom nav has been moved to <BottomNav /> shared component.
 
 // ====== Page ======
 const Home = () => {
@@ -136,6 +126,17 @@ const Home = () => {
   const [activeTab, setActiveTab] = useState<"home" | "month" | "journal" | "settings">("home");
   const [currentChapter, setCurrentChapter] = useState<ChapterFolder | null>(null);
   const [pastChapters, setPastChapters] = useState<ChapterFolder[]>([]);
+
+  // Mid-month check-in card state
+  const [checkinPrompt, setCheckinPrompt] = useState<{
+    questionNumber: 1 | 2;
+    questionText: string;
+    intakeId: string;
+  } | null>(null);
+  const [checkinAnswer, setCheckinAnswer] = useState("");
+  const [checkinSubmitting, setCheckinSubmitting] = useState(false);
+  const [checkinDismissedThisSession, setCheckinDismissedThisSession] = useState(false);
+
   const navigate = useNavigate();
 
   useEffect(() => { loadData(); }, []);
@@ -196,7 +197,104 @@ const Home = () => {
     });
     setPastChapters(past);
 
+    // ===== Mid-month check-in trigger =====
+    // Question 1 after 10 daily mood checkins, Question 2 after 22.
+    if (currentIntake?.id) {
+      const { data: checkinCountData } = await sb
+        .from("checkins")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("checkin_date", currentIntake.intake_start_date);
+      // Note: head:true returns count via a different mechanism; use explicit count instead
+      const { count: doneCount } = await sb
+        .from("checkins")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("checkin_date", currentIntake.intake_start_date);
+
+      let triggerNumber: 1 | 2 | null = null;
+      if ((doneCount ?? 0) >= 22) triggerNumber = 2;
+      else if ((doneCount ?? 0) >= 10) triggerNumber = 1;
+
+      if (triggerNumber) {
+        // Check if already answered or permanently dismissed
+        const { data: state } = await sb
+          .from("intake_checkin_state")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("intake_id", currentIntake.id)
+          .eq("question_number", triggerNumber)
+          .maybeSingle();
+
+        const alreadyDone = state?.answered_at || state?.dismissed_permanently;
+        if (!alreadyDone) {
+          // Pull question text from app_settings + theme override
+          const { data: appSet } = await sb.from("app_settings").select("checkin_question_1, checkin_question_2").maybeSingle();
+          const themeQ1 = displayTheme?.checkin_question;
+          const themeQ2 = displayTheme?.checkin_question_2;
+          const text = triggerNumber === 1
+            ? (themeQ1 || appSet?.checkin_question_1 || "What is shifting inside you right now?")
+            : (themeQ2 || appSet?.checkin_question_2 || "What is shifting inside you right now?");
+          setCheckinPrompt({ questionNumber: triggerNumber, questionText: text, intakeId: currentIntake.id });
+        }
+      }
+    }
+
     setLoading(false);
+  };
+
+  const dismissCheckin = async () => {
+    if (!checkinPrompt) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    if (checkinDismissedThisSession) {
+      // Second dismissal in same session = permanent
+      await sb.from("intake_checkin_state").upsert(
+        {
+          user_id: user.id,
+          intake_id: checkinPrompt.intakeId,
+          question_number: checkinPrompt.questionNumber,
+          dismissed_permanently: true,
+        },
+        { onConflict: "user_id,intake_id,question_number" }
+      );
+      setCheckinPrompt(null);
+    } else {
+      // First dismissal: postpone, will reappear next open
+      await sb.from("intake_checkin_state").upsert(
+        {
+          user_id: user.id,
+          intake_id: checkinPrompt.intakeId,
+          question_number: checkinPrompt.questionNumber,
+        },
+        { onConflict: "user_id,intake_id,question_number" }
+      );
+      setCheckinDismissedThisSession(true);
+      setCheckinPrompt(null);
+    }
+  };
+
+  const submitCheckin = async () => {
+    if (!checkinPrompt || !checkinAnswer.trim()) return;
+    setCheckinSubmitting(true);
+    try {
+      const { error } = await supabase.functions.invoke("regenerate-seed-5", {
+        body: {
+          question: checkinPrompt.questionText,
+          answer: checkinAnswer.trim(),
+          questionNumber: checkinPrompt.questionNumber,
+          intakeId: checkinPrompt.intakeId,
+        },
+      });
+      if (error) console.error("regenerate-seed-5 error:", error);
+      setCheckinPrompt(null);
+      setCheckinAnswer("");
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setCheckinSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -239,9 +337,14 @@ const Home = () => {
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 pt-6 pb-2">
         <SpiralLogo />
-        <button onClick={() => navigate("/settings")} aria-label="Menu" className="p-1">
-          <Menu size={22} style={{ color: "hsl(var(--subtitle))" }} strokeWidth={1.6} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => navigate("/settings")} aria-label="Settings" className="p-1.5">
+            <SettingsIcon size={20} style={{ color: "hsl(var(--subtitle))" }} strokeWidth={1.6} />
+          </button>
+          <button aria-label="Menu" className="p-1.5">
+            <Menu size={22} style={{ color: "hsl(var(--subtitle))" }} strokeWidth={1.6} />
+          </button>
+        </div>
       </div>
 
       {/* Greeting */}
@@ -322,25 +425,96 @@ const Home = () => {
               <PracticeItem
                 icon={<JournalGlyph />}
                 iconBg="#C8DED8"
-                title="Journal"
-                subtitle="A quiet place to reflect"
+                title="Reflect"
+                subtitle="your daily moment of honesty"
                 done={false}
-                onClick={() => setActiveTab("journal")}
-              />
-              <PracticeItem
-                icon={<FaceGlyph />}
-                iconBg="#F0D4C8"
-                title="Daily Check-in"
-                subtitle="A small moment of honesty"
-                done={false}
-                onClick={() => {}}
+                onClick={() => navigate("/reflect")}
               />
             </div>
           </div>
         </div>
       )}
 
-      {/* Previous chapters */}
+      {/* Mid-month check-in question card */}
+      {checkinPrompt && (
+        <div
+          className="mb-8 mx-4"
+          style={{
+            background: "#DDD0EE",
+            borderRadius: "18px",
+            padding: "18px",
+            border: "1px solid rgba(155, 123, 212, 0.2)",
+          }}
+        >
+          <p
+            className="uppercase mb-3"
+            style={{
+              fontSize: "10px",
+              letterSpacing: "0.2em",
+              color: "#9B7BD4",
+              fontFamily: "Georgia, serif",
+            }}
+          >
+            a question for you
+          </p>
+          <p
+            className="italic mb-4"
+            style={{
+              fontSize: "17px",
+              color: "#3D2E1E",
+              fontFamily: "Georgia, serif",
+              lineHeight: 1.5,
+            }}
+          >
+            {checkinPrompt.questionText}
+          </p>
+          <textarea
+            value={checkinAnswer}
+            onChange={(e) => setCheckinAnswer(e.target.value)}
+            placeholder="take your time..."
+            rows={3}
+            className="w-full bg-transparent outline-none resize-none italic mb-3"
+            style={{
+              fontSize: "14px",
+              color: "#3D2E1E",
+              fontFamily: "Georgia, serif",
+              borderBottom: "1px solid rgba(155, 123, 212, 0.2)",
+              padding: "6px 2px",
+              lineHeight: 1.6,
+            }}
+          />
+          <div className="flex justify-end mb-2">
+            <button
+              onClick={submitCheckin}
+              disabled={!checkinAnswer.trim() || checkinSubmitting}
+              className="lowercase transition-opacity"
+              style={{
+                fontSize: "13px",
+                color: "#9B7BD4",
+                fontFamily: "Georgia, serif",
+                opacity: !checkinAnswer.trim() || checkinSubmitting ? 0.4 : 1,
+                padding: "6px 14px",
+              }}
+            >
+              {checkinSubmitting ? "sharing..." : "share"}
+            </button>
+          </div>
+          <div className="flex justify-center">
+            <button
+              onClick={dismissCheckin}
+              className="lowercase"
+              style={{
+                fontSize: "11px",
+                color: "#C8B090",
+                fontFamily: "Georgia, serif",
+              }}
+            >
+              maybe later
+            </button>
+          </div>
+        </div>
+      )}
+
       {pastChapters.length > 0 && (
         <div className="mb-8">
           <SectionLabel>Previous Chapters</SectionLabel>
@@ -406,23 +580,7 @@ const Home = () => {
         </div>
       )}
 
-      {/* Bottom navigation */}
-      <nav
-        className="fixed bottom-0 left-0 right-0"
-        style={{
-          background: "hsl(var(--background))",
-          borderTop: "1px solid rgba(160, 120, 70, 0.15)",
-          paddingTop: "13px",
-          paddingBottom: "22px",
-        }}
-      >
-        <div className="flex justify-around max-w-sm mx-auto px-6">
-          <NavBtn icon={<HomeIcon size={20} strokeWidth={1.6} />} label="Home" active={activeTab === "home"} onClick={() => setActiveTab("home")} />
-          <NavBtn icon={<CalendarDays size={20} strokeWidth={1.6} />} label="My Month" active={activeTab === "month"} onClick={() => navigate("/month")} />
-          <NavBtn icon={<BookOpen size={20} strokeWidth={1.6} />} label="Journal" active={activeTab === "journal"} onClick={() => setActiveTab("journal")} />
-          <NavBtn icon={<UserIcon size={20} strokeWidth={1.6} />} label="Settings" active={activeTab === "settings"} onClick={() => navigate("/settings")} />
-        </div>
-      </nav>
+      <BottomNav />
     </div>
   );
 };
