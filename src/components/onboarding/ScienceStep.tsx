@@ -9,7 +9,7 @@ const ScienceStep = () => (
     transition={{ duration: 0.7 }}
     className="flex flex-col items-center text-center flex-1 justify-center px-2"
   >
-    <img src={logo} alt="YOUTOPIA" className="h-7 mb-8 opacity-80" />
+    <img src={logo} alt="YOUTOPIA" className="h-20 md:h-24 mb-8 mix-blend-multiply" />
 
     <h1 className="font-heading text-4xl text-secondary mb-6 leading-tight">
       Why this works
