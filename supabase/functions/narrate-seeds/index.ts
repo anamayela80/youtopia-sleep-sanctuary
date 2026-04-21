@@ -5,14 +5,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-function buildSSML(phrase: string, index: number): string {
-  // Seeds 1, 3, 5 (indexes 0, 2, 4) → whispered softly. Seeds 2, 4 (indexes 1, 3) → softly spoken.
-  const isWhisper = index % 2 === 0;
-  const text = phrase.trim();
-  if (isWhisper) {
-    return `[whisper][softly][slow][drawn out] ${text}`;
-  }
-  return `[softly][slow][warm] ${text}`;
+function buildSSML(phrase: string, _index: number): string {
+  // All seeds use the same gentle whisper tags — matches the working config from ElevenLabs UI.
+  return `[whisper] [slow] ${phrase.trim()}`;
 }
 
 async function callTTS(voiceId: string, ssml: string, apiKey: string) {
@@ -24,7 +19,10 @@ async function callTTS(voiceId: string, ssml: string, apiKey: string) {
       body: JSON.stringify({
         text: ssml,
         model_id: "eleven_v3",
+        // Creative mode: stability 0 = maximum expressiveness, lets [whisper] tag fully take effect.
         voice_settings: {
+          stability: 0,
+          similarity_boost: 0.75,
           style: 0,
           speed: 0.75,
           use_speaker_boost: true,
