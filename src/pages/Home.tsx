@@ -254,7 +254,7 @@ const Home = () => {
         <div className="px-6 mb-6">
           <div className="bg-cream-light rounded-3xl p-6 border border-border">
             {/* Square artwork */}
-            <div className="w-40 h-40 mx-auto aspect-square rounded-2xl overflow-hidden mb-5 relative">
+            <div className="w-56 h-56 mx-auto aspect-square rounded-2xl overflow-hidden mb-5 relative">
               {artworkUrl ? (
                 <img src={artworkUrl} alt={meditationName} className="w-full h-full object-cover" />
               ) : (
