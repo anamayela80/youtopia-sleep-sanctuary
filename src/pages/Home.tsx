@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Home as HomeIcon, CalendarDays, BookOpen, User as UserIcon, Check } from "lucide-react";
+import { Menu, Settings as SettingsIcon, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getLatestMeditation, getLatestSeeds, getActiveTheme, getUserProfile,
 } from "@/services/meditationService";
 import { getCurrentIntake, type UserIntake } from "@/services/intakeService";
 import { supabase as sb } from "@/integrations/supabase/client";
+import { BottomNav } from "@/components/BottomNav";
 import spiralLogo from "@/assets/youtopia-sun.png";
 
 const getGreeting = () => {
