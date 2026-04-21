@@ -5,10 +5,9 @@ interface ThemeIntroStepProps {
   themeName: string;
   description: string;
   intention: string;
-  monthLabel?: string;
 }
 
-const ThemeIntroStep = ({ themeName, description, intention, monthLabel }: ThemeIntroStepProps) => (
+const ThemeIntroStep = ({ themeName, description, intention }: ThemeIntroStepProps) => (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
@@ -17,12 +16,6 @@ const ThemeIntroStep = ({ themeName, description, intention, monthLabel }: Theme
     className="flex flex-col items-center text-center flex-1 justify-center px-4"
   >
     <img src={logo} alt="YOUTOPIA" className="h-7 mb-10 opacity-80" />
-
-    {monthLabel && (
-      <p className="text-[11px] uppercase tracking-[0.2em] font-body text-accent mb-5">
-        {monthLabel}
-      </p>
-    )}
 
     <motion.h1
       className="font-heading text-5xl md:text-6xl text-coral-dark mb-6 leading-[1.05] tracking-tight"

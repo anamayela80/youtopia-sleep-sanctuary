@@ -406,7 +406,6 @@ const Onboarding = () => {
               themeName={theme?.theme || "Your Practice"}
               description={theme?.description || ""}
               intention={theme?.intention || ""}
-              monthLabel={new Date().toLocaleString("default", { month: "long", year: "numeric" })}
             />
           )}
           {currentKind === "question" && (
