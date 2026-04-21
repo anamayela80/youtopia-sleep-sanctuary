@@ -6,13 +6,13 @@ const corsHeaders = {
 };
 
 function buildSSML(phrase: string, index: number): string {
-  // Seeds 1, 3, 5 (indexes 0, 2, 4) → whispered. Seeds 2, 4 (indexes 1, 3) → soft spoken.
+  // Seeds 1, 3, 5 (indexes 0, 2, 4) → whispered softly. Seeds 2, 4 (indexes 1, 3) → softly spoken.
   const isWhisper = index % 2 === 0;
   const text = phrase.trim();
   if (isWhisper) {
-    return `<speak><prosody rate="x-slow">[whisper]${text}[/whisper]</prosody></speak>`;
+    return `[whisper][softly][slow][drawn out] ${text}`;
   }
-  return `<speak><prosody rate="slow" volume="soft">${text}</prosody></speak>`;
+  return `[softly][slow][warm] ${text}`;
 }
 
 async function callTTS(voiceId: string, ssml: string, apiKey: string) {
