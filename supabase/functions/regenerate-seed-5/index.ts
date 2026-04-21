@@ -164,7 +164,7 @@ Write ONE Seed only. Rules:
           headers: { "xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json" },
           body: JSON.stringify({
             text,
-            model_id: "eleven_multilingual_v3",
+            model_id: "eleven_v3",
             voice_settings: { style: 0, speed: 0.75, use_speaker_boost: true },
           }),
         }

@@ -53,7 +53,7 @@ serve(async (req) => {
       : null;
     const fallbackVoiceId = "9BDgg2Q7WSrW0x8naPLw";
     const elevenLabsVoiceId = requestedVoiceId || fallbackVoiceId;
-    const modelId = "eleven_multilingual_v3";
+    const modelId = "eleven_v3";
 
     console.log(`Narrating segment ${segmentNumber || 'full'} voice=${elevenLabsVoiceId} model=${modelId}, script length=${script.length}`);
 

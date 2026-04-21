@@ -23,7 +23,7 @@ async function callTTS(voiceId: string, ssml: string, apiKey: string) {
       headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({
         text: ssml,
-        model_id: "eleven_multilingual_v3",
+        model_id: "eleven_v3",
         voice_settings: {
           style: 0,
           speed: 0.75,
