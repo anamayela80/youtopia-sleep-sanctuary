@@ -33,7 +33,7 @@ serve(async (req) => {
     console.log(`Narrating segment ${segmentNumber || 'full'} voice=${elevenLabsVoiceId} model=${modelId} stab=${stabilityVal} style=${styleVal} speed=${speedVal}, len=${script.length}`);
 
     const doTTS = async (vid: string, text: string, prev?: string, next?: string) => {
-      const wrapped = `[soft][slow]${text}[/slow][/soft]`;
+      const wrapped = `[soft][slow][whisper]${text}[/whisper][/slow][/soft]`;
       const body: Record<string, unknown> = {
         text: wrapped,
         model_id: modelId,
