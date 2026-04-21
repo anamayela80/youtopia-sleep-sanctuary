@@ -44,9 +44,11 @@ function toNarrationText(raw: string): string {
 }
 
 // Wrap each chunk for v3 with calm pacing tags. These ARE interpreted by
-// eleven_v3 as delivery hints (not read aloud).
-function wrapV3(text: string): string {
-  return `[soft][slow] ${text}`;
+// eleven_v3 as delivery hints (not read aloud). [softly] + [slow] +
+// [warm] + [drawn out] keep the delivery intimate and unhurried.
+function wrapV3(text: string, isFirst: boolean): string {
+  const opener = isFirst ? "[softly][slow][warm][drawn out] " : "[softly][slow][warm] ";
+  return `${opener}${text}`;
 }
 
 serve(async (req) => {
