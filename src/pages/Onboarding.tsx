@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   generateMeditationScript,
   generateMonthlyPackage,
+  generateMeditationArtwork,
   narrateSegment,
   uploadSegmentAudio,
   saveMeditation,
