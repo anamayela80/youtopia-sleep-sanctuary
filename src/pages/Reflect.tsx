@@ -377,6 +377,8 @@ const Reflect = () => {
                     border:
                       d.mood !== null
                         ? "none"
+                        : d.isFuture
+                        ? "1px solid rgba(160, 120, 70, 0.08)"
                         : "1px solid rgba(160, 120, 70, 0.15)",
                   }}
                 />
