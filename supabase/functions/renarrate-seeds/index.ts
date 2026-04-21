@@ -78,33 +78,42 @@ Deno.serve(async (req) => {
       voiceId = clone.elevenlabs_voice_id;
     }
 
-    const modelId = theme?.voice_model || settings?.default_voice_model || "eleven_v3";
-    const stability = Number(theme?.voice_stability ?? settings?.default_voice_stability ?? 0.0);
-    const style = Number(theme?.voice_style ?? settings?.default_voice_style ?? 0.0);
-
     const phrases = [seedsRow.phrase_1, seedsRow.phrase_2, seedsRow.phrase_3, seedsRow.phrase_4, seedsRow.phrase_5];
     const newUrls: (string | null)[] = [null, null, null, null, null];
+
+    const buildSSML = (phrase: string, i: number) => {
+      const isWhisper = i % 2 === 0; // seeds 1,3,5 whisper; 2,4 soft
+      const t = phrase.trim();
+      return isWhisper
+        ? `<speak><prosody rate="x-slow">[whisper]${t}[/whisper]</prosody></speak>`
+        : `<speak><prosody rate="slow" volume="soft">${t}</prosody></speak>`;
+    };
+
+    const callTTS = async (text: string) => fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
+      {
+        method: "POST",
+        headers: { "xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text,
+          model_id: "eleven_multilingual_v3",
+          voice_settings: { style: 0, speed: 0.75, use_speaker_boost: true },
+        }),
+      }
+    );
 
     for (let i = 0; i < 5; i++) {
       const phrase = phrases[i];
       if (!phrase) continue;
-      const wrappedText = `[soft][slow][whisper]${phrase.trim()}[/whisper][/slow][/soft]`;
-
-      const ttsRes = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
-        {
-          method: "POST",
-          headers: { "xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text: wrappedText,
-            model_id: modelId,
-            voice_settings: {
-              stability, similarity_boost: 0.85, style,
-              use_speaker_boost: false, speed: 0.8,
-            },
-          }),
-        }
-      );
+      let ttsRes = await callTTS(buildSSML(phrase, i));
+      if (!ttsRes.ok && ttsRes.status !== 401 && ttsRes.status !== 402) {
+        await new Promise((r) => setTimeout(r, 2000));
+        ttsRes = await callTTS(buildSSML(phrase, i));
+      }
+      if (ttsRes.status === 400) {
+        // SSML rejected, fall back to plain text
+        ttsRes = await callTTS(phrase.trim());
+      }
       if (!ttsRes.ok) {
         const err = await ttsRes.text();
         console.error(`Seed ${i + 1} TTS failed:`, ttsRes.status, err);

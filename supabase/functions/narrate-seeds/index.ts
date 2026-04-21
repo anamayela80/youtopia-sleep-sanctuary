@@ -5,13 +5,42 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function buildSSML(phrase: string, index: number): string {
+  // Seeds 1, 3, 5 (indexes 0, 2, 4) → whispered. Seeds 2, 4 (indexes 1, 3) → soft spoken.
+  const isWhisper = index % 2 === 0;
+  const text = phrase.trim();
+  if (isWhisper) {
+    return `<speak><prosody rate="x-slow">[whisper]${text}[/whisper]</prosody></speak>`;
+  }
+  return `<speak><prosody rate="slow" volume="soft">${text}</prosody></speak>`;
+}
+
+async function callTTS(voiceId: string, ssml: string, apiKey: string) {
+  return await fetch(
+    `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
+    {
+      method: "POST",
+      headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: ssml,
+        model_id: "eleven_multilingual_v3",
+        voice_settings: {
+          style: 0,
+          speed: 0.75,
+          use_speaker_boost: true,
+        },
+      }),
+    }
+  );
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { phrase, voiceId, model, stability, style, speed, index } = await req.json();
+    const { phrase, voiceId, index } = await req.json();
 
     if (!phrase || !voiceId) {
       return new Response(JSON.stringify({ error: "phrase and voiceId are required" }), {
@@ -22,46 +51,32 @@ serve(async (req) => {
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     if (!ELEVENLABS_API_KEY) throw new Error("ELEVENLABS_API_KEY is not configured");
 
-    const modelId = typeof model === "string" && model.trim() ? model.trim() : "eleven_v3";
-    const stabilityVal = typeof stability === "number" ? stability : 0.0;
-    const styleVal = typeof style === "number" ? style : 0.0;
-    const speedVal = typeof speed === "number" ? speed : 0.78;
+    const idx = typeof index === "number" ? index : 0;
+    const ssml = buildSSML(phrase, idx);
 
-    // Vary delivery: whisper some seeds, speak others softly. Alternate by index when provided.
-    const idx = typeof index === "number" ? index : Math.floor(Math.random() * 5);
-    const isWhisper = idx % 2 === 0;
-    const wrappedText = isWhisper
-      ? `[soft][slow][whisper]${phrase.trim()}[/whisper][/slow][/soft]`
-      : `[soft][slow]${phrase.trim()}[/slow][/soft]`;
+    // First attempt
+    let response = await callTTS(voiceId, ssml, ELEVENLABS_API_KEY);
 
-    const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
-      {
-        method: "POST",
-        headers: {
-          "xi-api-key": ELEVENLABS_API_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          text: wrappedText,
-          model_id: modelId,
-          voice_settings: {
-            stability: stabilityVal,
-            similarity_boost: 0.85,
-            style: styleVal,
-            use_speaker_boost: false,
-            speed: speedVal,
-          },
-        }),
-      }
-    );
+    // Retry once after 2 seconds on transient failure
+    if (!response.ok && response.status !== 404 && response.status !== 401 && response.status !== 402) {
+      console.warn(`Seed ${idx + 1} TTS failed (${response.status}), retrying in 2s`);
+      await new Promise((r) => setTimeout(r, 2000));
+      response = await callTTS(voiceId, ssml, ELEVENLABS_API_KEY);
+    }
+
+    // SSML rejected → strip tags and retry as plain text
+    if (response.status === 400) {
+      const errBody = await response.text();
+      console.warn(`Seed SSML rejected, retrying as plain text:`, errBody);
+      response = await callTTS(voiceId, phrase.trim(), ELEVENLABS_API_KEY);
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error("ElevenLabs seed narration error:", response.status, errorText);
 
       if (response.status === 404) {
-        return new Response(JSON.stringify({ 
+        return new Response(JSON.stringify({
           error: "voice_refresh_needed",
           message: "Your voice needs a refresh. It only takes a minute.",
         }), {

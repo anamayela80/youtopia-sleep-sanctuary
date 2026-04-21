@@ -5,13 +5,39 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Convert Claude bracket pause markers → SSML <break> tags.
+// Wrap in <speak>…</speak>. Strip any leftover bracket markers as a safety net.
+function toSSML(raw: string): string {
+  let s = raw;
+  const replacements: [RegExp, string][] = [
+    [/\[pause\s*4s\]/gi, '<break time="4s"/>'],
+    [/\[pause\s*5s\]/gi, '<break time="5s"/>'],
+    [/\[pause\s*6s\]/gi, '<break time="6s"/>'],
+    [/\[vision\s*pause\s*10s\]/gi, '<break time="10s"/>'],
+    [/\[long\s*pause\s*8s\]/gi, '<break time="8s"/>'],
+    [/\[long\s*pause\s*15s\]/gi, '<break time="15s"/>'],
+    [/\[affirm\s*pause\s*6s\]/gi, '<break time="6s"/>'],
+    [/\[seed\s*pause\s*6s\]/gi, '<break time="6s"/>'],
+  ];
+  for (const [re, val] of replacements) s = s.replace(re, val);
+  // Generic safety: any remaining [pause Ns] / [... Ns]
+  s = s.replace(/\[[^\]]*?(\d{1,2})s[^\]]*?\]/gi, (_m, sec) => `<break time="${sec}s"/>`);
+  // Strip any remaining bracket markers entirely so they aren't read aloud
+  s = s.replace(/\[[^\]]*\]/g, "");
+  return `<speak>${s.trim()}</speak>`;
+}
+
+function stripSSML(raw: string): string {
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { script, voiceId, segmentNumber, model, stability, style, speed } = await req.json();
+    const { script, voiceId, segmentNumber } = await req.json();
 
     if (!script) {
       return new Response(JSON.stringify({ error: "Script text is required" }), {
@@ -25,30 +51,13 @@ serve(async (req) => {
     const requestedVoiceId = typeof voiceId === "string" && voiceId.trim().length > 0
       ? voiceId.trim()
       : null;
-    const elevenLabsVoiceId = requestedVoiceId || "9BDgg2Q7WSrW0x8naPLw";
-    const modelId = typeof model === "string" && model.trim() ? model.trim() : "eleven_v3";
-    const stabilityVal = typeof stability === "number" ? stability : 0.0;
-    const styleVal = typeof style === "number" ? style : 0.0;
-    const speedVal = typeof speed === "number" ? speed : 0.72;
-    console.log(`Narrating segment ${segmentNumber || 'full'} voice=${elevenLabsVoiceId} model=${modelId} stab=${stabilityVal} style=${styleVal} speed=${speedVal}, len=${script.length}`);
+    const fallbackVoiceId = "9BDgg2Q7WSrW0x8naPLw";
+    const elevenLabsVoiceId = requestedVoiceId || fallbackVoiceId;
+    const modelId = "eleven_multilingual_v3";
 
-    const doTTS = async (vid: string, text: string, prev?: string, next?: string) => {
-      const wrapped = `[soft][slow][whisper]${text}[/whisper][/slow][/soft]`;
-      const body: Record<string, unknown> = {
-        text: wrapped,
-        model_id: modelId,
-        voice_settings: {
-          stability: stabilityVal,
-          similarity_boost: 0.85,
-          style: styleVal,
-          use_speaker_boost: false,
-          speed: speedVal,
-        },
-      };
-      // eleven_v3 does not support previous_text/next_text stitching
-      const supportsStitching = !modelId.includes("v3");
-      if (supportsStitching && prev) body.previous_text = prev;
-      if (supportsStitching && next) body.next_text = next;
+    console.log(`Narrating segment ${segmentNumber || 'full'} voice=${elevenLabsVoiceId} model=${modelId}, script length=${script.length}`);
+
+    const doTTS = async (vid: string, text: string) => {
       return await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${vid}?output_format=mp3_44100_128`,
         {
@@ -57,7 +66,15 @@ serve(async (req) => {
             "xi-api-key": ELEVENLABS_API_KEY,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(body),
+          body: JSON.stringify({
+            text,
+            model_id: modelId,
+            voice_settings: {
+              style: 0,
+              speed: 0.72,
+              use_speaker_boost: true,
+            },
+          }),
         }
       );
     };
@@ -75,51 +92,59 @@ serve(async (req) => {
       return buffer.slice(offset);
     };
 
-    // Chunk script into ≤4500 char pieces, splitting at paragraph/sentence boundaries
+    // Convert pause markers → SSML before chunking. Chunk on natural section boundaries
+    // (use long breaks as splitters) to keep each chunk under ElevenLabs limits.
+    let ssmlScript: string;
+    try {
+      ssmlScript = toSSML(script);
+    } catch (e) {
+      console.error("SSML conversion failed, falling back to plain text:", e);
+      ssmlScript = `<speak>${stripSSML(script)}</speak>`;
+    }
+
     const MAX_CHARS = 4500;
     const chunkScript = (text: string): string[] => {
-      if (text.length <= MAX_CHARS) return [text];
+      // Strip outer <speak> for chunking; we'll re-wrap each chunk.
+      const inner = text.replace(/^<speak>/i, "").replace(/<\/speak>$/i, "");
+      if (inner.length <= MAX_CHARS) return [`<speak>${inner}</speak>`];
+
       const chunks: string[] = [];
-      // Split by paragraphs first
-      const paragraphs = text.split(/\n\n+/);
+      // Split on long breaks (8s or 15s) as natural section boundaries.
+      const parts = inner.split(/(<break time="(?:8|10|15)s"\s*\/>)/i);
       let current = "";
-      for (const p of paragraphs) {
-        if ((current + "\n\n" + p).length <= MAX_CHARS) {
-          current = current ? current + "\n\n" + p : p;
+      for (const part of parts) {
+        if ((current + part).length <= MAX_CHARS) {
+          current += part;
         } else {
-          if (current) chunks.push(current);
-          if (p.length <= MAX_CHARS) {
-            current = p;
-          } else {
-            // Split paragraph by sentences
-            const sentences = p.split(/(?<=[.!?])\s+/);
+          if (current.trim()) chunks.push(`<speak>${current}</speak>`);
+          // If a single part is still too big, hard-split by sentence
+          if (part.length > MAX_CHARS) {
+            const sentences = part.split(/(?<=[.!?])\s+/);
             current = "";
             for (const s of sentences) {
               if ((current + " " + s).length <= MAX_CHARS) {
                 current = current ? current + " " + s : s;
               } else {
-                if (current) chunks.push(current);
+                if (current.trim()) chunks.push(`<speak>${current}</speak>`);
                 current = s;
               }
             }
+          } else {
+            current = part;
           }
         }
       }
-      if (current) chunks.push(current);
+      if (current.trim()) chunks.push(`<speak>${current}</speak>`);
       return chunks;
     };
 
-    const chunks = chunkScript(script);
+    const chunks = chunkScript(ssmlScript);
     console.log(`Split into ${chunks.length} chunk(s)`);
 
-    const fallbackVoiceId = "9BDgg2Q7WSrW0x8naPLw";
     const audioBuffers: Uint8Array[] = [];
 
     for (let i = 0; i < chunks.length; i++) {
-      const prev = i > 0 ? chunks[i - 1].slice(-300) : undefined;
-      const next = i < chunks.length - 1 ? chunks[i + 1].slice(0, 300) : undefined;
-
-      let response = await doTTS(elevenLabsVoiceId, chunks[i], prev, next);
+      let response = await doTTS(elevenLabsVoiceId, chunks[i]);
 
       if (response.status === 404 && requestedVoiceId) {
         return new Response(JSON.stringify({
@@ -131,7 +156,15 @@ serve(async (req) => {
 
       if (response.status === 404 && elevenLabsVoiceId !== fallbackVoiceId) {
         console.warn(`Voice ${elevenLabsVoiceId} not found, falling back to default`);
-        response = await doTTS(fallbackVoiceId, chunks[i], prev, next);
+        response = await doTTS(fallbackVoiceId, chunks[i]);
+      }
+
+      // If SSML is rejected (400) try plain text fallback for this chunk
+      if (response.status === 400) {
+        const errBody = await response.text();
+        console.warn(`SSML rejected on chunk ${i + 1}, retrying as plain text:`, errBody);
+        const plain = stripSSML(chunks[i]);
+        response = await doTTS(elevenLabsVoiceId, plain);
       }
 
       if (!response.ok) {

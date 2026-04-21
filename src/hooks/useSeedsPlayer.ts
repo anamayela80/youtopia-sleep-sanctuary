@@ -1,27 +1,50 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 
+/**
+ * 45-minute Evening Seeds session.
+ *
+ * Structure:
+ *   0:00 → music fade-in (4s) then music alone for ~2 min
+ *   Cycle 1: seeds 1→5 in fixed order. Seed vol 1.0. Music under seed 0.20, gap 0.35.
+ *   Cycle 2: shuffled. Seed vol 0.95.
+ *   Cycle 3: shuffled. Seed vol 0.85.
+ *   Cycle 4: shuffled. Seed vol 0.70. Music under seed 0.15, gap 0.28. Gaps 100s.
+ *   Final: music alone, 90-second slow fade to silence.
+ *
+ * Each seed is followed by 3s silence then 90s (or 100s in cycle 4) of music alone.
+ * The shuffle for each new cycle never starts with the previous cycle's last seed.
+ */
+
 interface UseSeedsPlayerOptions {
   seedAudioUrls: string[];
   musicUrl: string | null;
-  musicVolume?: number;
-  pauseDuration?: number;
   /** Total session length in seconds. Defaults to 45 minutes. */
   totalDuration?: number;
-  musicFadeInDuration?: number;
-  musicFadeOutDuration?: number;
-  /** Volume of seed phrases — kept low so it feels like a whisper for sleep. */
-  seedVolume?: number;
 }
+
+const PRELUDE_SECONDS = 120;        // music alone before any seed
+const FADE_IN_SECONDS = 4;
+const POST_SEED_SILENCE = 3;
+const GAP_NORMAL = 90;
+const GAP_DEEP = 100;
+const FINAL_FADE_SECONDS = 90;
+
+const CYCLE_SEED_VOLUMES = [1.0, 0.95, 0.85, 0.70];
+const CYCLE_MUSIC_UNDER  = [0.20, 0.20, 0.20, 0.15]; // music ducked while seed is playing
+const CYCLE_MUSIC_GAP    = [0.35, 0.35, 0.35, 0.28]; // music in the silence between seeds
+const CYCLE_GAP_SECONDS  = [GAP_NORMAL, GAP_NORMAL, GAP_NORMAL, GAP_DEEP];
+
+type SeedEvent = {
+  index: number;
+  startOffset: number;
+  duration: number;
+  cycle: number; // 0..3
+};
 
 export function useSeedsPlayer({
   seedAudioUrls,
   musicUrl,
-  musicVolume = 0.2,
-  pauseDuration = 35,
   totalDuration = 45 * 60,
-  musicFadeInDuration = 60,
-  musicFadeOutDuration = 120,
-  seedVolume = 0.18,
 }: UseSeedsPlayerOptions) {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
@@ -30,7 +53,7 @@ export function useSeedsPlayer({
   const rafRef = useRef<number>(0);
   const startTimeRef = useRef(0);
   const offsetRef = useRef(0);
-  const totalDurationRef = useRef(0);
+  const totalDurationRef = useRef(totalDuration);
   const seedBuffersRef = useRef<AudioBuffer[]>([]);
   const musicBufferRef = useRef<AudioBuffer | null>(null);
 
@@ -39,7 +62,7 @@ export function useSeedsPlayer({
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [duration, setDuration] = useState(totalDuration);
   const [hasStarted, setHasStarted] = useState(false);
 
   const loadBuffer = async (ctx: AudioContext, url: string): Promise<AudioBuffer> => {
@@ -48,47 +71,63 @@ export function useSeedsPlayer({
     return await ctx.decodeAudioData(arrayBuf);
   };
 
-  const buildTimeline = useCallback(() => {
-    const buffers = seedBuffersRef.current;
-    const events: { index: number; startOffset: number; duration: number }[] = [];
-    if (buffers.length === 0) return { events, totalDuration };
-
-    // Loop seeds across the full session in shuffled cycles so the same phrase
-    // never repeats back-to-back and the order feels organic for sleep.
-    const seedWindowEnd = totalDuration - musicFadeOutDuration;
-    const n = buffers.length;
-
-    const shuffleAvoiding = (avoidFirst: number | null): number[] => {
-      const arr = Array.from({ length: n }, (_, k) => k);
+  /** Shuffle [0..n-1] in place, ensuring index 0 != avoidFirst. */
+  const shuffleAvoiding = (n: number, avoidFirst: number | null): number[] => {
+    const arr = Array.from({ length: n }, (_, k) => k);
+    let attempts = 0;
+    do {
       for (let k = arr.length - 1; k > 0; k--) {
         const j = Math.floor(Math.random() * (k + 1));
         [arr[k], arr[j]] = [arr[j], arr[k]];
       }
-      if (avoidFirst !== null && n > 1 && arr[0] === avoidFirst) {
-        [arr[0], arr[1]] = [arr[1], arr[0]];
-      }
-      return arr;
-    };
-
-    let t = musicFadeInDuration;
-    let lastIdx: number | null = null;
-    let order = shuffleAvoiding(null);
-    let pos = 0;
-
-    while (t < seedWindowEnd) {
-      if (pos >= order.length) {
-        order = shuffleAvoiding(lastIdx);
-        pos = 0;
-      }
-      const idx = order[pos++];
-      const buf = buffers[idx];
-      if (t + buf.duration > seedWindowEnd) break;
-      events.push({ index: idx, startOffset: t, duration: buf.duration });
-      t += buf.duration + pauseDuration;
-      lastIdx = idx;
+      attempts++;
+    } while (avoidFirst !== null && n > 1 && arr[0] === avoidFirst && attempts < 10);
+    if (avoidFirst !== null && n > 1 && arr[0] === avoidFirst) {
+      [arr[0], arr[1]] = [arr[1], arr[0]];
     }
-    return { events, totalDuration };
-  }, [musicFadeInDuration, pauseDuration, totalDuration, musicFadeOutDuration]);
+    return arr;
+  };
+
+  /** Build the four-cycle timeline. Returns events + gap windows for music ducking. */
+  const buildTimeline = useCallback(() => {
+    const buffers = seedBuffersRef.current;
+    const events: SeedEvent[] = [];
+    if (buffers.length === 0) {
+      return { events, gapWindows: [] as { start: number; end: number; cycle: number }[] };
+    }
+    const n = buffers.length;
+    let t = FADE_IN_SECONDS + (PRELUDE_SECONDS - FADE_IN_SECONDS); // = PRELUDE_SECONDS
+    const sessionEnd = totalDuration - FINAL_FADE_SECONDS;
+    const gapWindows: { start: number; end: number; cycle: number }[] = [];
+
+    let lastIdx: number | null = null;
+
+    for (let cycle = 0; cycle < 4 && t < sessionEnd; cycle++) {
+      const order = cycle === 0
+        ? [0, 1, 2, 3, 4].slice(0, n)
+        : shuffleAvoiding(n, lastIdx);
+      const gap = CYCLE_GAP_SECONDS[cycle];
+
+      for (let p = 0; p < order.length && t < sessionEnd; p++) {
+        const idx = order[p];
+        const buf = buffers[idx];
+        if (t + buf.duration > sessionEnd) break;
+
+        events.push({ index: idx, startOffset: t, duration: buf.duration, cycle });
+        t += buf.duration;
+
+        // 3s silence after seed (music continues at "under seed" level briefly,
+        // then transitions to gap level for the rest of the gap window).
+        const gapStart = t + POST_SEED_SILENCE;
+        const gapEnd = Math.min(gapStart + gap, sessionEnd);
+        gapWindows.push({ start: t, end: gapEnd, cycle });
+        t = gapEnd;
+        lastIdx = idx;
+      }
+    }
+
+    return { events, gapWindows };
+  }, [totalDuration]);
 
   const tick = useCallback(() => {
     const ctx = audioCtxRef.current;
@@ -108,7 +147,7 @@ export function useSeedsPlayer({
   const stopAllSources = useCallback(() => {
     activeSourcesRef.current.forEach((s) => { try { s.stop(); } catch {} });
     activeSourcesRef.current = [];
-    try { musicSourceRef.current?.stop(); } catch {};
+    try { musicSourceRef.current?.stop(); } catch {}
     musicSourceRef.current = null;
     musicGainRef.current = null;
     cancelAnimationFrame(rafRef.current);
@@ -122,75 +161,104 @@ export function useSeedsPlayer({
 
     if (ctx.state === "suspended") ctx.resume();
 
-    const { events, totalDuration } = buildTimeline();
+    const { events } = buildTimeline();
     totalDurationRef.current = totalDuration;
     setDuration(totalDuration);
 
-    const clampedOffset = Math.max(0, Math.min(fromOffset, totalDuration));
-    offsetRef.current = clampedOffset;
+    const clamped = Math.max(0, Math.min(fromOffset, totalDuration));
+    offsetRef.current = clamped;
 
     const now = ctx.currentTime;
     startTimeRef.current = now;
 
-    // Music
+    // ---------- MUSIC + DUCKING SCHEDULE ----------
     if (musicBuf) {
       const musicSource = ctx.createBufferSource();
       musicSource.buffer = musicBuf;
       musicSource.loop = true;
-      const gainNode = ctx.createGain();
+      const gain = ctx.createGain();
 
-      let currentGain = musicVolume;
-      if (clampedOffset < musicFadeInDuration) {
-        currentGain = (clampedOffset / musicFadeInDuration) * musicVolume;
+      // Default music level when no seed is playing (gap level for the current cycle,
+      // or the prelude / final-fade levels).
+      const baseGapLevel = (sessionTime: number): number => {
+        if (sessionTime < PRELUDE_SECONDS) return CYCLE_MUSIC_GAP[0];
+        // find which cycle this time falls into via events
+        let cycle = 3;
+        for (const evt of events) {
+          if (sessionTime <= evt.startOffset + evt.duration + POST_SEED_SILENCE + CYCLE_GAP_SECONDS[evt.cycle]) {
+            cycle = evt.cycle;
+            break;
+          }
+        }
+        return CYCLE_MUSIC_GAP[cycle];
+      };
+
+      const startGain = (() => {
+        if (clamped < FADE_IN_SECONDS) return 0;
+        return baseGapLevel(clamped);
+      })();
+      gain.gain.setValueAtTime(startGain, now);
+
+      // Initial fade-in
+      if (clamped < FADE_IN_SECONDS) {
+        gain.gain.linearRampToValueAtTime(baseGapLevel(FADE_IN_SECONDS), now + (FADE_IN_SECONDS - clamped));
       }
-      const fadeOutStart = totalDuration - musicFadeOutDuration;
-      if (clampedOffset >= fadeOutStart) {
-        currentGain = Math.max(0, ((totalDuration - clampedOffset) / musicFadeOutDuration) * musicVolume);
+
+      // For each seed in the future, duck music down before, restore after.
+      events.forEach((evt) => {
+        const seedEnd = evt.startOffset + evt.duration;
+        if (seedEnd <= clamped) return;
+        const duckDown = CYCLE_MUSIC_UNDER[evt.cycle];
+        const gapLevel = CYCLE_MUSIC_GAP[evt.cycle];
+
+        const duckStartAbs = Math.max(evt.startOffset - 2, clamped);
+        const duckEndAbs = seedEnd; // restore begins after the seed audio finishes
+        const restoreEndAbs = seedEnd + POST_SEED_SILENCE + 8; // smooth ramp back over ~8s after silence
+
+        if (duckStartAbs > clamped) {
+          gain.gain.setValueAtTime(gapLevel, now + (duckStartAbs - clamped));
+          gain.gain.linearRampToValueAtTime(duckDown, now + (evt.startOffset - clamped));
+        } else {
+          gain.gain.linearRampToValueAtTime(duckDown, now + Math.max(0.1, evt.startOffset - clamped));
+        }
+        gain.gain.setValueAtTime(duckDown, now + (duckEndAbs - clamped));
+        gain.gain.linearRampToValueAtTime(gapLevel, now + (restoreEndAbs - clamped));
+      });
+
+      // Final 90s fade to silence.
+      const fadeOutStart = totalDuration - FINAL_FADE_SECONDS;
+      if (clamped < fadeOutStart) {
+        gain.gain.setValueAtTime(CYCLE_MUSIC_GAP[3], now + (fadeOutStart - clamped));
+        gain.gain.linearRampToValueAtTime(0, now + (totalDuration - clamped));
+      } else {
+        const remaining = totalDuration - clamped;
+        gain.gain.linearRampToValueAtTime(0, now + remaining);
       }
 
-      gainNode.gain.setValueAtTime(currentGain, now);
-
-      if (clampedOffset < musicFadeInDuration) {
-        const remainFade = musicFadeInDuration - clampedOffset;
-        gainNode.gain.linearRampToValueAtTime(musicVolume, now + remainFade);
-      }
-
-      const fadeOutStartOffset = totalDuration - musicFadeOutDuration;
-      if (clampedOffset < fadeOutStartOffset) {
-        const fadeOutAt = now + (fadeOutStartOffset - clampedOffset);
-        gainNode.gain.setValueAtTime(musicVolume, fadeOutAt);
-        gainNode.gain.linearRampToValueAtTime(0, fadeOutAt + musicFadeOutDuration);
-      } else if (clampedOffset < totalDuration) {
-        const remaining = totalDuration - clampedOffset;
-        gainNode.gain.linearRampToValueAtTime(0, now + remaining);
-      }
-
-      musicSource.connect(gainNode).connect(ctx.destination);
-      musicSource.start(now, clampedOffset % musicBuf.duration);
+      musicSource.connect(gain).connect(ctx.destination);
+      musicSource.start(now, clamped % musicBuf.duration);
       musicSourceRef.current = musicSource;
-      musicGainRef.current = gainNode;
+      musicGainRef.current = gain;
       activeSourcesRef.current.push(musicSource);
-
-      const musicStopAt = now + (totalDuration - clampedOffset) + 0.1;
-      musicSource.stop(musicStopAt);
+      musicSource.stop(now + (totalDuration - clamped) + 0.1);
     }
 
-    // Seeds
+    // ---------- SEEDS ----------
     events.forEach((evt) => {
       const segEnd = evt.startOffset + evt.duration;
-      if (segEnd <= clampedOffset) return;
+      if (segEnd <= clamped) return;
 
       const source = ctx.createBufferSource();
       source.buffer = buffers[evt.index];
       const gain = ctx.createGain();
-      gain.gain.value = seedVolume;
+      gain.gain.value = CYCLE_SEED_VOLUMES[evt.cycle];
       source.connect(gain).connect(ctx.destination);
 
-      if (clampedOffset > evt.startOffset) {
-        const skipInto = clampedOffset - evt.startOffset;
+      if (clamped > evt.startOffset) {
+        const skipInto = clamped - evt.startOffset;
         source.start(now, skipInto);
       } else {
-        const delay = evt.startOffset - clampedOffset;
+        const delay = evt.startOffset - clamped;
         source.start(now + delay);
       }
       activeSourcesRef.current.push(source);
@@ -200,22 +268,30 @@ export function useSeedsPlayer({
     setIsPaused(false);
     setHasStarted(true);
     rafRef.current = requestAnimationFrame(tick);
-  }, [musicVolume, musicFadeInDuration, musicFadeOutDuration, seedVolume, buildTimeline, tick]);
+  }, [buildTimeline, totalDuration, tick]);
 
   const play = useCallback(async () => {
     if (seedAudioUrls.filter(Boolean).length === 0) return;
-
     setIsLoading(true);
     try {
       const ctx = new AudioContext();
       audioCtxRef.current = ctx;
 
-      seedBuffersRef.current = await Promise.all(
+      // Load seeds; skip any individual failures silently.
+      const settled = await Promise.allSettled(
         seedAudioUrls.filter(Boolean).map((url) => loadBuffer(ctx, url))
       );
+      seedBuffersRef.current = settled
+        .filter((r): r is PromiseFulfilledResult<AudioBuffer> => r.status === "fulfilled")
+        .map((r) => r.value);
 
       if (musicUrl) {
-        musicBufferRef.current = await loadBuffer(ctx, musicUrl);
+        try {
+          musicBufferRef.current = await loadBuffer(ctx, musicUrl);
+        } catch (e) {
+          console.warn("Music failed to load — playing seeds in silence.", e);
+          musicBufferRef.current = null;
+        }
       }
 
       setIsLoading(false);
@@ -247,75 +323,55 @@ export function useSeedsPlayer({
   }, [tick]);
 
   const stop = useCallback(() => {
-    stopAllSources();
-    audioCtxRef.current?.close();
-    audioCtxRef.current = null;
-    setIsPlaying(false);
-    setIsPaused(false);
-    setProgress(0);
-    setCurrentTime(0);
-    setHasStarted(false);
-    offsetRef.current = 0;
+    // 1s fade out on the music gain so stop isn't jarring.
+    const gain = musicGainRef.current;
+    const ctx = audioCtxRef.current;
+    if (gain && ctx) {
+      try {
+        const now = ctx.currentTime;
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setValueAtTime(gain.gain.value, now);
+        gain.gain.linearRampToValueAtTime(0, now + 1);
+      } catch {}
+    }
+    setTimeout(() => {
+      stopAllSources();
+      audioCtxRef.current?.close();
+      audioCtxRef.current = null;
+      setIsPlaying(false);
+      setIsPaused(false);
+      setProgress(0);
+      setCurrentTime(0);
+      setHasStarted(false);
+      offsetRef.current = 0;
+    }, 1000);
   }, [stopAllSources]);
 
-  const skip = useCallback((seconds: number) => {
+  const seekTo = useCallback((t: number) => {
     const ctx = audioCtxRef.current;
     if (!ctx) return;
     const wasPlaying = isPlaying;
-    const currentPos = wasPlaying
-      ? offsetRef.current + (ctx.currentTime - startTimeRef.current)
-      : offsetRef.current;
-    const newPos = Math.max(0, Math.min(currentPos + seconds, totalDurationRef.current));
-
+    const newPos = Math.max(0, Math.min(t, totalDurationRef.current));
     stopAllSources();
-
     const newCtx = new AudioContext();
     audioCtxRef.current = newCtx;
     offsetRef.current = newPos;
-
-    if (wasPlaying || isPaused) {
-      playFromOffset(newPos);
-    } else {
-      setCurrentTime(newPos);
-      setProgress((newPos / totalDurationRef.current) * 100);
-    }
+    if (wasPlaying || isPaused) playFromOffset(newPos);
+    else { setCurrentTime(newPos); setProgress((newPos / totalDurationRef.current) * 100); }
   }, [isPlaying, isPaused, stopAllSources, playFromOffset]);
 
-  const skipForward = useCallback(() => skip(30), [skip]);
-  const skipBackward = useCallback(() => skip(-30), [skip]);
-
-  const seekTo = useCallback((timeInSeconds: number) => {
-    const ctx = audioCtxRef.current;
-    if (!ctx) return;
-    const wasPlaying = isPlaying;
-    const newPos = Math.max(0, Math.min(timeInSeconds, totalDurationRef.current));
-
-    stopAllSources();
-
-    const newCtx = new AudioContext();
-    audioCtxRef.current = newCtx;
-    offsetRef.current = newPos;
-
-    if (wasPlaying || isPaused) {
-      playFromOffset(newPos);
-    } else {
-      setCurrentTime(newPos);
-      setProgress((newPos / totalDurationRef.current) * 100);
-    }
-  }, [isPlaying, isPaused, stopAllSources, playFromOffset]);
+  const skipForward = useCallback(() => seekTo(currentTime + 30), [seekTo, currentTime]);
+  const skipBackward = useCallback(() => seekTo(currentTime - 30), [seekTo, currentTime]);
 
   const togglePlay = useCallback(() => {
-    if (isPlaying) {
-      pause();
-    } else if (isPaused) {
-      resume();
-    } else {
-      play();
-    }
+    if (isPlaying) pause();
+    else if (isPaused) resume();
+    else play();
   }, [isPlaying, isPaused, pause, resume, play]);
 
   useEffect(() => {
     return () => { stop(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {
