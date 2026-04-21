@@ -14,9 +14,10 @@ export function useSegmentedMixer({
   musicUrl,
   musicBridgeDurations = [60, 60, 75, 60],
   musicFadeInDuration = 60,
-  musicFadeOutDuration = 90,
-  musicVolume = 0.3,
-}: UseSegmentedMixerOptions) {
+  musicFadeOutDuration = 120,
+  musicVolume = 0.45,
+  narrationVolume = 0.7,
+}: UseSegmentedMixerOptions & { narrationVolume?: number }) {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const segmentBuffersRef = useRef<AudioBuffer[]>([]);
   const musicBufferRef = useRef<AudioBuffer | null>(null);
@@ -193,7 +194,7 @@ export function useSegmentedMixer({
       const source = ctx.createBufferSource();
       source.buffer = buffers[evt.index];
       const gain = ctx.createGain();
-      gain.gain.value = 1.0;
+      gain.gain.value = narrationVolume;
       source.connect(gain).connect(ctx.destination);
 
       if (clampedOffset > evt.startOffset) {

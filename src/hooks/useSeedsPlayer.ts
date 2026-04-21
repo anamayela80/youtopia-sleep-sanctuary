@@ -53,18 +53,39 @@ export function useSeedsPlayer({
     const events: { index: number; startOffset: number; duration: number }[] = [];
     if (buffers.length === 0) return { events, totalDuration };
 
-    // Loop seeds across the full session duration.
-    // Stop placing seeds early enough to leave a quiet fade-out tail.
+    // Loop seeds across the full session in shuffled cycles so the same phrase
+    // never repeats back-to-back and the order feels organic for sleep.
     const seedWindowEnd = totalDuration - musicFadeOutDuration;
+    const n = buffers.length;
+
+    const shuffleAvoiding = (avoidFirst: number | null): number[] => {
+      const arr = Array.from({ length: n }, (_, k) => k);
+      for (let k = arr.length - 1; k > 0; k--) {
+        const j = Math.floor(Math.random() * (k + 1));
+        [arr[k], arr[j]] = [arr[j], arr[k]];
+      }
+      if (avoidFirst !== null && n > 1 && arr[0] === avoidFirst) {
+        [arr[0], arr[1]] = [arr[1], arr[0]];
+      }
+      return arr;
+    };
+
     let t = musicFadeInDuration;
-    let i = 0;
+    let lastIdx: number | null = null;
+    let order = shuffleAvoiding(null);
+    let pos = 0;
+
     while (t < seedWindowEnd) {
-      const buf = buffers[i % buffers.length];
-      // Don't start a seed that wouldn't finish before the fade-out.
+      if (pos >= order.length) {
+        order = shuffleAvoiding(lastIdx);
+        pos = 0;
+      }
+      const idx = order[pos++];
+      const buf = buffers[idx];
       if (t + buf.duration > seedWindowEnd) break;
-      events.push({ index: i % buffers.length, startOffset: t, duration: buf.duration });
+      events.push({ index: idx, startOffset: t, duration: buf.duration });
       t += buf.duration + pauseDuration;
-      i++;
+      lastIdx = idx;
     }
     return { events, totalDuration };
   }, [musicFadeInDuration, pauseDuration, totalDuration, musicFadeOutDuration]);
