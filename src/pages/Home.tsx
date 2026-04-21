@@ -272,8 +272,12 @@ const Home = () => {
             <h3 className="font-heading text-2xl text-secondary text-center mb-1">
               {meditationName}
             </h3>
-            <p className="font-body text-xs text-muted-foreground text-center uppercase tracking-wider mb-5">
+            <p className="font-body text-xs text-muted-foreground text-center uppercase tracking-wider mb-2">
               Morning Meditation
+            </p>
+            <p className="font-body text-xs text-muted-foreground text-center flex items-center justify-center gap-1.5 mb-5">
+              <Headphones className="w-3.5 h-3.5" />
+              Best with headphones and eyes closed
             </p>
 
             {/* Progress */}
