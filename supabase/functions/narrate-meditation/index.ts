@@ -102,22 +102,20 @@ serve(async (req) => {
       ssmlScript = `<speak>${stripSSML(script)}</speak>`;
     }
 
-    const MAX_CHARS = 4500;
+    const MAX_CHARS = 1500;
     const chunkScript = (text: string): string[] => {
-      // Strip outer <speak> for chunking; we'll re-wrap each chunk.
       const inner = text.replace(/^<speak>/i, "").replace(/<\/speak>$/i, "");
       if (inner.length <= MAX_CHARS) return [`<speak>${inner}</speak>`];
 
       const chunks: string[] = [];
-      // Split on long breaks (8s or 15s) as natural section boundaries.
-      const parts = inner.split(/(<break time="(?:8|10|15)s"\s*\/>)/i);
+      // Split on any break tag as natural boundaries
+      const parts = inner.split(/(<break time="\d+s"\s*\/>)/i);
       let current = "";
       for (const part of parts) {
         if ((current + part).length <= MAX_CHARS) {
           current += part;
         } else {
           if (current.trim()) chunks.push(`<speak>${current}</speak>`);
-          // If a single part is still too big, hard-split by sentence
           if (part.length > MAX_CHARS) {
             const sentences = part.split(/(?<=[.!?])\s+/);
             current = "";
