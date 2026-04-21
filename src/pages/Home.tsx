@@ -423,7 +423,7 @@ const Home = () => {
       )}
 
       {/* 4. A message for you */}
-      <div className="px-6 mb-6">
+      <div className="px-6 mb-6 text-left">
         <p className="text-[11px] uppercase tracking-widest font-body text-accent mb-2 px-1">
           A message for you
         </p>
