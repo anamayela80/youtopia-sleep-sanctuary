@@ -113,7 +113,6 @@ const MyMonth = () => {
   const hasMeditation = meditation && segmentUrls.length > 0;
   const hasSeeds = seedAudioUrls.length > 0;
   const themeName = theme?.theme || "Your Practice";
-  const monthName = new Date().toLocaleString("default", { month: "long" });
   const meditationName = meditation?.meditation_name || meditation?.title || "Morning Meditation";
   const artworkUrl = meditation?.meditation_artwork_url;
   const messageForYou = meditation?.message_for_you;
@@ -153,7 +152,6 @@ const MyMonth = () => {
             <ArrowLeft size={22} />
           </button>
           <div className="flex-1">
-            <p className="text-[11px] uppercase tracking-[0.22em] font-body text-sage">{monthName}</p>
             <h1 className="font-heading text-3xl text-coral-dark leading-tight">{themeName}</h1>
           </div>
         </div>
