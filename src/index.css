@@ -7,7 +7,7 @@
     --background: 37 50% 93%;
     --foreground: 43 43% 25%;
 
-    --card: 37 45% 95%;
+    --card: 37 25% 90%;
     --card-foreground: 43 43% 25%;
 
     --popover: 37 50% 93%;
@@ -28,15 +28,15 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 37 25% 85%;
-    --input: 37 25% 85%;
+    --border: 35 18% 80%;
+    --input: 35 18% 80%;
     --ring: 163 35% 58%;
 
     --radius: 1rem;
 
     /* Custom brand tokens */
     --cream: 37 50% 93%;
-    --cream-light: 37 50% 97%;
+    --cream-light: 37 25% 90%;
     --teal: 163 35% 58%;
     --teal-light: 163 35% 88%;
     --teal-dark: 163 40% 42%;
@@ -45,11 +45,13 @@
     --coral-dark: 9 67% 50%;
     --gold: 43 43% 37%;
     --gold-light: 43 30% 70%;
+    --sage: 161 26% 59%;
+    --sage-soft: 161 22% 70%;
 
     --font-heading: 'Playfair Display', Georgia, serif;
     --font-body: 'DM Sans', system-ui, sans-serif;
 
-    --sidebar-background: 37 45% 95%;
+    --sidebar-background: 37 25% 90%;
     --sidebar-foreground: 43 43% 25%;
     --sidebar-primary: 163 35% 58%;
     --sidebar-primary-foreground: 37 50% 97%;
