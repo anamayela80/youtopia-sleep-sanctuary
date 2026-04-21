@@ -16,10 +16,18 @@ import { getCurrentIntake, type UserIntake } from "@/services/intakeService";
 import { supabase as sb } from "@/integrations/supabase/client";
 
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-[11px] uppercase tracking-[0.22em] font-body text-sage mb-3 px-1">
+  <p
+    className="text-[10px] uppercase font-body mb-3 px-1"
+    style={{ letterSpacing: "0.22em", color: "hsl(var(--label))" }}
+  >
     {children}
   </p>
 );
+
+// Two warm beige tones to alternate between sections
+const TONE_PAGE = "hsl(var(--background))"; // #F2EAD8
+const TONE_FOLDER = "hsl(var(--folder))";   // #E8DCC8
+const SOFT_BORDER = "1px solid rgba(160, 120, 70, 0.15)";
 
 const MyMonth = () => {
   const [meditation, setMeditation] = useState<any>(null);
