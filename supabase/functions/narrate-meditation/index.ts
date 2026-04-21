@@ -45,8 +45,10 @@ serve(async (req) => {
           speed: speedVal,
         },
       };
-      if (prev) body.previous_text = prev;
-      if (next) body.next_text = next;
+      // eleven_v3 does not support previous_text/next_text stitching
+      const supportsStitching = !modelId.includes("v3");
+      if (supportsStitching && prev) body.previous_text = prev;
+      if (supportsStitching && next) body.next_text = next;
       return await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${vid}?output_format=mp3_44100_128`,
         {
