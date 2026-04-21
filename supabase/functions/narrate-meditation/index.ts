@@ -29,7 +29,7 @@ serve(async (req) => {
     const modelId = typeof model === "string" && model.trim() ? model.trim() : "eleven_v3";
     const stabilityVal = typeof stability === "number" ? stability : 0.0;
     const styleVal = typeof style === "number" ? style : 0.0;
-    const speedVal = typeof speed === "number" ? speed : 0.78;
+    const speedVal = typeof speed === "number" ? speed : 0.72;
     console.log(`Narrating segment ${segmentNumber || 'full'} voice=${elevenLabsVoiceId} model=${modelId} stab=${stabilityVal} style=${styleVal} speed=${speedVal}, len=${script.length}`);
 
     const doTTS = async (vid: string, text: string, prev?: string, next?: string) => {
