@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN seed_voice_preference text NOT NULL DEFAULT 'clone' CHECK (seed_voice_preference IN ('clone', 'preset'));

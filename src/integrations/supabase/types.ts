@@ -393,6 +393,7 @@ export type Database = {
           membership_start_date: string
           morning_reminder_time: string | null
           night_reminder_time: string | null
+          seed_voice_preference: string
           updated_at: string
           user_id: string
         }
@@ -404,6 +405,7 @@ export type Database = {
           membership_start_date?: string
           morning_reminder_time?: string | null
           night_reminder_time?: string | null
+          seed_voice_preference?: string
           updated_at?: string
           user_id: string
         }
@@ -415,6 +417,7 @@ export type Database = {
           membership_start_date?: string
           morning_reminder_time?: string | null
           night_reminder_time?: string | null
+          seed_voice_preference?: string
           updated_at?: string
           user_id?: string
         }
