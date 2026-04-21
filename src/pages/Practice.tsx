@@ -42,11 +42,11 @@ const Practice = () => {
   const Section = ({ label, body }: { label: string; body: string }) =>
     body ? (
       <section className="mb-8">
-        <p className="text-[11px] uppercase tracking-[0.2em] font-body text-accent mb-3">
+        <p className="text-[11px] uppercase tracking-[0.22em] font-body text-sage mb-3">
           {label}
         </p>
-        <div className="bg-cream-light rounded-3xl p-6 border border-border">
-          <div className="font-body text-[15px] text-foreground/85 leading-relaxed whitespace-pre-wrap">
+        <div className="bg-card rounded-3xl p-6 shadow-[0_2px_10px_-6px_hsl(var(--accent)/0.2)]">
+          <div className="font-body text-[15px] text-accent/85 leading-relaxed whitespace-pre-wrap">
             {body}
           </div>
         </div>
