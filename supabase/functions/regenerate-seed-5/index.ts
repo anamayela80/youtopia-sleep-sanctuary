@@ -155,27 +155,28 @@ Write ONE Seed only. Rules:
         settings?.default_voice_id ||
         "zA6D7RyKdc2EClouEMkP";
 
+      // Seed 5 → whispered delivery
+      const ssml = `<speak><prosody rate="x-slow">[whisper]${newSeed}[/whisper]</prosody></speak>`;
+      const callTTS = async (text: string) => fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
+        {
+          method: "POST",
+          headers: { "xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text,
+            model_id: "eleven_multilingual_v3",
+            voice_settings: { style: 0, speed: 0.75, use_speaker_boost: true },
+          }),
+        }
+      );
+
       try {
-        const ttsRes = await fetch(
-          `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
-          {
-            method: "POST",
-            headers: {
-              "xi-api-key": ELEVENLABS_API_KEY,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              text: newSeed,
-              model_id: settings?.default_voice_model || "eleven_multilingual_v2",
-              voice_settings: {
-                stability: Number(settings?.default_voice_stability ?? 0.5),
-                similarity_boost: 0.75,
-                style: Number(settings?.default_voice_style ?? 0.5),
-                use_speaker_boost: true,
-              },
-            }),
-          }
-        );
+        let ttsRes = await callTTS(ssml);
+        if (!ttsRes.ok && ttsRes.status !== 401 && ttsRes.status !== 402 && ttsRes.status !== 404) {
+          await new Promise((r) => setTimeout(r, 2000));
+          ttsRes = await callTTS(ssml);
+        }
+        if (ttsRes.status === 400) ttsRes = await callTTS(newSeed);
 
         if (ttsRes.ok) {
           const audioBuf = await ttsRes.arrayBuffer();
