@@ -8,7 +8,7 @@ import {
 } from "@/services/meditationService";
 import { getCurrentIntake, type UserIntake } from "@/services/intakeService";
 import { supabase as sb } from "@/integrations/supabase/client";
-import logo from "@/assets/youtopia-logo.png";
+import SunIcon from "@/components/SunIcon";
 
 const getGreeting = () => {
   const h = new Date().getHours();
@@ -64,7 +64,9 @@ const FaceGlyph = () => (
 );
 
 const SpiralLogo = () => (
-  <img src={logo} alt="" aria-hidden className="w-[26px] h-[26px] opacity-30" style={{ filter: "sepia(1) hue-rotate(-10deg) saturate(2) brightness(0.55)" }} />
+  <div className="opacity-60">
+    <SunIcon size={26} />
+  </div>
 );
 
 // ====== Building blocks ======
