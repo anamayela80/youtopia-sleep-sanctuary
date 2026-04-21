@@ -65,6 +65,10 @@ export default {
           DEFAULT: "hsl(var(--gold))",
           light: "hsl(var(--gold-light))",
         },
+        sage: {
+          DEFAULT: "hsl(var(--sage))",
+          soft: "hsl(var(--sage-soft))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
