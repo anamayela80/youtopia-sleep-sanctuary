@@ -254,13 +254,13 @@ const Home = () => {
         <div className="px-6 mb-6">
           <div className="bg-cream-light rounded-3xl p-6 border border-border">
             {/* Square artwork */}
-            <div className="w-full aspect-square rounded-2xl overflow-hidden mb-5 relative">
+            <div className="w-40 h-40 mx-auto aspect-square rounded-2xl overflow-hidden mb-5 relative">
               {artworkUrl ? (
                 <img src={artworkUrl} alt={meditationName} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-cream via-coral-light to-coral/40 flex items-center justify-center">
                   <motion.div
-                    className="w-32 h-32 rounded-full bg-gradient-to-br from-cream-light/60 to-coral/20 blur-xl"
+                    className="w-20 h-20 rounded-full bg-gradient-to-br from-cream-light/60 to-coral/20 blur-xl"
                     animate={{ scale: [1, 1.1, 1] }}
                     transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                   />
