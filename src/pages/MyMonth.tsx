@@ -16,10 +16,18 @@ import { getCurrentIntake, type UserIntake } from "@/services/intakeService";
 import { supabase as sb } from "@/integrations/supabase/client";
 
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-[11px] uppercase tracking-[0.22em] font-body text-sage mb-3 px-1">
+  <p
+    className="text-[10px] uppercase font-body mb-3 px-1"
+    style={{ letterSpacing: "0.22em", color: "hsl(var(--label))" }}
+  >
     {children}
   </p>
 );
+
+// Two warm beige tones to alternate between sections
+const TONE_PAGE = "hsl(var(--background))"; // #F2EAD8
+const TONE_FOLDER = "hsl(var(--folder))";   // #E8DCC8
+const SOFT_BORDER = "1px solid rgba(160, 120, 70, 0.15)";
 
 const MyMonth = () => {
   const [meditation, setMeditation] = useState<any>(null);
@@ -154,7 +162,10 @@ const MyMonth = () => {
         {hasMeditation && (
           <section className="mb-8">
             <SectionLabel>Morning Meditation</SectionLabel>
-            <div className="bg-card rounded-3xl p-6 shadow-[0_2px_12px_-6px_hsl(var(--accent)/0.22)]">
+            <div
+              className="rounded-3xl p-6"
+              style={{ background: TONE_FOLDER, border: SOFT_BORDER }}
+            >
               <div className="w-[220px] h-[220px] mx-auto aspect-square rounded-2xl overflow-hidden mb-5 relative shadow-[0_8px_24px_-12px_hsl(var(--accent)/0.25)]">
                 {artworkUrl ? (
                   <img src={artworkUrl} alt={meditationName} className="w-full h-full object-cover" />
@@ -240,10 +251,13 @@ const MyMonth = () => {
         {hasSeeds && (
           <section className="mb-8">
             <SectionLabel>Evening Seeds</SectionLabel>
-            <div className="bg-card rounded-3xl p-6 shadow-[0_2px_12px_-6px_hsl(var(--accent)/0.22)]">
+            <div
+              className="rounded-3xl p-6"
+              style={{ background: TONE_PAGE, border: "1px solid rgba(160, 120, 70, 0.18)" }}
+            >
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-2xl bg-cream flex items-center justify-center">
-                  <Moon size={20} className="text-coral-dark" />
+                <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "#DDD0EE" }}>
+                  <Moon size={20} style={{ color: "hsl(var(--moon))" }} />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-heading text-lg text-accent">Plant the Seeds Tonight</h3>
@@ -319,7 +333,10 @@ const MyMonth = () => {
         {messageForYou && (
           <section className="mb-8">
             <SectionLabel>A Message For You</SectionLabel>
-            <div className="bg-card rounded-3xl p-6 shadow-[0_2px_10px_-6px_hsl(var(--accent)/0.2)]">
+            <div
+              className="rounded-3xl p-6"
+              style={{ background: TONE_FOLDER, border: SOFT_BORDER }}
+            >
               <p className="font-body text-base text-accent/90 leading-relaxed">{messageForYou}</p>
             </div>
           </section>
@@ -329,7 +346,10 @@ const MyMonth = () => {
         {tenureIntro && (
           <section className="mb-8">
             <SectionLabel>This Month's Practice</SectionLabel>
-            <div className="bg-card rounded-3xl p-6 shadow-[0_2px_10px_-6px_hsl(var(--accent)/0.2)]">
+            <div
+              className="rounded-3xl p-6"
+              style={{ background: TONE_PAGE, border: "1px solid rgba(160, 120, 70, 0.18)" }}
+            >
               <div className="font-body text-sm text-accent/85 leading-relaxed whitespace-pre-wrap line-clamp-3">
                 {tenureIntro}
               </div>
@@ -349,7 +369,11 @@ const MyMonth = () => {
             <SectionLabel>What You Shared</SectionLabel>
             <div className="space-y-3">
               {answerList.map((item, i) => (
-                <div key={i} className="bg-card rounded-3xl px-5 py-5 shadow-[0_2px_10px_-6px_hsl(var(--accent)/0.2)]">
+                <div
+                  key={i}
+                  className="rounded-3xl px-5 py-5"
+                  style={{ background: TONE_FOLDER, border: SOFT_BORDER }}
+                >
                   <p className="font-body text-sm text-accent leading-relaxed mb-2">{item.q}</p>
                   {item.a ? (
                     <p className="font-body text-[15px] text-accent/75 leading-relaxed italic">{item.a}</p>
