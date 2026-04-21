@@ -4,49 +4,65 @@
 
 @layer base {
   :root {
-    --background: 37 50% 93%;
-    --foreground: 43 43% 25%;
+    /* Page background: #F2EAD8 warm golden wheat */
+    --background: 39 50% 90%;
+    /* Deep warm brown #3D2E1E */
+    --foreground: 28 33% 18%;
 
-    --card: 37 25% 90%;
-    --card-foreground: 43 43% 25%;
+    /* Practice item cards same as page */
+    --card: 39 50% 90%;
+    --card-foreground: 28 33% 18%;
 
-    --popover: 37 50% 93%;
-    --popover-foreground: 43 43% 25%;
+    --popover: 39 50% 90%;
+    --popover-foreground: 28 33% 18%;
 
-    --primary: 163 35% 58%;
-    --primary-foreground: 37 50% 97%;
+    /* Sage green #6B9E8F */
+    --primary: 165 21% 52%;
+    --primary-foreground: 39 50% 95%;
 
-    --secondary: 9 67% 65%;
-    --secondary-foreground: 37 50% 97%;
+    /* Terracotta #B85C3A */
+    --secondary: 14 53% 47%;
+    --secondary-foreground: 39 50% 95%;
 
-    --muted: 37 30% 88%;
-    --muted-foreground: 43 20% 50%;
+    /* Folder background #E8DCC8 */
+    --muted: 38 36% 85%;
+    /* Medium warm tan #9A7B5A subtitle */
+    --muted-foreground: 28 27% 48%;
 
-    --accent: 43 43% 37%;
-    --accent-foreground: 37 50% 97%;
+    /* Muted gold brown #A08060 section labels */
+    --accent: 28 25% 50%;
+    --accent-foreground: 39 50% 95%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 35 18% 80%;
-    --input: 35 18% 80%;
-    --ring: 163 35% 58%;
+    /* Soft warm border rgba(160,120,70,0.15) ~ */
+    --border: 33 39% 75%;
+    --input: 33 39% 75%;
+    --ring: 165 21% 52%;
 
     --radius: 1rem;
 
     /* Custom brand tokens */
-    --cream: 37 50% 93%;
-    --cream-light: 37 25% 90%;
-    --teal: 163 35% 58%;
-    --teal-light: 163 35% 88%;
-    --teal-dark: 163 40% 42%;
-    --coral: 9 67% 65%;
-    --coral-light: 9 67% 90%;
-    --coral-dark: 9 67% 50%;
-    --gold: 43 43% 37%;
-    --gold-light: 43 30% 70%;
-    --sage: 161 26% 59%;
-    --sage-soft: 161 22% 70%;
+    --cream: 39 50% 90%;
+    --cream-light: 38 36% 85%;
+    --folder: 38 36% 85%;        /* #E8DCC8 */
+    --folder-past: 38 38% 86%;   /* #EAE0CC */
+    --teal: 165 21% 52%;
+    --teal-light: 165 21% 88%;
+    --teal-dark: 165 25% 42%;
+    --coral: 14 53% 47%;         /* terracotta */
+    --coral-light: 14 53% 88%;
+    --coral-dark: 14 53% 47%;
+    --gold: 32 56% 50%;          /* #C4903A */
+    --gold-light: 38 70% 86%;    /* #F5E4C0 */
+    --sage: 165 21% 52%;         /* #6B9E8F */
+    --sage-soft: 162 28% 42%;    /* #4E8C7A */
+    --moon: 259 47% 66%;         /* #9B7BD4 */
+    --moon-soft: 264 53% 88%;    /* #DDD0EE */
+    --label: 28 25% 50%;         /* #A08060 */
+    --subtitle: 28 27% 48%;      /* #9A7B5A */
+    --logo-tint: 28 35% 35%;     /* #7A5A3A */
 
     --font-heading: 'Playfair Display', Georgia, serif;
     --font-body: 'DM Sans', system-ui, sans-serif;
