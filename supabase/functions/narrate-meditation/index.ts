@@ -5,30 +5,48 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Convert Claude bracket pause markers → SSML <break> tags.
-// Wrap in <speak>…</speak>. Strip any leftover bracket markers as a safety net.
-function toSSML(raw: string): string {
-  let s = raw;
-  const replacements: [RegExp, string][] = [
-    [/\[pause\s*4s\]/gi, '<break time="4s"/>'],
-    [/\[pause\s*5s\]/gi, '<break time="5s"/>'],
-    [/\[pause\s*6s\]/gi, '<break time="6s"/>'],
-    [/\[vision\s*pause\s*10s\]/gi, '<break time="10s"/>'],
-    [/\[long\s*pause\s*8s\]/gi, '<break time="8s"/>'],
-    [/\[long\s*pause\s*15s\]/gi, '<break time="15s"/>'],
-    [/\[affirm\s*pause\s*6s\]/gi, '<break time="6s"/>'],
-    [/\[seed\s*pause\s*6s\]/gi, '<break time="6s"/>'],
-  ];
-  for (const [re, val] of replacements) s = s.replace(re, val);
-  // Generic safety: any remaining [pause Ns] / [... Ns]
-  s = s.replace(/\[[^\]]*?(\d{1,2})s[^\]]*?\]/gi, (_m, sec) => `<break time="${sec}s"/>`);
-  // Strip any remaining bracket markers entirely so they aren't read aloud
-  s = s.replace(/\[[^\]]*\]/g, "");
-  return `<speak>${s.trim()}</speak>`;
+// Convert Claude bracket pause markers into ElevenLabs v3 audio-tag pacing
+// plus ellipses (which the model interprets as natural pauses). We deliberately
+// do NOT wrap in <speak> or use <break> SSML — eleven_v3 reads those literally
+// or paces them poorly, which made the narration sound rushed and triggered
+// hallucinated additions on long inputs.
+//
+// Mapping:
+//   short pauses (≤5s)  → " ... "        (one ellipsis ≈ short beat)
+//   medium pauses (6s)  → " ...... "     (longer beat)
+//   long pauses (8s+)   → " ......... "  (extended beat)
+// Every chunk is wrapped with [soft][slow] so the whole delivery stays calm.
+function pausesFor(seconds: number): string {
+  if (seconds <= 4) return " ... ";
+  if (seconds <= 6) return " ...... ";
+  if (seconds <= 10) return " ......... ";
+  return " ............ ";
 }
 
-function stripSSML(raw: string): string {
-  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+function toNarrationText(raw: string): string {
+  let s = raw;
+
+  // Strip any SSML the model may have leaked in
+  s = s.replace(/<\/?speak>/gi, "");
+  s = s.replace(/<break\s+time="(\d+)s"\s*\/?>/gi, (_m, sec) => pausesFor(parseInt(sec, 10)));
+  s = s.replace(/<[^>]+>/g, " "); // remove any other stray tags
+
+  // Convert all bracket pause markers to ellipsis pacing
+  s = s.replace(/\[[^\]]*?(\d{1,2})s[^\]]*?\]/gi, (_m, sec) => pausesFor(parseInt(sec, 10)));
+
+  // Strip any remaining bracket markers (so they aren't read aloud)
+  s = s.replace(/\[[^\]]*\]/g, "");
+
+  // Collapse whitespace
+  s = s.replace(/\s+/g, " ").trim();
+
+  return s;
+}
+
+// Wrap each chunk for v3 with calm pacing tags. These ARE interpreted by
+// eleven_v3 as delivery hints (not read aloud).
+function wrapV3(text: string): string {
+  return `[soft][slow] ${text}`;
 }
 
 serve(async (req) => {
@@ -70,8 +88,10 @@ serve(async (req) => {
             text,
             model_id: modelId,
             voice_settings: {
+              stability: 0.6,
+              similarity_boost: 0.85,
               style: 0,
-              speed: 0.72,
+              speed: 0.85,
               use_speaker_boost: true,
             },
           }),
@@ -92,51 +112,30 @@ serve(async (req) => {
       return buffer.slice(offset);
     };
 
-    // Convert pause markers → SSML before chunking. Chunk on natural section boundaries
-    // (use long breaks as splitters) to keep each chunk under ElevenLabs limits.
-    let ssmlScript: string;
-    try {
-      ssmlScript = toSSML(script);
-    } catch (e) {
-      console.error("SSML conversion failed, falling back to plain text:", e);
-      ssmlScript = `<speak>${stripSSML(script)}</speak>`;
-    }
+    // Convert pause markers → ellipsis pacing (no SSML).
+    const narrationText = toNarrationText(script);
 
-    const MAX_CHARS = 1500;
+    // Chunk on sentence boundaries to keep each request small. eleven_v3 can
+    // hallucinate / drift on very long inputs, so we keep chunks tight.
+    const MAX_CHARS = 1200;
     const chunkScript = (text: string): string[] => {
-      const inner = text.replace(/^<speak>/i, "").replace(/<\/speak>$/i, "");
-      if (inner.length <= MAX_CHARS) return [`<speak>${inner}</speak>`];
-
+      if (text.length <= MAX_CHARS) return [text];
       const chunks: string[] = [];
-      // Split on any break tag as natural boundaries
-      const parts = inner.split(/(<break time="\d+s"\s*\/>)/i);
+      const sentences = text.split(/(?<=[.!?])\s+/);
       let current = "";
-      for (const part of parts) {
-        if ((current + part).length <= MAX_CHARS) {
-          current += part;
+      for (const s of sentences) {
+        if ((current + " " + s).trim().length <= MAX_CHARS) {
+          current = current ? current + " " + s : s;
         } else {
-          if (current.trim()) chunks.push(`<speak>${current}</speak>`);
-          if (part.length > MAX_CHARS) {
-            const sentences = part.split(/(?<=[.!?])\s+/);
-            current = "";
-            for (const s of sentences) {
-              if ((current + " " + s).length <= MAX_CHARS) {
-                current = current ? current + " " + s : s;
-              } else {
-                if (current.trim()) chunks.push(`<speak>${current}</speak>`);
-                current = s;
-              }
-            }
-          } else {
-            current = part;
-          }
+          if (current.trim()) chunks.push(current.trim());
+          current = s;
         }
       }
-      if (current.trim()) chunks.push(`<speak>${current}</speak>`);
+      if (current.trim()) chunks.push(current.trim());
       return chunks;
     };
 
-    const chunks = chunkScript(ssmlScript);
+    const chunks = chunkScript(narrationText).map(wrapV3);
     console.log(`Split into ${chunks.length} chunk(s)`);
 
     const processChunk = async (chunkText: string, idx: number): Promise<Uint8Array> => {
@@ -145,13 +144,6 @@ serve(async (req) => {
       if (response.status === 404 && elevenLabsVoiceId !== fallbackVoiceId) {
         console.warn(`Voice ${elevenLabsVoiceId} not found, falling back to default`);
         response = await doTTS(fallbackVoiceId, chunkText);
-      }
-
-      if (response.status === 400) {
-        const errBody = await response.text();
-        console.warn(`SSML rejected on chunk ${idx + 1}, retrying as plain text:`, errBody);
-        const plain = stripSSML(chunkText);
-        response = await doTTS(elevenLabsVoiceId, plain);
       }
 
       if (!response.ok) {
