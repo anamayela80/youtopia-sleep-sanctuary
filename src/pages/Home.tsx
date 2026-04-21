@@ -350,7 +350,7 @@ const Home = () => {
                 <Moon size={20} className="text-foreground/70" />
               </div>
               <div className="flex-1">
-                <h3 className="font-heading text-lg text-secondary">Tonight's Seeds</h3>
+                <h3 className="font-heading text-lg text-secondary">Plant the Seeds Tonight</h3>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <Headphones size={11} className="text-muted-foreground" />
                   <p className="font-body text-xs text-muted-foreground">Best with headphones and eyes closed</p>
