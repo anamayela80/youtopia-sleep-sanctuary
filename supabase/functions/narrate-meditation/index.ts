@@ -7,7 +7,7 @@ const corsHeaders = {
 
 // Convert Claude bracket pause markers into ElevenLabs v3 audio-tag pacing
 // plus ellipses (which the model interprets as natural pauses). We deliberately
-// do NOT wrap in <speak> or use <break> SSML — eleven_v3 reads those literally
+// do NOT wrap in <speak> or use <break> SSML, eleven_v3 reads those literally
 // or paces them poorly, which made the narration sound rushed and triggered
 // hallucinated additions on long inputs.
 //

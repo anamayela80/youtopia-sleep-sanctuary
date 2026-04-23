@@ -30,6 +30,7 @@ Rules:
 - First person, present tense
 - Identity-based, calm, grounded
 - Must positively reflect the user's check-in answer
+- NEVER use em dashes (—) or en dashes (–). Use commas or periods instead.
 ${monthlyTheme ? `Monthly theme: "${monthlyTheme}".${themeIntention ? ` Intention: "${themeIntention}".` : ''}` : ''}
 
 Return ONLY the single phrase, no quotes, no numbering.`;
