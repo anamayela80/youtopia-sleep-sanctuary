@@ -13,6 +13,7 @@ import Practice from "./pages/Practice.tsx";
 import MyMonth from "./pages/MyMonth.tsx";
 import Reflect from "./pages/Reflect.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import PreviewLoading from "./pages/PreviewLoading.tsx";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/practice" element={<Practice />} />
           <Route path="/month" element={<MyMonth />} />
           <Route path="/reflect" element={<Reflect />} />
+          <Route path="/preview-loading" element={<PreviewLoading />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

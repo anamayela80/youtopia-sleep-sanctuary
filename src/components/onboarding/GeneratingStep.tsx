@@ -5,24 +5,31 @@ import sun from "@/assets/youtopia-sun.png";
 interface GeneratingStepProps {
   status?: string;
   themeName?: string;
+  userName?: string;
+  previewMode?: boolean;
 }
 
-const ROTATING = [
-  "Reading your answers…",
-  "Writing your meditation…",
-  "Planting your Seeds…",
+const ROTATING_TEMPLATES = [
+  "Still waters run deep.",
+  "What you shared is becoming something.",
+  "The seeds are being prepared.",
+  "Patience is part of the practice.",
+  "Almost, {name}.",
 ];
 
-const GeneratingStep = ({ status, themeName }: GeneratingStepProps) => {
+const GeneratingStep = ({ status, themeName, userName, previewMode }: GeneratingStepProps) => {
   const [idx, setIdx] = useState(0);
+  const rotating = ROTATING_TEMPLATES.map((m) =>
+    m.replace("{name}", userName?.trim() || "friend")
+  );
   useEffect(() => {
-    const t = setInterval(() => setIdx((i) => (i + 1) % ROTATING.length), 2600);
+    const t = setInterval(() => setIdx((i) => (i + 1) % rotating.length), 2600);
     return () => clearInterval(t);
-  }, []);
+  }, [rotating.length]);
 
-  // If the parent passed a specific status (e.g. "Creating voice narration..."),
-  // show that. Otherwise rotate through the ceremonial copy.
-  const message = status && status.length > 0 ? status : ROTATING[idx];
+  // In previewMode, always rotate through the ceremonial copy (ignore status).
+  // Otherwise: if parent passed a specific status, show it; else rotate.
+  const message = !previewMode && status && status.length > 0 ? status : rotating[idx];
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
@@ -41,7 +48,7 @@ const GeneratingStep = ({ status, themeName }: GeneratingStepProps) => {
         />
 
         <h2 className="font-heading text-3xl text-secondary mb-6 max-w-sm leading-tight">
-          Creating your {themeName || "monthly"} practice…
+          Creating your everyday utopia
         </h2>
 
         <AnimatePresence mode="wait">
