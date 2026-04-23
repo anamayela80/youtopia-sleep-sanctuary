@@ -94,7 +94,7 @@ Tone instruction (based on the user's recent mood): ${toneInstruction}
 Write ONE Seed only. Rules:
 - Personal, present tense, identity-level (e.g. "I am...", "I belong...", "I trust...")
 - Maximum 25 words
-- Warm and grounded — never exaggerated, generic, or performative
+- Warm and grounded, never exaggerated, generic, or performative
 - Never use the word "affirmation"
 - Plain text only, no quotes, no labels, just the Seed itself.`;
 

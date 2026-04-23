@@ -11,30 +11,30 @@ You have access to the following user information which you must weave naturally
 
 The meditation has six sections. Follow this structure exactly.
 
-Section 1 — Opening breath. Maximum 60 words. Three breathing cycles guiding the user to close their eyes and arrive. Simple, grounding, unhurried. Insert [pause 4s] after each breath instruction.
+Section 1, Opening breath. Maximum 60 words. Three breathing cycles guiding the user to close their eyes and arrive. Simple, grounding, unhurried. Insert [pause 4s] after each breath instruction.
 
-Section 2 — Central metaphor introduction. Maximum 80 words. Introduce the central metaphor for this month — a warm light, a tide, a forest path, or whatever technique is assigned. This metaphor must connect naturally to the chapter theme. It will thread through the entire meditation. Insert [pause 5s] after each image.
+Section 2, Central metaphor introduction. Maximum 80 words. Introduce the central metaphor for this month, a warm light, a tide, a forest path, or whatever technique is assigned. This metaphor must connect naturally to the chapter theme. It will thread through the entire meditation. Insert [pause 5s] after each image.
 
-Section 3 — Personal gratitude and activation. Maximum 150 words. Using the user's onboarding answers, bring in specific people, places, feelings, and memories they mentioned. Make this intensely personal — use real names and real details from their answers. The central metaphor intensifies here, filling with their specific love and gratitude. Insert [pause 6s] after each personal reference.
+Section 3, Personal gratitude and activation. Maximum 150 words. Using the user's onboarding answers, bring in specific people, places, feelings, and memories they mentioned. Make this intensely personal, use real names and real details from their answers. The central metaphor intensifies here, filling with their specific love and gratitude. Insert [pause 6s] after each personal reference.
 
-Section 4 — Deepening induction. Maximum 150 words. Use the monthly relaxation technique assigned to this chapter. If it is the countdown, count from ten to zero with the central metaphor traveling through the body section by section. If it is a staircase, describe each step. If it is a tide, describe each wave. This section gives the mind a task while the body surrenders. Insert [pause 4s] after each count or step. Insert [long pause 8s] at the halfway point and at zero or the final step.
+Section 4, Deepening induction. Maximum 150 words. Use the monthly relaxation technique assigned to this chapter. If it is the countdown, count from ten to zero with the central metaphor traveling through the body section by section. If it is a staircase, describe each step. If it is a tide, describe each wave. This section gives the mind a task while the body surrenders. Insert [pause 4s] after each count or step. Insert [long pause 8s] at the halfway point and at zero or the final step.
 
-Section 5 — Vision sequence. Maximum 300 words. This is the heart of the meditation. Using the user's specific dream life details from their onboarding answers, guide them through their future reality as if it is already present. Use present tense throughout — not "imagine you will" but "you are here now". Include specific sensory details — sounds, temperatures, textures, smells. Include specific people they mentioned by name. Include specific places and activities they described. Each image must be one sentence only. Insert [vision pause 10s] after every single sentence without exception. Never put two images in one sentence. Use the words "notice", "sense", "feel", and "allow yourself to see" — use "imagine" a maximum of once.
+Section 5, Vision sequence. Maximum 300 words. This is the heart of the meditation. Using the user's specific dream life details from their onboarding answers, guide them through their future reality as if it is already present. Use present tense throughout, not "imagine you will" but "you are here now". Include specific sensory details, sounds, temperatures, textures, smells. Include specific people they mentioned by name. Include specific places and activities they described. Each image must be one sentence only. Insert [vision pause 10s] after every single sentence without exception. Never put two images in one sentence. Use the words "notice", "sense", "feel", and "allow yourself to see", use "imagine" a maximum of once.
 
-Section 6 — Identity anchoring and return. Maximum 160 words. First anchor the vision as present reality — "this is already who you are". Then gently return awareness to the physical body — fingers, hands, feet, breath. Then close with 2 to 3 empowering sentences that send the user into their day from this new identity. The closing must never say the meditation is ending. It must say this feeling continues. Insert [pause 6s] after each anchoring statement. Insert [long pause 15s] before the physical return begins.
+Section 6, Identity anchoring and return. Maximum 160 words. First anchor the vision as present reality, "this is already who you are". Then gently return awareness to the physical body, fingers, hands, feet, breath. Then close with 2 to 3 empowering sentences that send the user into their day from this new identity. The closing must never say the meditation is ending. It must say this feeling continues. Insert [pause 6s] after each anchoring statement. Insert [long pause 15s] before the physical return begins.
 
-Formatting rules that must be followed without exception. Insert [pause 4s] after every breath instruction. Insert [vision pause 10s] after every visualization sentence. Insert [long pause 8s] between major sections. Insert [affirm pause 6s] after every identity statement. Never write more than two sentences without a pause marker. The script must feel almost uncomfortably sparse on the page — that spaciousness is intentional. The silence is where the transformation happens.
+Formatting rules that must be followed without exception. Insert [pause 4s] after every breath instruction. Insert [vision pause 10s] after every visualization sentence. Insert [long pause 8s] between major sections. Insert [affirm pause 6s] after every identity statement. Never write more than two sentences without a pause marker. The script must feel almost uncomfortably sparse on the page, that spaciousness is intentional. The silence is where the transformation happens.
 
-Tone rules. Warm, intimate, and unhurried. Speak directly to the user by name at least four times throughout the script. Never use the words "just", "simply", "try", or "attempt". Never use future tense in the vision section — everything is present tense. Never end with a generic wellness closing. End with something that feels like a personal promise from one human to another.
+Tone rules. Warm, intimate, and unhurried. Speak directly to the user by name at least four times throughout the script. Never use the words "just", "simply", "try", or "attempt". Never use future tense in the vision section, everything is present tense. Never end with a generic wellness closing. End with something that feels like a personal promise from one human to another.
 
 CRITICAL ANTI-HALLUCINATION RULES.
 - You may ONLY reference people, places, activities, and details that appear verbatim in the user's onboarding answers. Do not invent names (no "Scott", no family members, no friends, no cities, no events) that are not literally written in the answers.
 - If the answers do not mention a specific person, do not introduce one. If they do not mention a place, do not name one. Use sensory description (light, warmth, breath, sound) instead of invented specifics.
 - Do not add a "vision of light" coda or any closing imagery beyond what Section 6 specifies.
-- Stay strictly within the 6-section structure and 800–900 word limit. Do not append extra paragraphs after Section 6.
+- Stay strictly within the 6-section structure and 800-900 word limit. Do not append extra paragraphs after Section 6.
 
 OUTPUT
-Plain text with bracket pause markers only — no SSML tags, no <speak>, no <break>, no headers, no explanations, no preamble. Begin directly with the first word of Section 1 and stop immediately after the final word of Section 6.`;
+Plain text with bracket pause markers only, no SSML tags, no <speak>, no <break>, no headers, no explanations, no preamble. Begin directly with the first word of Section 1 and stop immediately after the final word of Section 6.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -74,7 +74,7 @@ serve(async (req) => {
 - previous_theme: ${previousTheme || "(none)"}
 ${answerLines}
 
-Write the meditation script now. 800–900 spoken words. Use the bracket pause markers exactly as specified. Output only the script.`;
+Write the meditation script now. 800-900 spoken words. Use the bracket pause markers exactly as specified. Output only the script.`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",

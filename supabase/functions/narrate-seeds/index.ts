@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 function buildSSML(phrase: string, _index: number): string {
-  // All seeds use the same gentle whisper tags — matches the working config from ElevenLabs UI.
+  // All seeds use the same gentle whisper tags, matches the working config from ElevenLabs UI.
   return `[whisper] [slow] ${phrase.trim()}`;
 }
 
