@@ -13,6 +13,8 @@ const SYSTEM_PROMPT = `You are the insight engine behind Youtopia. Based on a us
 
 3. image_prompt: A prompt for an AI image generator to create the meditation artwork. Style: warm modern abstract art, brand colors (cream #F5F0E8, teal #6BBFAA, coral #E07B6A, olive gold #8B7035). No people, no faces, no text. Evokes the emotional territory of this month's theme and the user's specific answers. Painterly, textured, intimate. 50-80 words.
 
+PUNCTUATION RULE (ABSOLUTE): NEVER use em dashes (—) or en dashes (–) in meditation_name or message_for_you. Use commas, periods, semicolons, or parentheses instead.
+
 Return ONLY valid JSON in this exact format, nothing else:
 {
   "meditation_name": "...",
