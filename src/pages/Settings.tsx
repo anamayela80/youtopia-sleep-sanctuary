@@ -139,7 +139,11 @@ const SettingsPage = () => {
                   </div>
                 </div>
               ) : (
-                <button onClick={() => setShowDeleteConfirm(true)} className="flex items-center gap-2 text-destructive font-body text-sm">
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="flex items-center gap-2 font-body text-sm"
+                  style={{ color: "#8B6914", background: "transparent", padding: 0 }}
+                >
                   <Trash2 size={16} /> Delete voice clone
                 </button>
               )}
@@ -221,7 +225,17 @@ const SettingsPage = () => {
                 className="font-body text-sm bg-background rounded-lg px-3 py-1.5 border border-border"
               />
             </div>
-            <button onClick={handleUpdateTimes} className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-body text-sm font-medium">
+            <button
+              onClick={handleUpdateTimes}
+              className="w-full font-body font-semibold transition-all hover:opacity-90 active:scale-[0.98]"
+              style={{
+                background: "#4A9A88",
+                color: "#FFFFFF",
+                borderRadius: "50px",
+                padding: "14px",
+                fontSize: "15px",
+              }}
+            >
               Save Times
             </button>
           </div>
@@ -248,7 +262,13 @@ const SettingsPage = () => {
         {/* Sign Out */}
         <button
           onClick={handleSignOut}
-          className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-muted text-muted-foreground font-body font-medium"
+          className="w-full flex items-center justify-center gap-2 font-body"
+          style={{
+            color: "#8B6914",
+            background: "transparent",
+            padding: "14px",
+            fontSize: "14px",
+          }}
         >
           <LogOut size={18} /> Sign Out
         </button>
