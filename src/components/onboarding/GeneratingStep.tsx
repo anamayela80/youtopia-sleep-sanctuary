@@ -48,7 +48,7 @@ const GeneratingStep = ({ status, themeName, userName, previewMode }: Generating
         />
 
         <h2 className="font-heading text-3xl text-secondary mb-6 max-w-sm leading-tight">
-          Creating your {themeName || "monthly"} practice…
+          Creating your everyday utopia
         </h2>
 
         <AnimatePresence mode="wait">
