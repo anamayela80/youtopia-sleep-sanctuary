@@ -33,6 +33,7 @@ const App = () => (
           <Route path="/practice" element={<Practice />} />
           <Route path="/month" element={<MyMonth />} />
           <Route path="/reflect" element={<Reflect />} />
+          <Route path="/preview-loading" element={<PreviewLoading />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
