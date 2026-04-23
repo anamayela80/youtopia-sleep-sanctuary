@@ -47,7 +47,12 @@ function toNarrationText(raw: string): string {
 // eleven_v3 as delivery hints (not read aloud). [softly] + [slow] +
 // [warm] + [drawn out] keep the delivery intimate and unhurried.
 function wrapV3(text: string, isFirst: boolean): string {
-  const opener = isFirst ? "[softly][slow][warm][drawn out] " : "[softly][slow][warm] ";
+  // [intimate] + [drawn out] lean hard into the soulful, unhurried delivery
+  // the user wants during the vision section. Applied to every chunk so the
+  // pacing doesn't snap back to neutral mid-meditation.
+  const opener = isFirst
+    ? "[softly][slow][warm][intimate][drawn out] "
+    : "[softly][slow][warm][intimate] ";
   return `${opener}${text}`;
 }
 
@@ -90,10 +95,14 @@ serve(async (req) => {
             text,
             model_id: modelId,
             voice_settings: {
-              stability: 0.6,
+              // Calmer, slower morning-meditation delivery. 0.55 stability
+              // preserves v3 expressiveness while 0.80 speed gives the
+              // vision sentences room to breathe — before, visualizations
+              // felt rushed and bullet-pointy.
+              stability: 0.55,
               similarity_boost: 0.85,
               style: 0,
-              speed: 0.85,
+              speed: 0.80,
               use_speaker_boost: true,
             },
           }),

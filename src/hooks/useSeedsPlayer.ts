@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from "react";
+import { createReverb } from "@/lib/audioEffects";
 
 /**
  * 45-minute Evening Seeds session.
@@ -29,12 +30,20 @@ const GAP_NORMAL = 90;
 const GAP_DEEP = 100;
 const FINAL_FADE_SECONDS = 90;
 
-// Seeds are subliminal — they should sit BENEATH the music, never spike above it.
-// Voice stays low; music barely ducks so the whisper feels like part of the soundscape.
-const CYCLE_SEED_VOLUMES = [0.45, 0.40, 0.35, 0.28];
-const CYCLE_MUSIC_UNDER  = [0.30, 0.30, 0.28, 0.25]; // music level while seed plays (only slight duck)
-const CYCLE_MUSIC_GAP    = [0.40, 0.40, 0.38, 0.32]; // music level between seeds
+// Seeds are SUBLIMINAL WHISPERS — they should feel like thoughts arising from
+// inside the music, never like someone speaking. Voice sits well beneath the
+// music at all times and is piped through heavy reverb + a lowpass filter
+// so it reads as distant and ethereal. Previous values (0.45 → 0.28) were
+// far too loud and sounded like narration instead of whispers.
+const CYCLE_SEED_VOLUMES = [0.22, 0.19, 0.16, 0.13];
+const CYCLE_MUSIC_UNDER  = [0.28, 0.26, 0.24, 0.22]; // music barely ducks — the seed is the soft thing
+const CYCLE_MUSIC_GAP    = [0.34, 0.32, 0.30, 0.26]; // music level between seeds
 const CYCLE_GAP_SECONDS  = [GAP_NORMAL, GAP_NORMAL, GAP_NORMAL, GAP_DEEP];
+
+// Voice-chain shaping for the whisper feel
+const SEED_LOWPASS_HZ = 3200;   // rolls off sibilance — distant, not piercing
+const SEED_REVERB_WET = 0.55;   // heavy wet — the seed blooms into the music
+const SEED_REVERB_DRY = 0.70;
 
 type SeedEvent = {
   index: number;
@@ -173,6 +182,10 @@ export function useSeedsPlayer({
     const now = ctx.currentTime;
     startTimeRef.current = now;
 
+    // ---------- Shared reverb for the session ----------
+    const reverb = createReverb(ctx, 5.0, 2.4);
+    reverb.output.connect(ctx.destination);
+
     // ---------- MUSIC + DUCKING SCHEDULE ----------
     if (musicBuf) {
       const musicSource = ctx.createBufferSource();
@@ -245,16 +258,38 @@ export function useSeedsPlayer({
       musicSource.stop(now + (totalDuration - clamped) + 0.1);
     }
 
-    // ---------- SEEDS ----------
+    // ---------- SEEDS (whisper chain: LP filter → dry + reverb send) ----------
     events.forEach((evt) => {
       const segEnd = evt.startOffset + evt.duration;
       if (segEnd <= clamped) return;
 
+      const seedLevel = CYCLE_SEED_VOLUMES[evt.cycle];
+
       const source = ctx.createBufferSource();
       source.buffer = buffers[evt.index];
-      const gain = ctx.createGain();
-      gain.gain.value = CYCLE_SEED_VOLUMES[evt.cycle];
-      source.connect(gain).connect(ctx.destination);
+
+      // Lowpass — rolls off sibilance and distance-filters the whisper
+      const lpf = ctx.createBiquadFilter();
+      lpf.type = "lowpass";
+      lpf.frequency.value = SEED_LOWPASS_HZ;
+      lpf.Q.value = 0.5;
+
+      // Subtle low-shelf cut — keeps whispers airy, not muddy
+      const lowShelf = ctx.createBiquadFilter();
+      lowShelf.type = "highpass";
+      lowShelf.frequency.value = 140;
+
+      const dryGain = ctx.createGain();
+      dryGain.gain.value = seedLevel * SEED_REVERB_DRY;
+      const wetGain = ctx.createGain();
+      wetGain.gain.value = seedLevel * SEED_REVERB_WET;
+
+      source.connect(lpf);
+      lpf.connect(lowShelf);
+      lowShelf.connect(dryGain);
+      lowShelf.connect(wetGain);
+      dryGain.connect(ctx.destination);
+      wetGain.connect(reverb.input);
 
       if (clamped > evt.startOffset) {
         const skipInto = clamped - evt.startOffset;
