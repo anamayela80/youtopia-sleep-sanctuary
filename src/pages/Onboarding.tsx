@@ -342,7 +342,7 @@ const Onboarding = () => {
   }
 
   if (isGenerating) {
-    return <GeneratingStep status={generationStatus} themeName={theme?.theme} />;
+    return <GeneratingStep themeName={theme?.theme} userName={fullName} previewMode />;
   }
 
   if (showUnlock) {
