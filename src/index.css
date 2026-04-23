@@ -132,9 +132,4 @@
   animation: fade-up 0.8s ease-out forwards;
 }
 
-/* Logo PNGs have transparent backgrounds */
-img[src*="youtopia-logo"],
-img[src*="youtopia-sun"] {
-  background: transparent;
-}
 
