@@ -19,6 +19,7 @@ RULES FOR SEEDS
 - Must feel like the user's own inner voice, never imposed from outside.
 - Grounded, not grandiose. ("I move through my days with quiet confidence", not "I am unstoppable and blessed.")
 - No exclamation marks.
+- NEVER use em dashes (—) or en dashes (–) anywhere. Use commas or periods instead.
 - NEVER use these words: manifest, universe, blessed, worthy, enough, journey, sacred, divine, or any wellness cliché.
 
 MAPPING ANSWERS TO SEEDS
