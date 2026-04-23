@@ -59,10 +59,10 @@ const Auth = () => {
         transition={{ duration: 0.6 }}
         className="flex flex-col items-center flex-1"
       >
-        <img src={logo} alt="YOUTOPIA" className="w-40 mb-8" />
+        <img src={logo} alt="YOUTOPIA" className="w-40 mb-8 mix-blend-multiply" />
 
         <h2 className="font-heading text-2xl text-secondary mb-2">
-          {mode === "signup" ? "Create Your Space" : "Welcome Back"}
+          {mode === "signup" ? "Create your own Utopia" : "Welcome Back"}
         </h2>
         <p className="font-body text-muted-foreground mb-8 text-center">
           {mode === "signup"
@@ -73,7 +73,7 @@ const Auth = () => {
         <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
           {mode === "signup" && (
             <div>
-              <label className="block font-body text-sm text-accent mb-1.5">Full Name</label>
+              <label className="block font-body text-sm text-accent mb-1.5">Name</label>
               <input
                 type="text"
                 value={name}
