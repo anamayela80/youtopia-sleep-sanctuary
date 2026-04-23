@@ -4,10 +4,10 @@ import { useAmbientGenerator } from "./useAmbientGenerator";
 interface UseAudioMixerOptions {
   narrationUrl: string | null;
   musicMood?: string;
-  musicVolume?: number; // 0-1, default 0.15
+  musicVolume?: number; // 0-1, default 0.30
 }
 
-export function useAudioMixer({ narrationUrl, musicMood = "deep-sleep", musicVolume = 0.15 }: UseAudioMixerOptions) {
+export function useAudioMixer({ narrationUrl, musicMood = "deep-sleep", musicVolume = 0.30 }: UseAudioMixerOptions) {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const narrationSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const narrationBufferRef = useRef<AudioBuffer | null>(null);
@@ -86,7 +86,7 @@ export function useAudioMixer({ narrationUrl, musicMood = "deep-sleep", musicVol
     const narSource = ctx.createBufferSource();
     narSource.buffer = narBuf;
     const narGain = ctx.createGain();
-    narGain.gain.value = 1.0;
+    narGain.gain.value = 0.75;
     narSource.connect(narGain).connect(ctx.destination);
     narrationSourceRef.current = narSource;
 
