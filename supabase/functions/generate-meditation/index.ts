@@ -33,6 +33,9 @@ CRITICAL ANTI-HALLUCINATION RULES.
 - Do not add a "vision of light" coda or any closing imagery beyond what Section 6 specifies.
 - Stay strictly within the 6-section structure and 800-900 word limit. Do not append extra paragraphs after Section 6.
 
+PUNCTUATION RULE (ABSOLUTE).
+- NEVER use em dashes (—) or en dashes (–) anywhere in the output. Use commas, periods, or semicolons instead. Hyphens (-) inside compound words are allowed.
+
 OUTPUT
 Plain text with bracket pause markers only, no SSML tags, no <speak>, no <break>, no headers, no explanations, no preamble. Begin directly with the first word of Section 1 and stop immediately after the final word of Section 6.`;
 

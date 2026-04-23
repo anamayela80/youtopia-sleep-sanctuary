@@ -96,6 +96,7 @@ Write ONE Seed only. Rules:
 - Maximum 25 words
 - Warm and grounded, never exaggerated, generic, or performative
 - Never use the word "affirmation"
+- NEVER use em dashes (—) or en dashes (–). Use commas or periods instead.
 - Plain text only, no quotes, no labels, just the Seed itself.`;
 
     // Call Claude
