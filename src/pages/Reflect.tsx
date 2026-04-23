@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCurrentIntake } from "@/services/intakeService";
 import { BottomNav } from "@/components/BottomNav";
 import { MoodOrb, MOODS } from "@/components/reflect/MoodOrb";
+import spiralLogo from "@/assets/youtopia-sun.png";
 
 const MOOD_COLORS = MOODS.map((m) => m.color);
 const SOFT_BORDER = "1px solid rgba(160, 120, 70, 0.08)";
@@ -203,16 +204,20 @@ const Reflect = () => {
 
   return (
     <div className="min-h-screen pb-32" style={{ background: "#F2EAD8", fontFamily: "Georgia, serif" }}>
-      {/* Top spacing */}
-      <div className="pt-10 pb-8 px-6">
+      {/* Top bar with sun logo */}
+      <div className="flex items-center justify-between px-6 pt-6 pb-2">
+        <img src={spiralLogo} alt="Youtopia" className="w-[26px] h-[26px] object-contain" />
+      </div>
+
+      {/* Title — left aligned */}
+      <div className="pt-4 pb-8 px-6">
         <h1
-          className="text-center"
           style={{ fontSize: "26px", color: "#3D2E1E", fontFamily: "Georgia, serif" }}
         >
           reflect
         </h1>
         <p
-          className="text-center italic mt-2"
+          className="italic mt-2"
           style={{ fontSize: "13px", color: "#9A7B5A", fontFamily: "Georgia, serif" }}
         >
           your daily moment of honesty

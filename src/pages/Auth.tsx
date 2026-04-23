@@ -47,9 +47,26 @@ const Auth = () => {
     }
   };
 
+  const inputStyle: React.CSSProperties = {
+    background: "#EDE3CF",
+    border: "1px solid rgba(160, 120, 70, 0.18)",
+    borderRadius: "12px",
+    padding: "12px 16px",
+    fontFamily: "var(--font-body)",
+    color: "#3D2E1E",
+    fontSize: "15px",
+  };
+
   return (
-    <div className="min-h-screen bg-background flex flex-col px-6 pt-12 pb-8">
-      <button onClick={() => navigate("/")} className="self-start mb-8 text-accent">
+    <div
+      className="min-h-screen flex flex-col px-6 pt-12 pb-8"
+      style={{ background: "#F2EAD8" }}
+    >
+      <button
+        onClick={() => navigate("/")}
+        className="self-start mb-6"
+        style={{ color: "#8B6914" }}
+      >
         <ArrowLeft size={24} />
       </button>
 
@@ -59,12 +76,31 @@ const Auth = () => {
         transition={{ duration: 0.6 }}
         className="flex flex-col items-center flex-1"
       >
-        <img src={logo} alt="YOUTOPIA" className="w-40 mb-8 mix-blend-multiply" />
+        <div className="w-full flex justify-center mb-6" style={{ overflow: "visible" }}>
+          <img
+            src={logo}
+            alt="YOUTOPIA"
+            className="mix-blend-multiply"
+            style={{
+              maxWidth: "240px",
+              width: "100%",
+              height: "auto",
+              objectFit: "contain",
+              display: "block",
+            }}
+          />
+        </div>
 
-        <h2 className="font-heading text-2xl text-secondary mb-2">
+        <h2
+          className="font-heading mb-2 text-center"
+          style={{ fontSize: "26px", color: "#B85C3A" }}
+        >
           {mode === "signup" ? "Create your own Utopia" : "Welcome Back"}
         </h2>
-        <p className="font-body text-muted-foreground mb-8 text-center">
+        <p
+          className="font-body text-center mb-8"
+          style={{ color: "#9A7B5A", fontSize: "14px" }}
+        >
           {mode === "signup"
             ? "Begin your inner transformation journey"
             : "Continue your journey"}
@@ -73,12 +109,18 @@ const Auth = () => {
         <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
           {mode === "signup" && (
             <div>
-              <label className="block font-body text-sm text-accent mb-1.5">Name</label>
+              <label
+                className="block font-body mb-1.5"
+                style={{ fontSize: "13px", color: "#A08060" }}
+              >
+                Name
+              </label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3.5 rounded-xl bg-cream-light border border-border font-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+                className="w-full focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                style={inputStyle}
                 placeholder="Your name"
                 required
               />
@@ -86,25 +128,37 @@ const Auth = () => {
           )}
 
           <div>
-            <label className="block font-body text-sm text-accent mb-1.5">Email</label>
+            <label
+              className="block font-body mb-1.5"
+              style={{ fontSize: "13px", color: "#A08060" }}
+            >
+              Email
+            </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3.5 rounded-xl bg-cream-light border border-border font-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+              className="w-full focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+              style={inputStyle}
               placeholder="hello@example.com"
               required
             />
           </div>
 
           <div>
-            <label className="block font-body text-sm text-accent mb-1.5">Password</label>
+            <label
+              className="block font-body mb-1.5"
+              style={{ fontSize: "13px", color: "#A08060" }}
+            >
+              Password
+            </label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3.5 rounded-xl bg-cream-light border border-border font-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all pr-12"
+                className="w-full focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                style={{ ...inputStyle, paddingRight: "44px" }}
                 placeholder="••••••••"
                 required
                 minLength={6}
@@ -112,7 +166,8 @@ const Auth = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
+                className="absolute right-4 top-1/2 -translate-y-1/2"
+                style={{ color: "#9A7B5A" }}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -122,7 +177,14 @@ const Auth = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-body font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] mt-2 disabled:opacity-50"
+            className="w-full font-body font-semibold transition-all hover:opacity-90 active:scale-[0.98] mt-2 disabled:opacity-50"
+            style={{
+              background: "#4A9A88",
+              color: "#FFFFFF",
+              borderRadius: "50px",
+              padding: "14px",
+              fontSize: "15px",
+            }}
           >
             {loading ? "Please wait..." : mode === "signup" ? "Create Account" : "Sign In"}
           </button>
@@ -131,12 +193,24 @@ const Auth = () => {
         <div className="mt-6">
           <button
             onClick={() => setMode(mode === "signup" ? "login" : "signup")}
-            className="font-body text-sm text-muted-foreground"
+            className="font-body"
+            style={{
+              fontSize: "14px",
+              color: "#9A7B5A",
+              background: "transparent",
+              padding: "4px 8px",
+            }}
           >
             {mode === "signup" ? (
-              <>Already have an account? <span className="text-primary font-medium">Sign in</span></>
+              <>
+                Already have an account?{" "}
+                <span style={{ color: "#8B6914", fontWeight: 500 }}>Sign in</span>
+              </>
             ) : (
-              <>New here? <span className="text-primary font-medium">Create account</span></>
+              <>
+                New here?{" "}
+                <span style={{ color: "#8B6914", fontWeight: 500 }}>Create account</span>
+              </>
             )}
           </button>
         </div>
