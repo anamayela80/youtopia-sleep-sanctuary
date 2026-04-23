@@ -76,17 +76,20 @@ const Auth = () => {
         transition={{ duration: 0.6 }}
         className="flex flex-col items-center flex-1"
       >
-        <div className="w-full flex justify-center mb-6" style={{ overflow: "visible" }}>
+        <div
+          className="w-full flex justify-center mb-6"
+          style={{ overflow: "visible", background: "transparent" }}
+        >
           <img
             src={logo}
             alt="YOUTOPIA"
-            className="mix-blend-multiply"
             style={{
               maxWidth: "240px",
               width: "100%",
               height: "auto",
               objectFit: "contain",
               display: "block",
+              background: "transparent",
             }}
           />
         </div>
