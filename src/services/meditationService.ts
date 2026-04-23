@@ -67,7 +67,8 @@ async function getVoiceSettings() {
   const { data } = await supabase.from("app_settings").select("*").maybeSingle();
   return {
     model: data?.default_voice_model || "eleven_v3",
-    stability: data?.default_voice_stability ?? 0.50,
+    // v3 preset: Creative (0.0) — lets [intimate][drawn out] tags take full effect
+    stability: data?.default_voice_stability ?? 0.0,
     style: data?.default_voice_style ?? 0.0,
   };
 }

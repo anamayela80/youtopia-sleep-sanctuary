@@ -95,11 +95,12 @@ serve(async (req) => {
             text,
             model_id: modelId,
             voice_settings: {
-              // Calmer, slower morning-meditation delivery. 0.55 stability
-              // preserves v3 expressiveness while 0.80 speed gives the
-              // vision sentences room to breathe — before, visualizations
-              // felt rushed and bullet-pointy.
-              stability: 0.55,
+              // Eleven v3 maps stability to 3 presets: Creative=0, Neutral=0.5,
+              // Robust=1. Creative (0.0) is correct for meditation — it lets
+              // the [intimate][drawn out][softly][slow] v3 tags take full
+              // effect. Pacing is controlled by speed: 0.80 + the [slow]
+              // tag, so we don't need stability to slow things down.
+              stability: 0.0,
               similarity_boost: 0.85,
               style: 0,
               speed: 0.80,
