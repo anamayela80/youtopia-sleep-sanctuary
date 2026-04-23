@@ -132,10 +132,9 @@
   animation: fade-up 0.8s ease-out forwards;
 }
 
-/* Blend white background of logo PNGs into the cream page background */
+/* Logo PNGs have transparent backgrounds */
 img[src*="youtopia-logo"],
 img[src*="youtopia-sun"] {
-  mix-blend-mode: multiply;
   background: transparent;
 }
 
