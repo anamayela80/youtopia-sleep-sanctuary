@@ -186,17 +186,25 @@ NO METAPHORS. No forests, rivers, beaches, gardens, morning tables, meals, or jo
 The ONLY optional image is this month's: "${lightMetaphor}" — reference it once in Section 2 only, as a brief sensory note, then drop it.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-THE CRITICAL RULE — Youtopia does NOT describe the future
+THE YOUTOPIA DIFFERENCE — personal vision, not motivational speech
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Dispenza never describes the listener's future life to them. He names a frequency and lets the listener's own heart generate the content. Youtopia does the same — with one difference: the frequency is named from the USER'S OWN ANSWERS, making it personal without creating a scene.
+The Dispenza framework is the architecture. Youtopia adds one thing Dispenza never does: a personalised vision in Section 6.
 
-WRONG (motivational speech): "There is Scott. There is a morning and a beach and breakfast beside someone you love."
-WRONG (affirmation): "You are financially free. Your app is helping people."
-CORRECT (frequency tuning): "Tune in to the frequency of love, ${userName}. [long pause 10s] Find it. [long pause 10s] Feel it. [long pause 12s] Draw it to you with your heart."
+BUT the vision must work like poetry, not a shopping list. It must:
+— Create an IMAGE that CARRIES the feeling, not describes the circumstances
+— Be emotionally true to what the user wants WITHOUT literally quoting their words back
+— Make the listener smile and feel something they can't quite name — like standing under northern lights, or the first breath after crossing a finish line, or the specific weight of a sleeping baby on your chest
 
-STEP 1 before writing: Read the user's answers. Extract the core FEELING they want — not the circumstances, the feeling. (e.g. answers about wanting love/family → frequency is "love and belonging"; answers about work/freedom → frequency is "creative freedom")
-STEP 2: Name that feeling as a frequency in Section 6. That is the only personalization in that section.
-STEP 3: Use the user's name 4-5 times across the full script for intimacy.
+WRONG (literal answer playback): "There is Scott. There is a morning and a beach and breakfast beside someone you love. Your app is helping people. You are financially free."
+WRONG (too abstract): "Tune in to the frequency of love. Feel it. Come back."
+CORRECT (poetic image that carries the feeling): "You are standing somewhere you belong. [long pause 10s] The air around you has a different quality — [pause 6s] the way air feels [pause 4s] after something has already been decided. [long pause 12s] You know this place. [long pause 10s] You have always been on your way here. [long pause 15s]"
+
+HOW TO BUILD THE SECTION 6 VISION:
+STEP 1 — Read the answers. Find the EMOTIONAL CORE — what is the feeling underneath everything they've described? (e.g. "I want to feel held, stable, alive, and free all at once")
+STEP 2 — Build 4-6 images that embody THAT FEELING, not the circumstances. Each image is one or two slow sentences. Each sentence is followed by [long pause 10s].
+STEP 3 — Weave in 1-2 grounding details drawn from their answers — a sensation, a texture, a sound — that makes it feel specifically theirs. Not a scene. A sensory anchor.
+STEP 4 — Use their name 1-2 times inside the vision section.
+STEP 5 — End with: "This is already true. [long pause 12s] Your body knows it. [long pause 15s]"
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 8-SECTION STRUCTURE
@@ -236,21 +244,28 @@ RULES:
 — Drop one presence anchor here: "Feel it." on its own line, [long pause 15s] after.
 — End with: "The field. [long pause 15s] And remember this feeling."
 
-SECTION 6 — Frequency tuning (${sw.becoming} words)
-Still in the blackness. Guide the listener to tune in to THEIR frequency — derived from their answers.
-"And now, [user name], tune in to the frequency of [extracted feeling from answers]." [long pause 10s]
-"Find it." [long pause 10s] "Feel it." [long pause 12s] "Stay connected to it." [long pause 12s]
-"Feel more of it [pause 6s] and less of you." [long pause 12s]
-"Become it [pause 8s] in the blackness." [long pause 12s]
-"And now draw it to you [pause 6s] with your heart." [long pause 12s]
-"Feel your connection to it [pause 6s] with your heart." [long pause 15s]
-"Drawing it to you [pause 6s] with your heart." [long pause 12s]
-"That's energy in your heart." [long pause 12s]
-"Remember this feeling." [long pause 15s]
-"Know it by heart." [long pause 15s]
+SECTION 6 — Vision (${sw.becoming} words)
+From the formless space, something begins to form — not a scene that is described TO the listener, but a feeling that rises FROM them.
 
-If the user's answers suggest multiple distinct desires, you may tune to 2 frequencies (e.g. "frequency of love" then "frequency of freedom") — same pattern, one after the other.
-Drop one more presence anchor: "Remember." on its own line, [long pause 15s] after.
+FIRST: Name the frequency briefly (2-3 lines max), then move directly into the vision.
+"And now, ${userName}, tune in to the frequency of [core feeling]. [long pause 10s] Find it. [long pause 10s] Feel it. [long pause 12s]"
+
+THEN: The vision — 4 to 6 slow poetic images that embody the FEELING, not the facts.
+Each image: 1-2 sentences, followed by [long pause 10s].
+Images should be unexpected, emotionally precise, and personal enough to be surprising.
+They should feel like something the listener couldn't have written for themselves — but immediately recognises as true.
+Use present tense: "you are", "you notice", "you sense". Not "imagine" or "picture".
+Weave in 1-2 sensory details drawn from their real answers (a feeling, not a scene).
+Use their name once inside the vision.
+
+THEN: Close the vision with the body knowing it:
+"This is already true. [long pause 12s] Your body knows it. [long pause 15s]"
+"Draw this feeling to you [pause 6s] with your heart. [long pause 12s]"
+"That's energy in your heart. [long pause 12s]"
+"Remember this feeling. [long pause 15s]"
+"Know it by heart. [long pause 15s]"
+
+Drop one presence anchor: "Remember." on its own line with [long pause 15s] after.
 
 SECTION 7 — Broadcasting (${sw.anchor} words)
 "Broadcasting [user name's frequency word] into the field." [long pause 12s]
