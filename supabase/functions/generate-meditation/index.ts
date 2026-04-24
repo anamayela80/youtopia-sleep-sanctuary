@@ -77,49 +77,49 @@ const LENGTH_BANDS: Record<Tenure, {
   extraDepth: string;
 }> = {
   orienting: {
-    totalWords: "780 to 860",
+    totalWords: "420 to 520",
     sectionWords: {
-      arrival: "40-55",
+      arrival: "20-30",
       release: "60-80",
-      body: "55-75",
-      coherence: "100-130",
-      nowhere: "60-85",
-      becoming: "260-310",
-      anchor: "60-80",
-      return: "50-70",
+      body: "40-55",
+      coherence: "30-45",
+      nowhere: "60-80",
+      becoming: "100-130",
+      anchor: "40-55",
+      return: "30-40",
     },
     extraDepth:
-      "Keep the Space of Nowhere short but spacious. Becoming is the heart of the session — give it the most words.",
+      "Orienting sessions are the most sparse. Every phrase is short. Silence dominates. The space of nowhere and frequency tuning sections carry the most pause time, not the most words.",
   },
   settling: {
-    totalWords: "1050 to 1150",
+    totalWords: "580 to 720",
     sectionWords: {
-      arrival: "50-70",
-      release: "80-110",
-      body: "75-100",
-      coherence: "150-190",
-      nowhere: "110-150",
-      becoming: "330-400",
-      anchor: "90-120",
-      return: "70-100",
+      arrival: "25-35",
+      release: "80-100",
+      body: "55-70",
+      coherence: "40-55",
+      nowhere: "90-120",
+      becoming: "150-200",
+      anchor: "55-70",
+      return: "35-45",
     },
     extraDepth:
-      "In Heart Coherence, add one sub-beat where the user generates the emotion twice — once for themselves, once for someone they love. In Space of Nowhere, extend the dissolution — more declarative single-phrase lines with [long pause 12s] between them.",
+      "In Heart awakening, spend more time building the ${coherenceEmotion} — breathe into it three times instead of two. In Space of nowhere, add more directional phrases (beyond you, behind you, above you, below you, all around you) each with [long pause 12s]. Tune to 2 frequencies in Section 6.",
   },
   established: {
-    totalWords: "1440 to 1570",
+    totalWords: "800 to 1000",
     sectionWords: {
-      arrival: "60-85",
-      release: "100-140",
-      body: "100-130",
-      coherence: "200-260",
-      nowhere: "180-230",
-      becoming: "480-560",
-      anchor: "130-170",
-      return: "90-120",
+      arrival: "30-40",
+      release: "100-130",
+      body: "70-90",
+      coherence: "55-70",
+      nowhere: "130-170",
+      becoming: "230-300",
+      anchor: "80-100",
+      return: "40-55",
     },
     extraDepth:
-      "Add a Second Descent after Heart Coherence: a brief body scan (~60 words) that returns attention to the breath before Space of Nowhere. In Becoming, include at least two sensory-rich rehearsal passages — one focused on being, one focused on doing. In Anchor, include one sentence that explicitly names the biological change ('your body is already learning to be this person').",
+      "In Section 3 (energy breath), guide 3 full breath cycles up the spine. In Space of nowhere, guide the listener to dissolve into all directions of space and then into 'the realm of energy, frequency, all possibilities' before introducing the frequency. In Section 6, tune to 3 distinct frequencies drawn from the user's answers. In Section 7 (broadcasting), add: 'Synchronize your energy for synchronicities in your life.'",
   },
 };
 
@@ -135,114 +135,151 @@ function buildSystemPrompt(tenure: Tenure, monthNumber: number): string {
 
   const sw = band.sectionWords;
 
-  return `You are writing a neuroscience-informed guided meditation for the Youtopia app. It will be narrated by a warm, intimate voice over ambient music.
+  return `You are writing a guided meditation for the Youtopia app. It will be narrated by a warm, intimate voice over ambient music.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ABSOLUTE OUTPUT RULES — violating any of these makes the output unusable
+THE MODEL YOU ARE FOLLOWING
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. PLAIN TEXT ONLY. No markdown, no headers, no labels, no section titles, no asterisks, no bullet points.
-2. NO VOICE DELIVERY TAGS. Never write [softly], [slow], [warm], [intimate], [drawn out], [whisper], or any similar bracketed delivery instruction. These are added by the audio system — if you include them they will be read aloud and ruin the recording.
-3. PAUSE MARKERS ONLY. The only bracket content allowed: [pause Xs], [long pause Xs], [vision pause 10s], [affirm pause 6s] — where X is a number.
-4. PRESENCE ANCHORS on their own line only — never inside a sentence.
-5. NO REPEATED PASSAGES. Each technique, image, or structural device appears exactly once.
-6. DO NOT label sections. Output flows as continuous narration.
-7. Begin with the first spoken word. End immediately after the last word of Section 8. No preamble, no sign-off.
+Study how this works: short phrases, enormous silences, the listener does the work — not the narrator.
+
+Example of correct pacing:
+  Take a breath. [pause 8s]
+  And relax your body. [pause 10s]
+  Feel your body. [pause 12s]
+  And relax more. [long pause 15s]
+
+Example of correct "space of nowhere" tone:
+  The blackness. [long pause 12s]
+  Beyond you. [long pause 12s]
+  Behind you. [long pause 12s]
+  All around you. [long pause 15s]
+  Become more of it. [long pause 12s]
+  Less of you. [long pause 15s]
+
+Example of correct frequency tuning (NOT a scene — a felt signal):
+  Tune in to the frequency of freedom. [long pause 10s]
+  Find it. [long pause 10s]
+  Feel it. [long pause 12s]
+  Stay connected to it. [long pause 12s]
+  Feel more of it [long pause 8s] and less of you. [long pause 15s]
+  Draw it to you with your heart. [long pause 12s]
+
+The silence between phrases IS the meditation. The brain changes happen in the silence.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-LANGUAGE
+ABSOLUTE OUTPUT RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-YOU MAY USE: breath, heart rhythm, nervous system, attention, awareness, neural pathways, energy centers, the field of what's possible, frequency of dreaming, the new you, becoming, rest, receive.
-
-NEVER USE: pineal gland, chakras, quantum, unified field, higher self, astral, timeline jumping, motivational phrases like "you deserve this", "you are worthy". No named scientists or studies.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-METAPHOR RULE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Do NOT take the user on a guided journey through nature (no forests, rivers, beaches, gardens, meadows). The meditation descends into formlessness and emerges into the user's felt identity — not a movie of their life.
-
-The ONLY metaphor allowed is this month's: "${lightMetaphor}". Use it ONCE in Section 2 and ONCE in Section 7. Nowhere else.
+1. PLAIN TEXT ONLY. No markdown, headers, labels, asterisks, or bullet points.
+2. NO VOICE DELIVERY TAGS. Never write [softly], [slow], [warm], [intimate], [drawn out], [whisper], or any similar delivery instruction. They are added by the audio system — writing them here ruins the recording.
+3. PAUSE MARKERS ONLY. The only allowed brackets: [pause Xs] and [long pause Xs] where X is a number of seconds.
+4. STANDALONE LINES ONLY for presence anchors: "Remember." / "Feel it." / "Breathe." — on their own line, never inside a sentence.
+5. NO REPEATED PASSAGES. Each phrase, image, or instruction appears once.
+6. NO SECTION LABELS. Continuous narration only.
+7. Start with the first spoken word. Stop after the last word of Section 8.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-THE CRITICAL DISTINCTION — this is what makes Youtopia different
+LANGUAGE RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Most meditation apps describe the future TO the user ("your partner is there, breakfast is made, you feel successful"). This is a motivational speech, not neuroplastic change.
-
-Youtopia does the opposite:
-  STEP 1 — Build the ELEVATED EMOTION first, from nothing, before any vision.
-  STEP 2 — Take the user into formless awareness (no body, no time, no identity).
-  STEP 3 — From that space, let them FEEL who they already are becoming — not what they will have, but WHO they are.
-  STEP 4 — Brief, felt sensory anchors to their real life details — one breath, one texture, one knowing — not a scene description.
-
-The Becoming section is NOT a movie. It is a felt identity. The user is not watching their future — they ARE it. The difference is: "sense the particular ease in your chest of someone who is no longer afraid" NOT "you are sitting at the breakfast table and your partner hands you coffee."
+USE: breath, heart, energy centers, awareness, the blackness, the field, frequency, the space, becoming, draw it to you.
+NEVER USE: pineal gland, chakras, quantum, unified field, higher self, astral, "you deserve", "you are worthy", scene descriptions, future images, place names, names of other people (only the user's first name).
+NO METAPHORS. No forests, rivers, beaches, gardens, morning tables, meals, or journeys through nature.
+The ONLY optional image is this month's: "${lightMetaphor}" — reference it once in Section 2 only, as a brief sensory note, then drop it.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-8-SECTION STRUCTURE — write all 8 in sequence, no skipping
+THE CRITICAL RULE — Youtopia does NOT describe the future
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Dispenza never describes the listener's future life to them. He names a frequency and lets the listener's own heart generate the content. Youtopia does the same — with one difference: the frequency is named from the USER'S OWN ANSWERS, making it personal without creating a scene.
+
+WRONG (motivational speech): "There is Scott. There is a morning and a beach and breakfast beside someone you love."
+WRONG (affirmation): "You are financially free. Your app is helping people."
+CORRECT (frequency tuning): "Tune in to the frequency of love, ${userName}. [long pause 10s] Find it. [long pause 10s] Feel it. [long pause 12s] Draw it to you with your heart."
+
+STEP 1 before writing: Read the user's answers. Extract the core FEELING they want — not the circumstances, the feeling. (e.g. answers about wanting love/family → frequency is "love and belonging"; answers about work/freedom → frequency is "creative freedom")
+STEP 2: Name that feeling as a frequency in Section 6. That is the only personalization in that section.
+STEP 3: Use the user's name 4-5 times across the full script for intimacy.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8-SECTION STRUCTURE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 SECTION 1 — Arrival (${sw.arrival} words)
-${openingDevice}
-Concrete, body-centered. No metaphor. [pause 4s] after each breath or body instruction.
+The opening is minimal. Close eyes. One or two breaths. Feel the body weight on the surface.
+[pause 8s] after every single instruction. Maximum 4 words per phrase. Nothing more.
 
-SECTION 2 — Release (${sw.release} words)
-The autonomic nervous system is downshifting. Guide the user to release the known self — the roles, the to-do list, the day's accumulated identity. This is the only place (outside Section 7) where "${lightMetaphor}" may appear. [pause 5s] after each release instruction. [long pause 8s] to close.
+SECTION 2 — Heart awakening (${sw.release} words)
+IMMEDIATELY after arrival — no long body scan first.
+"It's time to awaken your heart." Guide the listener to FIND the energy at the center of the chest.
+"That's energy in your heart." Breathe into it. Hold. Exhale. "Feel it." "Notice it." "Experience it."
+Build it into the feeling of ${coherenceEmotion}: "Grateful to be alive." / "A love for life." / "A joy for existence." (pick one register and stay there)
+"And remember this feeling." [long pause 12s]
+The optional light metaphor ("${lightMetaphor}") may appear here as one brief sensory phrase only.
+[pause 8s] between every instruction.
 
-SECTION 3 — Body settling (${sw.body} words)
-Attention moves through the body regions once: jaw → throat → chest → belly → pelvis → legs → feet. Short declarative sentences. No metaphor. No countdown technique here — do not use a numbered count in this section. [pause 5s] between regions. [long pause 10s] to close.
+SECTION 3 — Energy breath (${sw.body} words)
+Guide a slow breath moving awareness from the base of the spine upward through each energy center to the crown of the head. Hold at the crown. Exhale. "Feel that in your brain." Repeat 2 times.
+Short, directive sentences. "Follow your breath upward." "Hold it." "Exhale." "Feel that energy."
+[pause 6s] between instructions. [long pause 12s] at the end.
 
-SECTION 4 — Heart coherence (${sw.coherence} words)
-Bring attention to the center of the chest. The user generates the feeling of ${coherenceEmotion} — NOT from a vision, but from the feeling itself. "Let the feeling come before anything you picture. Breathe it open." Guide the breath through the chest, outward. Do NOT introduce any future images yet. [pause 6s] between beats. [long pause 12s] to close.
+SECTION 4 — Deep release (${sw.coherence} words)
+After the energy breath: "And relax your body." [long pause 10s] "Feel your body." [long pause 12s] "And relax more." [long pause 15s]
+Very sparse. Only 4-6 short phrases. Let the silence dominate.
+This is where the body drops and the nervous system crosses over into the frequency of dreaming.
 
 SECTION 5 — Space of nowhere (${sw.nowhere} words)
-THE STRUCTURAL HINGE. Everything stops here. The user dissolves into awareness without edges.
-Rules for this section:
-- Each line is ONE short declarative sentence. Maximum 8 words. Then [long pause 12s].
-- No body references. No name. No story. No time. No metaphor.
-- The register: "Nothing to hold." / "No one here." / "Only this." (Write your own — do not copy these.)
-- Drop one PRESENCE ANCHOR on its own line here — "Stay with this." or "You're here." — followed by [long pause 15s].
-- Total: ${sw.nowhere} words of spoken text surrounded by long pauses.
+THE HEART OF THE MEDITATION. Give this section the most silence.
+Guide the listener into formless awareness: the blackness, the space, the field where there is no body, no name, no time.
+RULES:
+— Maximum 5 words per phrase
+— [long pause 12s] after EVERY phrase
+— No body references. No name. No story.
+— Phrases like: "The blackness." / "Beyond you." / "Behind you." / "All around you." / "Become more of it." / "Less of you." / "Lose yourself into nothing." / "Moving beyond space and time." / "The realm of all possibilities." (write your own variations, do not copy these exactly)
+— Drop one presence anchor here: "Feel it." on its own line, [long pause 15s] after.
+— End with: "The field. [long pause 15s] And remember this feeling."
 
-SECTION 6 — Becoming (${sw.becoming} words)
-From the formless space, the new identity arises. This is the heart of the session.
-IMPORTANT — BECOMING IS FELT IDENTITY, NOT SCENE DESCRIPTION:
-  ✓ "Sense the particular quality of a person who is no longer bracing."
-  ✓ "You know this feeling. You have always known it."
-  ✓ "Notice how it feels to move through the world as her."
-  ✗ NOT: "You are at the table, breakfast is made, your partner is there."
-  ✗ NOT: listing their desires back at them as a scene.
+SECTION 6 — Frequency tuning (${sw.becoming} words)
+Still in the blackness. Guide the listener to tune in to THEIR frequency — derived from their answers.
+"And now, [user name], tune in to the frequency of [extracted feeling from answers]." [long pause 10s]
+"Find it." [long pause 10s] "Feel it." [long pause 12s] "Stay connected to it." [long pause 12s]
+"Feel more of it [pause 6s] and less of you." [long pause 12s]
+"Become it [pause 8s] in the blackness." [long pause 12s]
+"And now draw it to you [pause 6s] with your heart." [long pause 12s]
+"Feel your connection to it [pause 6s] with your heart." [long pause 15s]
+"Drawing it to you [pause 6s] with your heart." [long pause 12s]
+"That's energy in your heart." [long pause 12s]
+"Remember this feeling." [long pause 15s]
+"Know it by heart." [long pause 15s]
 
-Use the user's onboarding answers to name the EMOTIONAL TEXTURE of their new identity — the felt quality of being that person — not the external circumstances of their life. One or two brief, specific sensory anchors from their real life are allowed (a texture, a sound, a known physical sensation) but not a scene.
+If the user's answers suggest multiple distinct desires, you may tune to 2 frequencies (e.g. "frequency of love" then "frequency of freedom") — same pattern, one after the other.
+Drop one more presence anchor: "Remember." on its own line, [long pause 15s] after.
 
-Use present tense: "you are", "you notice", "you sense", "you carry". Never "you will" or "you'll have".
-[vision pause 10s] after each felt-identity statement.
-Drop PRESENCE ANCHORS 2-3 times — "Remember." / "Feel it." / "This is real." — each on its own line, surrounded by [long pause 12s] on both sides.
-Near the end: one sentence naming the biological reality — "your nervous system is already learning to be this person" in your own words.
-
-SECTION 7 — Anchor (${sw.anchor} words)
-The identity lands and consolidates. "This is already who you are" — in your own words. "${lightMetaphor}" returns here one final time, closing the loop from Section 2. [affirm pause 6s] after each anchoring statement. Drop one final PRESENCE ANCHOR: "Remember." on its own line, [long pause 15s] after.
+SECTION 7 — Broadcasting (${sw.anchor} words)
+"Broadcasting [user name's frequency word] into the field." [long pause 12s]
+"That's new energy in your heart." [long pause 12s]
+"In the blackness." [long pause 15s]
+"Synchronize." [long pause 12s]
+"And remember this feeling." [long pause 15s]
+Short, sparse. Maximum 6 lines total.
 
 SECTION 8 — Return (${sw.return} words)
-Bring awareness back: fingers, hands, breath, the surface beneath the body. 2-3 sentences send the user into their day from this new identity. Do NOT say "the meditation is ending". Say this feeling travels with them. [pause 6s] between beats.
+"And now, slowly, come back." [long pause 10s]
+"Come back to a new body." [long pause 10s]
+"A new environment [pause 6s] where something is different." [long pause 10s]
+"Into a whole new future." [long pause 8s]
+Address the user by name one final time.
+"When you're ready, [pause 4s] open your eyes."
+Never say "the meditation is ending." Never say "well done" or "good work."
 
 ${band.extraDepth}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PRESENCE ANCHORS
+PACING RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-"Remember." / "Feel it." / "Breathe." / "Stay with this." / "This is real." / "You're here."
-— Each appears on its OWN LINE, surrounded by pause markers.
-— Only in Sections 5, 6, and 7.
-— Maximum 5 total across the whole script.
-— Never string two together. Never embed in a sentence.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PACING & TONE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-— Address the user by name 4-6 times, spread across all sections.
-— Never write more than 2 sentences without a pause marker.
-— Script should look sparse on the page — that spaciousness IS the meditation.
-— Total spoken words: ${band.totalWords}.
-— Never use: "just", "simply", "try", "attempt", "deserve", "worthy".
-— Never end with a generic wellness phrase.`;
+— The script on the page should look almost empty. That is correct.
+— Total spoken words: ${band.totalWords}. Most of the session time is silence.
+— Use the user's first name 4-5 times. Spread across all sections.
+— Every phrase stands alone on its own line followed by a pause marker.
+— Never write more than 2 phrases without a pause marker between them.
+— Never use: "just", "simply", "try", "attempt", "deserve", "worthy", "beautiful", "amazing".`;
 }
 
 // --- Segment splitter -----------------------------------------------------
