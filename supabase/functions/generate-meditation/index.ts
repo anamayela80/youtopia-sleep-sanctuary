@@ -135,76 +135,114 @@ function buildSystemPrompt(tenure: Tenure, monthNumber: number): string {
 
   const sw = band.sectionWords;
 
-  return `You are writing a deeply personal, neuroscience-informed guided meditation for the Youtopia app. The meditation will be narrated by a warm, slow, intimate female voice over ambient music. Your script must be ${band.totalWords} words of spoken content. The remaining session time is silence created by pause markers — the silence is where the rewiring happens.
+  return `You are writing a neuroscience-informed guided meditation for the Youtopia app. It will be narrated by a warm, intimate voice over ambient music.
 
-GROUND RULES FOR LANGUAGE
-Use accessible, nervous-system-grounded language. Your job is to help the user descend into the frequency of dreaming — the state where the body quiets, the thinking mind softens, and new patterns can actually settle in.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE OUTPUT RULES — violating any of these makes the output unusable
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. PLAIN TEXT ONLY. No markdown, no headers, no labels, no section titles, no asterisks, no bullet points.
+2. NO VOICE DELIVERY TAGS. Never write [softly], [slow], [warm], [intimate], [drawn out], [whisper], or any similar bracketed delivery instruction. These are added by the audio system — if you include them they will be read aloud and ruin the recording.
+3. PAUSE MARKERS ONLY. The only bracket content allowed: [pause Xs], [long pause Xs], [vision pause 10s], [affirm pause 6s] — where X is a number.
+4. PRESENCE ANCHORS on their own line only — never inside a sentence.
+5. NO REPEATED PASSAGES. Each technique, image, or structural device appears exactly once.
+6. DO NOT label sections. Output flows as continuous narration.
+7. Begin with the first spoken word. End immediately after the last word of Section 8. No preamble, no sign-off.
 
-YOU MAY USE: breath, heart rhythm, nervous system, attention, awareness, neural pathways, chemistry, energy centers, the field of what's possible, the space where everything is still open, the place between thought and dream, the frequency of dreaming, the new you, becoming, rest, receive.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LANGUAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+YOU MAY USE: breath, heart rhythm, nervous system, attention, awareness, neural pathways, energy centers, the field of what's possible, frequency of dreaming, the new you, becoming, rest, receive.
 
-DO NOT USE: pineal gland, chakras, quantum field, unified field, higher self, astral, spiritual entities, timeline jumping, frequency matching, ascension. Never reference specific scientific studies or neuroscientists by name.
+NEVER USE: pineal gland, chakras, quantum, unified field, higher self, astral, timeline jumping, motivational phrases like "you deserve this", "you are worthy". No named scientists or studies.
 
-METAPHOR POLICY
-Metaphor is a grounding device, not a journey. Do NOT take the user on imagined walks through forests, rivers, beaches, or gardens. The meditation is a descent into formless awareness and an emergence into the user's own real life.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+METAPHOR RULE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Do NOT take the user on a guided journey through nature (no forests, rivers, beaches, gardens, meadows). The meditation descends into formlessness and emerges into the user's felt identity — not a movie of their life.
 
-The single monthly light metaphor for THIS session is: "${lightMetaphor}". Reference this once in Release and once in Anchor — no more. Every other image must either be (a) an abstract sensory description (warmth, weight, light, sound) or (b) a specific detail from the user's own onboarding answers.
+The ONLY metaphor allowed is this month's: "${lightMetaphor}". Use it ONCE in Section 2 and ONCE in Section 7. Nowhere else.
 
-THE 8-SECTION STRUCTURE — follow exactly
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+THE CRITICAL DISTINCTION — this is what makes Youtopia different
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Most meditation apps describe the future TO the user ("your partner is there, breakfast is made, you feel successful"). This is a motivational speech, not neuroplastic change.
+
+Youtopia does the opposite:
+  STEP 1 — Build the ELEVATED EMOTION first, from nothing, before any vision.
+  STEP 2 — Take the user into formless awareness (no body, no time, no identity).
+  STEP 3 — From that space, let them FEEL who they already are becoming — not what they will have, but WHO they are.
+  STEP 4 — Brief, felt sensory anchors to their real life details — one breath, one texture, one knowing — not a scene description.
+
+The Becoming section is NOT a movie. It is a felt identity. The user is not watching their future — they ARE it. The difference is: "sense the particular ease in your chest of someone who is no longer afraid" NOT "you are sitting at the breakfast table and your partner hands you coffee."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8-SECTION STRUCTURE — write all 8 in sequence, no skipping
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 SECTION 1 — Arrival (${sw.arrival} words)
-The device for this month: ${openingDevice}
-Insert [pause 4s] after each breath instruction. Keep it concrete and body-centered. No metaphor yet.
+${openingDevice}
+Concrete, body-centered. No metaphor. [pause 4s] after each breath or body instruction.
 
 SECTION 2 — Release (${sw.release} words)
-Guide the user to let go of the day, the known self, what the mind is still holding. The autonomic nervous system is downshifting. This is the only section in the first half where the monthly light metaphor may be gently named ("${lightMetaphor}"). Insert [pause 5s] after each release instruction. Insert [long pause 8s] at the end of this section.
+The autonomic nervous system is downshifting. Guide the user to release the known self — the roles, the to-do list, the day's accumulated identity. This is the only place (outside Section 7) where "${lightMetaphor}" may appear. [pause 5s] after each release instruction. [long pause 8s] to close.
 
 SECTION 3 — Body settling (${sw.body} words)
-Attention moves through the body — jaw, throat, chest, belly, pelvis, legs, feet. The nervous system is quieting further. No metaphor. Short declarative sentences. Insert [pause 5s] between body regions. End with [long pause 10s].
+Attention moves through the body regions once: jaw → throat → chest → belly → pelvis → legs → feet. Short declarative sentences. No metaphor. No countdown technique here — do not use a numbered count in this section. [pause 5s] between regions. [long pause 10s] to close.
 
 SECTION 4 — Heart coherence (${sw.coherence} words)
-This is the hinge of the meditation. Bring attention to the center of the chest. The user generates the feeling of ${coherenceEmotion} BEFORE any vision arrives — the elevated emotion precedes the image, not the other way around. Guide them to breathe the feeling through the chest, to let it warm outward. Do NOT name anything they will visualize yet. Insert [pause 6s] between beats. End with [long pause 12s].
+Bring attention to the center of the chest. The user generates the feeling of ${coherenceEmotion} — NOT from a vision, but from the feeling itself. "Let the feeling come before anything you picture. Breathe it open." Guide the breath through the chest, outward. Do NOT introduce any future images yet. [pause 6s] between beats. [long pause 12s] to close.
 
 SECTION 5 — Space of nowhere (${sw.nowhere} words)
-THIS IS WHERE THE STRUCTURE CHANGES. The user dissolves into awareness without edges. No body, no name, no story, no time. Pure witness. Pure space.
-Use short, declarative, single-sentence lines — almost one per pause. Examples of the TONE (do not quote these directly, write your own in this register): "No shape." "No one holding on." "The you that existed before any thought."
-Insert [long pause 12s] between each line. Drop one PRESENCE ANCHOR on its own line here — either "You're here." or "Stay with this." — followed by [long pause 15s]. Do NOT use any metaphor in this section. Do NOT reference the body by name.
+THE STRUCTURAL HINGE. Everything stops here. The user dissolves into awareness without edges.
+Rules for this section:
+- Each line is ONE short declarative sentence. Maximum 8 words. Then [long pause 12s].
+- No body references. No name. No story. No time. No metaphor.
+- The register: "Nothing to hold." / "No one here." / "Only this." (Write your own — do not copy these.)
+- Drop one PRESENCE ANCHOR on its own line here — "Stay with this." or "You're here." — followed by [long pause 15s].
+- Total: ${sw.nowhere} words of spoken text surrounded by long pauses.
 
 SECTION 6 — Becoming (${sw.becoming} words)
-This is the heart. Using the user's specific dream life details from their onboarding answers, guide them into their future reality as if it is already present. Use present tense throughout — not "imagine you will" but "you are here now", "you are the one who".
-Include specific sensory details, real names from their answers, real places, real activities they described. Each image should be one sentence, followed by [vision pause 10s]. Use the words "notice", "sense", "feel", and "allow yourself to see" — use "imagine" at most once.
-Drop PRESENCE ANCHORS into this section 2-3 times — standalone lines reading "Remember." or "Feel it." or "This is real." — each surrounded by [long pause 12s] on either side. These are the most important beats of the whole meditation.
-Toward the end of this section, include one sentence that names the biological reality of what is happening ("your body is already learning to be this person" or equivalent — in your own words).
+From the formless space, the new identity arises. This is the heart of the session.
+IMPORTANT — BECOMING IS FELT IDENTITY, NOT SCENE DESCRIPTION:
+  ✓ "Sense the particular quality of a person who is no longer bracing."
+  ✓ "You know this feeling. You have always known it."
+  ✓ "Notice how it feels to move through the world as her."
+  ✗ NOT: "You are at the table, breakfast is made, your partner is there."
+  ✗ NOT: listing their desires back at them as a scene.
+
+Use the user's onboarding answers to name the EMOTIONAL TEXTURE of their new identity — the felt quality of being that person — not the external circumstances of their life. One or two brief, specific sensory anchors from their real life are allowed (a texture, a sound, a known physical sensation) but not a scene.
+
+Use present tense: "you are", "you notice", "you sense", "you carry". Never "you will" or "you'll have".
+[vision pause 10s] after each felt-identity statement.
+Drop PRESENCE ANCHORS 2-3 times — "Remember." / "Feel it." / "This is real." — each on its own line, surrounded by [long pause 12s] on both sides.
+Near the end: one sentence naming the biological reality — "your nervous system is already learning to be this person" in your own words.
 
 SECTION 7 — Anchor (${sw.anchor} words)
-The new identity consolidates. "This is already who you are" — in your own words. The monthly light metaphor ("${lightMetaphor}") may return here one final time to close the loop from Release. Insert [affirm pause 6s] after each anchoring statement. Drop one final PRESENCE ANCHOR here — "Remember." on its own line with [long pause 15s] after.
+The identity lands and consolidates. "This is already who you are" — in your own words. "${lightMetaphor}" returns here one final time, closing the loop from Section 2. [affirm pause 6s] after each anchoring statement. Drop one final PRESENCE ANCHOR: "Remember." on its own line, [long pause 15s] after.
 
 SECTION 8 — Return (${sw.return} words)
-Gently bring awareness back to physical body — fingers, hands, feet, breath. Close with 2-3 empowering sentences that send the user into their day from this new identity. Do NOT say the meditation is ending. Say this feeling continues. Insert [pause 6s] between beats.
+Bring awareness back: fingers, hands, breath, the surface beneath the body. 2-3 sentences send the user into their day from this new identity. Do NOT say "the meditation is ending". Say this feeling travels with them. [pause 6s] between beats.
 
 ${band.extraDepth}
 
-PRESENCE ANCHORS — how to use
-The phrases "Remember.", "Feel it.", "Breathe.", "Stay with this.", "This is real.", "You're here." are sacred beats. Each one appears on its OWN LINE, ALONE, surrounded by [long pause] markers. Never string them together. Never put them inside a sentence. They only appear in sections 5, 6, and 7, and no more than 5 times total across the whole meditation.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRESENCE ANCHORS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"Remember." / "Feel it." / "Breathe." / "Stay with this." / "This is real." / "You're here."
+— Each appears on its OWN LINE, surrounded by pause markers.
+— Only in Sections 5, 6, and 7.
+— Maximum 5 total across the whole script.
+— Never string two together. Never embed in a sentence.
 
-FORMATTING RULES (follow without exception)
-- Insert [pause 4s] after every breath instruction
-- Insert [vision pause 10s] after every visualization sentence in Section 6
-- Insert [long pause 12s] between each line in Section 5
-- Insert [long pause 8-15s] between major sections
-- Insert [affirm pause 6s] after every identity statement
-- Never write more than two sentences without a pause marker
-- The script should feel almost uncomfortably sparse on the page — that spaciousness is intentional
-
-TONE RULES
-Warm, intimate, unhurried. Address the user by name at least four times across the script. Never use the words "just", "simply", "try", or "attempt". Vision section is always present tense. Never end with a generic wellness closing.
-
-ANTI-HALLUCINATION RULES (critical)
-- You may ONLY reference people, places, activities, and details that appear verbatim in the user's onboarding answers. Do not invent names, family members, friends, cities, or events.
-- If the answers don't mention a specific person, don't introduce one. Use abstract sensory description (warmth, light, breath, sound) instead.
-- Stay strictly within the 8-section structure and the ${band.totalWords} word limit. Do not append extra paragraphs after Section 8.
-
-OUTPUT
-Plain text with bracket pause markers and standalone PRESENCE ANCHOR lines only — no SSML, no <speak>, no <break>, no headers, no section labels, no explanations. Begin directly with the first word of Section 1 and stop immediately after the final word of Section 8.`;
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PACING & TONE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+— Address the user by name 4-6 times, spread across all sections.
+— Never write more than 2 sentences without a pause marker.
+— Script should look sparse on the page — that spaciousness IS the meditation.
+— Total spoken words: ${band.totalWords}.
+— Never use: "just", "simply", "try", "attempt", "deserve", "worthy".
+— Never end with a generic wellness phrase.`;
 }
 
 // --- Segment splitter -----------------------------------------------------
@@ -346,7 +384,12 @@ Write the meditation script now. Follow the 8-section structure exactly. Use the
     const fullScript: string = data.content?.[0]?.text;
     if (!fullScript) throw new Error("No script generated");
 
-    const segmentTexts = splitIntoSegments(fullScript.trim());
+    // Strip any v3 delivery tags the model may have leaked into the script.
+    // These tags are added by narrate-meditation — if they appear in the script
+    // text itself the TTS system reads them aloud.
+    const V3_DELIVERY_TAGS = /\[(softly|slow|warm|intimate|drawn out|whisper|fast|neutral|robust|creative|loud|quiet|serious|happy|sad|angry|fearful|surprised|disgust|calm|excited)\]/gi;
+    const cleanedScript = fullScript.trim().replace(V3_DELIVERY_TAGS, "");
+    const segmentTexts = splitIntoSegments(cleanedScript);
     const titles = ["Arrival", "Coherence", "Becoming", "Return"];
     const segments = segmentTexts.map((text, i) => ({
       number: i + 1,
@@ -354,7 +397,7 @@ Write the meditation script now. Follow the 8-section structure exactly. Use the
       text,
     }));
 
-    return new Response(JSON.stringify({ script: fullScript, segments }), {
+    return new Response(JSON.stringify({ script: cleanedScript, segments }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
