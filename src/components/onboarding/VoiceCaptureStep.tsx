@@ -228,7 +228,7 @@ const VoiceCaptureStep = ({
                     Serena's voice {presetSelected && "✓"}
                   </p>
                   <p className="font-body text-xs text-muted-foreground leading-relaxed">
-                    A warm, calming preset voice — chosen for you. Skip the recording.
+                    A warm, calming preset voice, chosen for you. Skip the recording.
                   </p>
                 </div>
               </div>
@@ -355,7 +355,7 @@ const VoiceCaptureStep = ({
         <span className="font-body text-sm text-muted-foreground ml-2">/ {formatTime(MAX_SECONDS)}</span>
         {state === "active" && elapsed < MIN_SECONDS && (
           <p className="font-body text-xs text-primary mt-2">
-            Keep going — {MIN_SECONDS - elapsed}s more needed
+            Keep going, {MIN_SECONDS - elapsed}s more needed
           </p>
         )}
       </div>

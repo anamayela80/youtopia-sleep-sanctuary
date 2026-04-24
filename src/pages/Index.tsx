@@ -44,7 +44,7 @@ const Index = () => {
 
         <div className="bg-teal-light/50 rounded-2xl px-4 py-2 mb-8">
           <p className="text-sm font-body text-teal-dark">
-            ✨ Welcome to our free beta — full access while we're getting started
+            ✨ Welcome to our free beta. Full access while we're getting started
           </p>
         </div>
 

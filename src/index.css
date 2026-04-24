@@ -1,3 +1,4 @@
+/* NO EM DASHES in user-facing text, ever. Use commas, colons, or rewrite. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

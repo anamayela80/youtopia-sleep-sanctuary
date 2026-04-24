@@ -22,12 +22,12 @@ const WelcomeStep = ({ userFirstName }: WelcomeStepProps) => (
     <div className="space-y-5 max-w-md font-body text-accent leading-relaxed">
       <p>
         You've just stepped into something built differently. Youtopia is not a meditation app.
-        It's a monthly practice that goes somewhere most apps are afraid to go — into the real questions,
+        It's a monthly practice that goes somewhere most apps are afraid to go, into the real questions,
         the ones that actually change how you feel from the inside out.
       </p>
       <p>
         Every month you'll receive a morning meditation built entirely around your answers to five questions.
-        And every night, five Seeds — whispered in your own voice — will plant new beliefs while you sleep.
+        And every night, five Seeds, whispered in your own voice, will plant new beliefs while you sleep.
       </p>
       <p className="italic text-foreground/80">
         This is not generic. Nothing here is for everyone. It is made, every month, specifically for you.

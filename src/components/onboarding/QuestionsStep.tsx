@@ -42,7 +42,7 @@ const QuestionsStep = ({
         {rendered}
       </h2>
       <p className="font-body text-sm text-muted-foreground italic mb-6">
-        There's no wrong answer — speak from your heart.
+        There's no wrong answer. Speak from your heart.
       </p>
 
       <textarea

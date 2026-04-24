@@ -134,7 +134,7 @@ export const AdminThemes = () => {
             <p className="text-[11px] uppercase tracking-wider font-body text-accent">Voices</p>
 
             <div className="space-y-1">
-              <p className="text-[11px] font-body text-muted-foreground">Guide voice — narrates the morning meditation. Leave blank to use the global default.</p>
+              <p className="text-[11px] font-body text-muted-foreground">Guide voice, narrates the morning meditation. Leave blank to use the global default.</p>
               <input
                 value={t.guide_voice_id || ""}
                 onChange={(e) => update(t.id, { guide_voice_id: e.target.value })}
@@ -144,7 +144,7 @@ export const AdminThemes = () => {
             </div>
 
             <div className="space-y-1">
-              <p className="text-[11px] font-body text-muted-foreground">Preset Seed voice (Serena) — used when a user opts not to record their own voice. Falls back to the guide voice if blank.</p>
+              <p className="text-[11px] font-body text-muted-foreground">Preset Seed voice (Serena), used when a user opts not to record their own voice. Falls back to the guide voice if blank.</p>
               <input
                 value={t.seed_voice_id || ""}
                 onChange={(e) => update(t.id, { seed_voice_id: e.target.value })}
@@ -166,17 +166,17 @@ export const AdminThemes = () => {
           </div>
 
           <div className="space-y-2 pt-2 border-t border-border">
-            <p className="text-[11px] uppercase tracking-wider font-body text-accent">This month's practice — by tenure</p>
+            <p className="text-[11px] uppercase tracking-wider font-body text-accent">This month's practice: by tenure</p>
             <textarea
               value={t.intro_orienting || ""}
               onChange={(e) => update(t.id, { intro_orienting: e.target.value })}
-              placeholder="Months 1–2 (orienting): for someone new"
+              placeholder="Months 1 to 2 (orienting): for someone new"
               className="w-full h-20 px-3 py-2 rounded-lg bg-background border border-border font-body text-sm text-foreground resize-none"
             />
             <textarea
               value={t.intro_settling || ""}
               onChange={(e) => update(t.id, { intro_settling: e.target.value })}
-              placeholder="Months 3–5 (settling): for someone finding their rhythm"
+              placeholder="Months 3 to 5 (settling): for someone finding their rhythm"
               className="w-full h-20 px-3 py-2 rounded-lg bg-background border border-border font-body text-sm text-foreground resize-none"
             />
             <textarea
@@ -199,7 +199,7 @@ export const AdminThemes = () => {
             <textarea
               value={t.science || ""}
               onChange={(e) => update(t.id, { science: e.target.value })}
-              placeholder="Why it works — the science"
+              placeholder="Why it works: the science"
               className="w-full h-28 px-3 py-2 rounded-lg bg-background border border-border font-body text-sm text-foreground resize-none"
             />
             <textarea
