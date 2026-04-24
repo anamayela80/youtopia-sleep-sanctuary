@@ -183,7 +183,7 @@ serve(async (req) => {
     // Run all chunks in parallel to stay under the edge function timeout
     let rawBuffers: Uint8Array[];
     try {
-      rawBuffers = await Promise.all(chunks.map((c, i) => processChunk(c, i)));
+      rawBuffers = await Promise.all(chunks.map((c: string, i: number) => processChunk(c, i)));
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown";
       if (msg === "QUOTA_EXCEEDED") {
