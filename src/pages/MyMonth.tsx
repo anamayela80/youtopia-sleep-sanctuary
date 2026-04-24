@@ -52,6 +52,7 @@ const MyMonth = () => {
   const meditationMixer = useSegmentedMixer({
     segmentUrls,
     musicUrl: theme?.morning_music_url || theme?.music_file_url || null,
+    tenureBand: getTenureBand(profile?.membership_start_date),
   });
 
   const seedsPlayer = useSeedsPlayer({

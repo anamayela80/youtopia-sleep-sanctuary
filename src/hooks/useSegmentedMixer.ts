@@ -25,7 +25,27 @@ interface UseSegmentedMixerOptions {
   musicVolume?: number;
   /** Voice dry level. Default 0.72 — high enough to clearly lead */
   narrationVolume?: number;
+  /**
+   * Tenure band — when provided and bridge/fade durations aren't explicitly
+   * set, the mixer scales silences to match the corresponding session length.
+   */
+  tenureBand?: "orienting" | "settling" | "established";
 }
+
+/**
+ * Tenure-aware defaults so the music breathing room scales with the listener's
+ * journey — the same 4-segment audio structure is stretched into longer
+ * sessions as users become established.
+ *
+ *   orienting   → ~20 min (fade 60 + bridges 135/150/135 + fade 120)
+ *   settling    → ~28 min (fade 75 + bridges 180/210/180 + fade 150)
+ *   established → ~38 min (fade 90 + bridges 240/300/240 + fade 180)
+ */
+const TENURE_TIMING = {
+  orienting:   { fadeIn: 60, bridges: [0, 135, 150, 135], fadeOut: 120 },
+  settling:    { fadeIn: 75, bridges: [0, 180, 210, 180], fadeOut: 150 },
+  established: { fadeIn: 90, bridges: [0, 240, 300, 240], fadeOut: 180 },
+};
 
 // Ducking
 const DUCK_RATIO = 0.45;       // music drops to 45% of current arc level under voice
@@ -48,12 +68,18 @@ const ARC = {
 export function useSegmentedMixer({
   segmentUrls,
   musicUrl,
-  musicBridgeDurations = [0, 135, 150, 135],
-  musicFadeInDuration = 60,
-  musicFadeOutDuration = 120,
+  musicBridgeDurations,
+  musicFadeInDuration,
+  musicFadeOutDuration,
   musicVolume = 0.42,
   narrationVolume = 0.72,
+  tenureBand,
 }: UseSegmentedMixerOptions) {
+  // Resolve tenure-aware defaults when explicit timings aren't passed.
+  const tenureDefaults = TENURE_TIMING[tenureBand ?? "orienting"];
+  const resolvedBridges = musicBridgeDurations ?? tenureDefaults.bridges;
+  const resolvedFadeIn = musicFadeInDuration ?? tenureDefaults.fadeIn;
+  const resolvedFadeOut = musicFadeOutDuration ?? tenureDefaults.fadeOut;
   const audioCtxRef = useRef<AudioContext | null>(null);
   const segmentBuffersRef = useRef<AudioBuffer[]>([]);
   const musicBufferRef = useRef<AudioBuffer | null>(null);
@@ -87,16 +113,16 @@ export function useSegmentedMixer({
   const buildTimeline = useCallback(() => {
     const buffers = segmentBuffersRef.current;
     const events: { index: number; startOffset: number; duration: number }[] = [];
-    let t = musicFadeInDuration;
+    let t = resolvedFadeIn;
     buffers.forEach((buf, i) => {
       const effectiveDuration = buf.duration / VOICE_RATE;
       events.push({ index: i, startOffset: t, duration: effectiveDuration });
       t += effectiveDuration;
-      if (i < buffers.length - 1) t += musicBridgeDurations[i + 1] || 60;
+      if (i < buffers.length - 1) t += resolvedBridges[i + 1] || 60;
     });
-    const totalDur = t + musicFadeOutDuration;
+    const totalDur = t + resolvedFadeOut;
     return { events, totalDuration: totalDur };
-  }, [musicFadeInDuration, musicFadeOutDuration, musicBridgeDurations]);
+  }, [resolvedFadeIn, resolvedFadeOut, resolvedBridges]);
 
   useEffect(() => {
     if (segmentUrls.length === 0) return;
@@ -206,18 +232,18 @@ export function useSegmentedMixer({
 
       // Starting gain — where are we in the arc at the current offset?
       let startGain = 0;
-      if (clampedOffset < musicFadeInDuration) {
-        startGain = (clampedOffset / musicFadeInDuration) * musicVolume * ARC.fadeInPeak;
+      if (clampedOffset < resolvedFadeIn) {
+        startGain = (clampedOffset / resolvedFadeIn) * musicVolume * ARC.fadeInPeak;
       } else {
         startGain = musicVolume * arcLevelAt(clampedOffset, events);
       }
       gainNode.gain.setValueAtTime(startGain, now);
 
       // Remaining fade-in
-      if (clampedOffset < musicFadeInDuration) {
+      if (clampedOffset < resolvedFadeIn) {
         gainNode.gain.linearRampToValueAtTime(
           musicVolume * ARC.fadeInPeak,
-          toCtx(musicFadeInDuration),
+          toCtx(resolvedFadeIn),
         );
       }
 
@@ -253,7 +279,7 @@ export function useSegmentedMixer({
       });
 
       // Final fade-out
-      const fadeOutStart = totalDuration - musicFadeOutDuration;
+      const fadeOutStart = totalDuration - resolvedFadeOut;
       if (clampedOffset < fadeOutStart) {
         gainNode.gain.linearRampToValueAtTime(0, toCtx(totalDuration));
       } else {
@@ -297,7 +323,7 @@ export function useSegmentedMixer({
     setIsPaused(false);
     setHasStarted(true);
     rafRef.current = requestAnimationFrame(tick);
-  }, [musicVolume, narrationVolume, musicFadeInDuration, musicFadeOutDuration, buildTimeline, tick]);
+  }, [musicVolume, narrationVolume, resolvedFadeIn, resolvedFadeOut, buildTimeline, tick]);
 
   const playSequence = useCallback(() => {
     playFromOffset(0);

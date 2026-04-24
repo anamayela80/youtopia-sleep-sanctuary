@@ -12,15 +12,17 @@ const corsHeaders = {
 // hallucinated additions on long inputs.
 //
 // Mapping:
-//   short pauses (≤5s)  → " ... "        (one ellipsis ≈ short beat)
-//   medium pauses (6s)  → " ...... "     (longer beat)
-//   long pauses (8s+)   → " ......... "  (extended beat)
-// Every chunk is wrapped with [soft][slow] so the whole delivery stays calm.
+//   short pauses (≤5s)  → " ... "            (short beat)
+//   medium pauses (6s)  → " ...... "         (longer beat)
+//   long pauses (8-10s) → " ......... "      (extended beat)
+//   deep pauses (12-15s)→ " ............. "  (section-break / presence-anchor beat)
+//   abyss (16s+)        → " .................. " (Space-of-nowhere style)
 function pausesFor(seconds: number): string {
   if (seconds <= 4) return " ... ";
   if (seconds <= 6) return " ...... ";
   if (seconds <= 10) return " ......... ";
-  return " ............ ";
+  if (seconds <= 14) return " ............. ";
+  return " .................. ";
 }
 
 function toNarrationText(raw: string): string {

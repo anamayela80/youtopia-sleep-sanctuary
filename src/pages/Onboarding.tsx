@@ -19,6 +19,9 @@ import {
   narrateSeed,
   uploadSeedAudio,
   saveSeeds,
+  getTenureBand,
+  getMonthNumber,
+  getUserProfile,
 } from "@/services/meditationService";
 import {
   hasEverCompletedIntake,
@@ -209,13 +212,18 @@ const Onboarding = () => {
         ? presetSeedVoiceId
         : (userVoiceId || presetSeedVoiceId);
 
-      // 3. Meditation script
+      // 3. Meditation script — tenure and month drive length + monthly variation
       setGenerationStatus("Writing your meditation…");
+      const profile = await getUserProfile(user.id);
+      const tenureBand = getTenureBand(profile?.membership_start_date);
+      const monthNumber = getMonthNumber(profile?.membership_start_date);
       const { script, segments } = await generateMeditationScript({
         answers,
         userName,
         monthlyTheme: theme?.theme,
         themeIntention: theme?.intention,
+        tenureBand,
+        monthNumber,
       });
 
       // 4. Narrate segments

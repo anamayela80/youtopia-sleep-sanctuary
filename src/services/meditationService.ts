@@ -15,6 +15,29 @@ export interface GenerateMeditationParams {
   monthlyTheme?: string;
   themeIntention?: string;
   previousTheme?: string;
+  /** Controls length/depth of the meditation. Defaults to "orienting" in the edge function. */
+  tenureBand?: "orienting" | "settling" | "established";
+  /**
+   * Months since the user joined (1-based). Drives the monthly variation
+   * rotation — opening device, light metaphor, and coherence emotion all
+   * cycle by this number so the structure stays fresh.
+   */
+  monthNumber?: number;
+}
+
+/**
+ * Calculate how many months the user has been a member, starting at 1 for
+ * their first month. Used as the variation seed for meditation generation.
+ */
+export function getMonthNumber(membershipStartDate: string | null | undefined): number {
+  if (!membershipStartDate) return 1;
+  const start = new Date(membershipStartDate);
+  const now = new Date();
+  const months =
+    (now.getFullYear() - start.getFullYear()) * 12 +
+    (now.getMonth() - start.getMonth()) +
+    1; // 1-based
+  return Math.max(1, months);
 }
 
 export async function generateMeditationScript(params: GenerateMeditationParams): Promise<{
