@@ -13,20 +13,24 @@ const corsHeaders = {
 //
 // Dot density calibration:
 //   ElevenLabs v3 with [slow][drawn out] delivery renders each dot at roughly
-//   0.4–0.5 s. We therefore use ~2.2 dots per intended second so the actual
-//   rendered silence closely matches the target duration.
+//   0.35–0.45 s. We use a modest increase over baseline to add breathing room
+//   WITHOUT flooding the model with dots — dot-heavy inputs cause hallucination
+//   in the Space of Nowhere section where phrases are short and pauses are long.
+//   Duration is primarily controlled by the music bridge lengths in the mixer.
 //
-//   Examples (target → dots → expected render):
-//     4s  →  9 dots  → ~3.5–4.5 s
-//     8s  → 18 dots  → ~7–9 s
-//    10s  → 22 dots  → ~9–11 s
-//    12s  → 27 dots  → ~11–13 s
-//    15s  → 33 dots  → ~13–16 s
-//    20s  → 44 dots  → ~18–22 s
-//    25s  → 55 dots  → ~22–27 s
+//   Mapping (target → dots → expected render):
+//     ≤4s  →  7 dots  → ~2.5–3 s
+//      6s  → 10 dots  → ~3.5–4.5 s
+//     10s  → 14 dots  → ~5–6 s
+//     12s  → 17 dots  → ~6–7.5 s
+//     15s  → 19 dots  → ~7–8.5 s
+//     20s  → 21 dots  → ~7.5–9.5 s
 function pausesFor(seconds: number): string {
-  const dots = Math.max(6, Math.round(seconds * 2.2));
-  return " " + ".".repeat(dots) + " ";
+  if (seconds <= 4)  return " ....... ";
+  if (seconds <= 6)  return " .......... ";
+  if (seconds <= 10) return " .............. ";
+  if (seconds <= 14) return " ................. ";
+  return " ..................... ";
 }
 
 function toNarrationText(raw: string): string {
@@ -133,20 +137,27 @@ serve(async (req) => {
     // Convert pause markers → ellipsis pacing (no SSML).
     const narrationText = toNarrationText(script);
 
-    // Chunk on sentence boundaries to keep each request small. eleven_v3 can
-    // hallucinate / drift on very long inputs, so we keep chunks tight.
-    const MAX_CHARS = 1200;
+    // Chunk on pause boundaries to prevent hallucination on dot-heavy passages.
+    // The Space of Nowhere section has many short phrases each followed by 17-21
+    // dots. Keeping MAX_CHARS low (400) ensures no chunk is predominantly dots,
+    // which is what causes ElevenLabs v3 to hallucinate filler text.
+    const MAX_CHARS = 400;
     const chunkScript = (text: string): string[] => {
       if (text.length <= MAX_CHARS) return [text];
+
+      // Split at pause boundaries (runs of 8+ dots) so each chunk ends cleanly
+      // rather than breaking mid-dots and confusing the model.
+      const pauseBoundary = /(?<=\.{8,}\s)/;
+      const rawParts = text.split(pauseBoundary).filter(Boolean);
+
       const chunks: string[] = [];
-      const sentences = text.split(/(?<=[.!?])\s+/);
       let current = "";
-      for (const s of sentences) {
-        if ((current + " " + s).trim().length <= MAX_CHARS) {
-          current = current ? current + " " + s : s;
+      for (const part of rawParts) {
+        if ((current + part).length <= MAX_CHARS) {
+          current += part;
         } else {
           if (current.trim()) chunks.push(current.trim());
-          current = s;
+          current = part;
         }
       }
       if (current.trim()) chunks.push(current.trim());

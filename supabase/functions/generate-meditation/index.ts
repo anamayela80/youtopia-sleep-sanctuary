@@ -344,12 +344,13 @@ Drop one presence anchor: "Remember." on its own line. [long pause 20s] after.
 Then: "[segment break]" on its own line — this is the third and final segment break.
 
 SECTION 7 — Anchor (${sw.anchor} words)
-Short. Sparse. Integration happens in silence, not in words.
-  "Let this be a knowing. [long pause 12s]"
-  "Not a memory. [long pause 12s]"
+Short. Sparse. The body is encoding what was felt — this is how future memory is made.
+  "The body is encoding this. [long pause 12s]"
+  "Into memory. [long pause 12s]"
+  "The nervous system is learning something new. [long pause 12s]"
   "Carry it back. [long pause 12s]"
   "Into everything. [long pause 20s]"
-Maximum 5 lines total.
+Maximum 5-6 lines total. Do NOT write "not a memory" — we ARE creating a memory of the future.
 
 SECTION 8 — Return (${sw.return} words)
   "And now, slowly — come back. [long pause 10s]"
@@ -357,8 +358,10 @@ SECTION 8 — Return (${sw.return} words)
   "Into this day. [long pause 10s]"
   "Something has shifted. [long pause 10s]"
   Address the user by name once.
-  "When you're ready — [pause 4s] open your eyes."
-Never say "the meditation is ending." Never say "well done" or "good work." Never say "a new body" or "a whole new future."
+  "When you're ready — [pause 4s] open your eyes. [pause 6s]"
+  "Welcome to your new reality."
+The final line "Welcome to your new reality." is always the last words of the script. No pause marker after it.
+Never say "the meditation is ending." Never say "well done" or "good work." Never say "a new body."
 
 ${band.extraDepth}
 
@@ -524,7 +527,12 @@ Write the meditation script now. Follow the 8-section structure exactly. Use the
     // These tags are added by narrate-meditation — if they appear in the script
     // text itself the TTS system reads them aloud.
     const V3_DELIVERY_TAGS = /\[(softly|slow|warm|intimate|drawn out|whisper|fast|neutral|robust|creative|loud|quiet|serious|happy|sad|angry|fearful|surprised|disgust|calm|excited)\]/gi;
-    const cleanedScript = fullScript.trim().replace(V3_DELIVERY_TAGS, "");
+    // Strip em dashes and en dashes — they cause ElevenLabs to pause awkwardly
+    // and bleed through into the narrated audio as unintended hesitations.
+    const cleanedScript = fullScript.trim()
+      .replace(V3_DELIVERY_TAGS, "")
+      .replace(/—/g, " ")
+      .replace(/–/g, " ");
     const segmentTexts = splitIntoSegments(cleanedScript);
     const titles = ["Arrival", "Coherence", "Becoming", "Return"];
     const segments = segmentTexts.map((text, i) => ({

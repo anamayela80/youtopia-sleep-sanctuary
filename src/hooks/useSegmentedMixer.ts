@@ -41,10 +41,19 @@ interface UseSegmentedMixerOptions {
  *   settling    → ~28 min (fade 75 + bridges 180/210/180 + fade 150)
  *   established → ~38 min (fade 90 + bridges 240/300/240 + fade 180)
  */
+/**
+ * Bridge durations are the primary lever for session length.
+ * Dot-based pauses in the TTS audio only contribute ~6-8 s per marker;
+ * the real silence that lets each section LAND comes from these bridges.
+ *
+ *   orienting   → ~20 min  (5 min narration + 15 min music/silence)
+ *   settling    → ~28 min  (7 min narration + 21 min music/silence)
+ *   established → ~38 min  (9 min narration + 29 min music/silence)
+ */
 const TENURE_TIMING = {
-  orienting:   { fadeIn: 60, bridges: [0, 135, 150, 135], fadeOut: 120 },
-  settling:    { fadeIn: 75, bridges: [0, 180, 210, 180], fadeOut: 150 },
-  established: { fadeIn: 90, bridges: [0, 240, 300, 240], fadeOut: 180 },
+  orienting:   { fadeIn: 60, bridges: [0, 210, 240, 210], fadeOut: 180 },
+  settling:    { fadeIn: 75, bridges: [0, 270, 300, 270], fadeOut: 210 },
+  established: { fadeIn: 90, bridges: [0, 360, 420, 360], fadeOut: 270 },
 };
 
 // Ducking
