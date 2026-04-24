@@ -134,37 +134,25 @@ serve(async (req) => {
       return buffer.slice(offset);
     };
 
-    // Convert pause markers → ellipsis pacing (no SSML).
-    const narrationText = toNarrationText(script);
-
-    // Chunk on pause boundaries to prevent hallucination on dot-heavy passages.
-    // The Space of Nowhere section has many short phrases each followed by 17-21
-    // dots. Keeping MAX_CHARS low (400) ensures no chunk is predominantly dots,
-    // which is what causes ElevenLabs v3 to hallucinate filler text.
-    const MAX_CHARS = 400;
-    const chunkScript = (text: string): string[] => {
-      if (text.length <= MAX_CHARS) return [text];
-
-      // Split at pause boundaries (runs of 8+ dots) so each chunk ends cleanly
-      // rather than breaking mid-dots and confusing the model.
-      const pauseBoundary = /(?<=\.{8,}\s)/;
-      const rawParts = text.split(pauseBoundary).filter(Boolean);
-
-      const chunks: string[] = [];
-      let current = "";
-      for (const part of rawParts) {
-        if ((current + part).length <= MAX_CHARS) {
-          current += part;
-        } else {
-          if (current.trim()) chunks.push(current.trim());
-          current = part;
-        }
-      }
-      if (current.trim()) chunks.push(current.trim());
-      return chunks;
-    };
-
-    const chunks = chunkScript(narrationText).map((c, i) => wrapV3(c, i === 0));
+    // One phrase per TTS call — the only reliable way to prevent hallucination.
+    //
+    // Paragraph-level chunking caused ElevenLabs v3 to hallucinate in the Space
+    // of Nowhere section: short phrases surrounded by many dots look like noise
+    // and the model fills in invented text ("before the name before the video
+    // the theater the theater..."). Dispenza-style meditations work precisely
+    // because every line is a standalone 5-10 word call with no context to drift.
+    //
+    // Process: split raw script on newlines → each line is one phrase + its pause
+    // marker → convert each line independently → one TTS call per line → stitch.
+    const chunks = script
+      .replace(/\[segment break\]/gi, "")  // remove splitter markers
+      .split(/\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => toNarrationText(line))
+      // Drop lines that are pure whitespace/dots after conversion (blank lines)
+      .filter((line) => line.replace(/[\s.]/g, "").length > 0)
+      .map((line, i) => wrapV3(line, i === 0));
     console.log(`Split into ${chunks.length} chunk(s)`);
 
     const processChunk = async (chunkText: string, idx: number): Promise<Uint8Array> => {
