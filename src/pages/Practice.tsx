@@ -71,7 +71,7 @@ const Practice = () => {
         </h1>
 
         <Section label="What this month is about" body={about} />
-        <Section label="Why it works — the science" body={science} />
+        <Section label="Why it works: the science" body={science} />
         <Section label="Your practice this month" body={practice} />
 
         {!about && !science && !practice && (

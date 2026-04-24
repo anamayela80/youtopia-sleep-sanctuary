@@ -18,16 +18,16 @@ const ScienceStep = () => (
     <div className="space-y-5 max-w-md font-body text-accent leading-relaxed text-left">
       <p>
         Your brain is most open to new beliefs at two specific moments: just after waking,
-        and just before sleep — when it shifts between conscious and subconscious states.
+        and just before sleep, when it shifts between conscious and subconscious states.
       </p>
       <p>
         Youtopia works with both windows. Your morning meditation uses guided imagery and breath
-        to bring you into a focused, receptive state — then plants the seeds of this month's intention.
+        to bring you into a focused, receptive state, then plants the seeds of this month's intention.
         Your nightly Seeds use your own voice, whispered as you drift off, to reach the subconscious directly.
       </p>
       <p>
-        Research in neuroplasticity shows that repeated suggestion during these threshold states —
-        delivered in a familiar voice — accelerates the formation of new neural pathways.
+        Research in neuroplasticity shows that repeated suggestion during these threshold states,
+        delivered in a familiar voice, accelerates the formation of new neural pathways.
         In other words: <span className="italic">what you hear yourself say, at the right moment, becomes what you believe.</span>
       </p>
       <p className="text-foreground/80">
