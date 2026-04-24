@@ -231,9 +231,16 @@ export function useSegmentedMixer({
       const toCtx = (abs: number) => now + Math.max(0.005, abs - clampedOffset);
 
       // Starting gain — where are we in the arc at the current offset?
-      let startGain = 0;
+      // Music always starts at an audible level (min 35% of peak) so the
+      // listener hears it immediately rather than perceiving silence until
+      // the voice enters. The remaining fade-in ramp then lifts it to full peak.
+      const FADE_IN_FLOOR = 0.35; // minimum fraction of fadeInPeak at t=0
+      let startGain: number;
       if (clampedOffset < resolvedFadeIn) {
-        startGain = (clampedOffset / resolvedFadeIn) * musicVolume * ARC.fadeInPeak;
+        const rawProgress = clampedOffset / resolvedFadeIn;
+        // Interpolate from FADE_IN_FLOOR → 1.0 of fadeInPeak
+        const flooredProgress = FADE_IN_FLOOR + rawProgress * (1 - FADE_IN_FLOOR);
+        startGain = musicVolume * ARC.fadeInPeak * flooredProgress;
       } else {
         startGain = musicVolume * arcLevelAt(clampedOffset, events);
       }
