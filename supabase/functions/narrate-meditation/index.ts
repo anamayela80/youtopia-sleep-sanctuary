@@ -144,15 +144,15 @@ serve(async (req) => {
     //
     // Process: split raw script on newlines → each line is one phrase + its pause
     // marker → convert each line independently → one TTS call per line → stitch.
-    const chunks = script
+    const chunks: string[] = (script as string)
       .replace(/\[segment break\]/gi, "")  // remove splitter markers
       .split(/\n/)
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => toNarrationText(line))
+      .map((line: string) => line.trim())
+      .filter((line: string) => line.length > 0)
+      .map((line: string) => toNarrationText(line))
       // Drop lines that are pure whitespace/dots after conversion (blank lines)
-      .filter((line) => line.replace(/[\s.]/g, "").length > 0)
-      .map((line, i) => wrapV3(line, i === 0));
+      .filter((line: string) => line.replace(/[\s.]/g, "").length > 0)
+      .map((line: string, i: number) => wrapV3(line, i === 0));
     console.log(`Split into ${chunks.length} chunk(s)`);
 
     const processChunk = async (chunkText: string, idx: number): Promise<Uint8Array> => {
@@ -183,7 +183,7 @@ serve(async (req) => {
     // Run all chunks in parallel to stay under the edge function timeout
     let rawBuffers: Uint8Array[];
     try {
-      rawBuffers = await Promise.all(chunks.map((c, i) => processChunk(c, i)));
+      rawBuffers = await Promise.all(chunks.map((c: string, i: number) => processChunk(c, i)));
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown";
       if (msg === "QUOTA_EXCEEDED") {
