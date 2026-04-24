@@ -157,11 +157,16 @@ ABSOLUTE OUTPUT RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 1. PLAIN TEXT ONLY. No markdown, headers, labels, asterisks, or bullet points.
 2. NO VOICE DELIVERY TAGS. Never write [softly], [slow], [warm], [intimate], [drawn out], [whisper], or any similar delivery instruction. They are added by the audio system — writing them here doubles them and ruins the recording.
-3. PAUSE MARKERS ONLY. The only allowed brackets: [pause Xs] and [long pause Xs] where X is a number of seconds.
+3. PAUSE MARKERS ONLY. The only allowed brackets: [pause Xs], [long pause Xs], and [segment break]. Nothing else.
 4. STANDALONE LINES for presence anchors: "Remember." / "Feel it." / "Breathe." — each on its own line, never inside a sentence.
 5. NO REPEATED PASSAGES. Each phrase appears once only.
 6. NO SECTION LABELS. Continuous narration only.
 7. Start with the first spoken word. Stop after the last word of the Return section.
+8. SEGMENT BREAKS — insert "[segment break]" on its own line exactly 3 times:
+   — After the last line of Section 3 (Energy breath), before Section 4
+   — After the last line of Section 4 (Deep release), before Section 5
+   — After "Remember." presence anchor at the end of Section 6, before Section 7
+   These are the only 3 segment breaks. Do not add more.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 YOUTOPIA LANGUAGE — use these words
@@ -218,6 +223,7 @@ NEVER WRITE:
   "That's energy in your heart" — max once per script, not a refrain
   "And remember this feeling" — max once per script, not a refrain
   "Draw it to you with your heart" — max once per script
+  "Feel that in your brain" — Dispenza phrase; use "Notice that energy." or "Feel the aliveness at the crown." instead
 
 Also never use: "just", "simply", "try", "attempt", "deserve", "worthy", "beautiful", "amazing", "universe", "quantum", "unified field", "higher self", "astral".
 Never use place names, country names, or names of people other than the user's first name.
@@ -237,41 +243,31 @@ STEP 4 — Do NOT announce the answer. Translate it into feeling. If they said "
 STEP 5 — Weave the user's name in once inside the vision, and once more when closing it.
 STEP 6 — Distribute images across the whole section. Not clustered. Not in the order of the questions. Let them arrive like separate discoveries.
 
-CORRECT EXAMPLE — for a user whose answers included: cycling without fear / balcony breakfast with a partner / stopped wanting help and does everything alone / wants their work to reach people / dreams of going to Norway to see the northern lights by a fire with someone they love:
+CORRECT EXAMPLE — for a fictional user whose answers included: used to run marathons but stopped after an injury and is afraid to try again / morning coffee ritual alone at the kitchen window / grew up being told not to ask for too much / teaches music to children but doubts anyone is listening / dreams of watching the sunrise over mountains with their father before he gets too old:
 
-  Your body is moving. [long pause 10s]
-  Without asking itself first. [long pause 12s]
-  No calculation before the movement. [long pause 10s]
-  Just the movement. [long pause 15s]
+  The legs know what to do. [long pause 10s]
+  They always did. [long pause 12s]
+  There is no negotiation before the first step — [long pause 10s]
+  just the step. [long pause 15s]
 
-  There is a morning. [long pause 10s]
-  The balcony. [long pause 10s]
-  The coffee still warm. [long pause 10s]
-  And someone sitting across from you [pause 5s] who chose you on purpose. [long pause 15s]
-  Not because you were useful. [long pause 12s]
-  Because you were you. [long pause 15s]
+  There is a window. [long pause 10s]
+  Morning before anyone else is awake. [long pause 10s]
+  The mug warm in both hands. [long pause 10s]
+  And this — [pause 5s] this quiet — [long pause 12s]
+  belonging to you completely. [long pause 15s]
 
-  He asks if you need anything. [long pause 12s]
-  And you say yes. [long pause 20s]
+  Someone small is learning a chord for the first time. [long pause 12s]
+  You watch their face when it rings true. [long pause 12s]
+  That moment will live in them [pause 5s] long after they forget your name. [long pause 20s]
 
-  And somewhere small [pause 4s] and certain — [long pause 10s]
-  something that has both of you in it. [long pause 15s]
-  Blue eyes. [long pause 12s]
-  Your skin. [long pause 20s]
+  And somewhere — high ground, cold air. [long pause 12s]
+  The sky beginning to change. [long pause 12s]
+  He is beside you. [long pause 10s]
+  Not the version of him that worries. [long pause 10s]
+  The version that used to lift you onto his shoulders [pause 5s] so you could see further. [long pause 20s]
 
-  The work reaches people in the dark. [long pause 12s]
-  A voice in someone's ear. [long pause 12s]
-  Their nervous system slowly learning it's safe. [long pause 15s]
-  You can feel it from here. [long pause 15s]
-
-  And then — [pause 5s] cold outside the glass. [long pause 12s]
-  Something vast moving above you. [long pause 12s]
-  Greens and whites you have no word for. [long pause 15s]
-  The fire behind you. [long pause 10s]
-  The wine warm in your hand. [long pause 10s]
-  And him, beside you. [long pause 15s]
-  Not wishing for this. [long pause 10s]
-  In it. [long pause 20s]
+  You didn't ask for too much. [long pause 12s]
+  You asked for exactly the right things. [long pause 20s]
 
 WRONG — literal answer playback (never do this):
   "There is Scott. There is a morning and a beach and breakfast beside someone you love. Your app is helping people. You are financially free."
@@ -296,14 +292,16 @@ The optional sensory note this month: "${lightMetaphor}" — use it once here on
 [pause 8s] between every instruction. [long pause 12s] at the end of the section.
 
 SECTION 3 — Energy breath (${sw.body} words)
-Guide breath from the base of the spine upward to the crown. Hold. Exhale. "Feel that in your brain." Repeat twice.
+Guide breath from the base of the spine upward to the crown. Hold. Exhale. "Notice that energy." or "Feel the aliveness at the crown." Repeat twice.
 Short, directive sentences. [pause 6s] between instructions. [long pause 12s] at the end.
+End with: "[segment break]" on its own line — this is the first of the 3 required segment breaks.
 
 SECTION 4 — Deep release (${sw.coherence} words)
 "Relax. [long pause 10s] Feel the body. [long pause 12s] And soften more. [long pause 15s]"
 Very sparse. Only 4-5 short phrases. Let silence dominate.
 The nervous system is crossing into theta here. Do not interfere with words.
 End with: "Let everything go quiet. [long pause 20s]"
+Then: "[segment break]" on its own line — this is the second of the 3 required segment breaks.
 
 SECTION 5 — Space of nowhere (${sw.nowhere} words)
 THE HEART OF THE MEDITATION. Use ONLY Youtopia language. Zero Dispenza phrases.
@@ -343,6 +341,7 @@ Close the vision:
   "Into the marrow. [long pause 20s]"
 
 Drop one presence anchor: "Remember." on its own line. [long pause 20s] after.
+Then: "[segment break]" on its own line — this is the third and final segment break.
 
 SECTION 7 — Anchor (${sw.anchor} words)
 Short. Sparse. Integration happens in silence, not in words.
@@ -379,18 +378,33 @@ PACING RULES
 /**
  * Split the 8-section script into 4 audio segments for the mixer.
  *
- *   Segment 1 = Arrival + Release + Body settling (sections 1-3)
- *   Segment 2 = Heart coherence (section 4)
- *   Segment 3 = Space of nowhere + Becoming (sections 5-6) — the deep work
- *   Segment 4 = Anchor + Return (sections 7-8)
+ *   Segment 1 = Sections 1–3 (Arrival + Heart awakening + Energy breath)
+ *   Segment 2 = Section 4 (Deep release)
+ *   Segment 3 = Sections 5–6 (Space of nowhere + Vision) — the deep work
+ *   Segment 4 = Sections 7–8 (Anchor + Return)
  *
- * The mixer inserts ~135-210s of music-only between segments so each beat
- * can land before the next begins.
+ * The model is instructed to insert "[segment break]" exactly 3 times at
+ * the correct section boundaries. We split on those markers first; if they
+ * are absent we fall back to a content-weighted paragraph split.
+ *
+ * The mixer inserts 2–2.5 min of music between segments automatically.
  */
 function splitIntoSegments(text: string): string[] {
+  // Primary: honour explicit [segment break] markers placed by the model
+  const BREAK = /\[segment break\]/i;
+  if (BREAK.test(text)) {
+    const parts = text.split(BREAK).map((s) => s.trim()).filter(Boolean);
+    if (parts.length === 4) return parts;
+    // If the model placed fewer/more markers, pad or trim gracefully
+    if (parts.length > 1) {
+      while (parts.length < 4) parts.push("");
+      return parts.slice(0, 4).map((s) => s || "(continue)");
+    }
+  }
+
+  // Fallback: weight-based paragraph split (sections 5–6 get ~45% of content)
   const paras = text.split(/\n\s*\n+/).map((p) => p.trim()).filter(Boolean);
   if (paras.length <= 1) {
-    // Fallback: split by sentences into 4 rough chunks
     const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean);
     const per = Math.ceil(sentences.length / 4);
     return [
@@ -401,25 +415,18 @@ function splitIntoSegments(text: string): string[] {
     ].filter((s) => s.trim().length > 0);
   }
 
-  // Group paragraphs into 4 segments by approximate length.
-  // We weight segment 3 (Space of nowhere + Becoming) to receive the most
-  // content since it carries sections 5-6 which are the largest.
   const totalLen = paras.reduce((s, p) => s + p.length, 0);
-  const weights = [0.20, 0.15, 0.45, 0.20];
+  const weights = [0.22, 0.10, 0.48, 0.20];
   const targets = weights.map((w) => w * totalLen);
-
   const groups: string[][] = [[], [], [], []];
   let groupIdx = 0;
   let runningLen = 0;
-  let accumulatedTarget = 0;
 
   for (const p of paras) {
     groups[groupIdx].push(p);
     runningLen += p.length;
-    accumulatedTarget = targets.slice(0, groupIdx + 1).reduce((s, t) => s + t, 0);
-    if (runningLen >= accumulatedTarget && groupIdx < 3) {
-      groupIdx++;
-    }
+    const accumulatedTarget = targets.slice(0, groupIdx + 1).reduce((s, t) => s + t, 0);
+    if (runningLen >= accumulatedTarget && groupIdx < 3) groupIdx++;
   }
   return groups.filter((g) => g.length > 0).map((g) => g.join("\n\n"));
 }

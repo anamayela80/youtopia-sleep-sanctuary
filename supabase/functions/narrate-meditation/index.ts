@@ -11,18 +11,22 @@ const corsHeaders = {
 // or paces them poorly, which made the narration sound rushed and triggered
 // hallucinated additions on long inputs.
 //
-// Mapping:
-//   short pauses (≤5s)  → " ... "            (short beat)
-//   medium pauses (6s)  → " ...... "         (longer beat)
-//   long pauses (8-10s) → " ......... "      (extended beat)
-//   deep pauses (12-15s)→ " ............. "  (section-break / presence-anchor beat)
-//   abyss (16s+)        → " .................. " (Space-of-nowhere style)
+// Dot density calibration:
+//   ElevenLabs v3 with [slow][drawn out] delivery renders each dot at roughly
+//   0.4–0.5 s. We therefore use ~2.2 dots per intended second so the actual
+//   rendered silence closely matches the target duration.
+//
+//   Examples (target → dots → expected render):
+//     4s  →  9 dots  → ~3.5–4.5 s
+//     8s  → 18 dots  → ~7–9 s
+//    10s  → 22 dots  → ~9–11 s
+//    12s  → 27 dots  → ~11–13 s
+//    15s  → 33 dots  → ~13–16 s
+//    20s  → 44 dots  → ~18–22 s
+//    25s  → 55 dots  → ~22–27 s
 function pausesFor(seconds: number): string {
-  if (seconds <= 4) return " ... ";
-  if (seconds <= 6) return " ...... ";
-  if (seconds <= 10) return " ......... ";
-  if (seconds <= 14) return " ............. ";
-  return " .................. ";
+  const dots = Math.max(6, Math.round(seconds * 2.2));
+  return " " + ".".repeat(dots) + " ";
 }
 
 function toNarrationText(raw: string): string {

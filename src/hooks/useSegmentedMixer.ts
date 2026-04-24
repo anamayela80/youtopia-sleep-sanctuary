@@ -230,27 +230,27 @@ export function useSegmentedMixer({
 
       const toCtx = (abs: number) => now + Math.max(0.005, abs - clampedOffset);
 
-      // Starting gain — where are we in the arc at the current offset?
-      // Music always starts at an audible level (min 35% of peak) so the
-      // listener hears it immediately rather than perceiving silence until
-      // the voice enters. The remaining fade-in ramp then lifts it to full peak.
-      const FADE_IN_FLOOR = 0.35; // minimum fraction of fadeInPeak at t=0
+      // Music gain: always audible within the first few seconds.
+      // We decouple the "audible ramp" (8 s to reach peak) from the voice
+      // entry time (resolvedFadeIn ≈ 60 s).  This prevents the previous glitch
+      // where the gain was still near-zero when the ducking setValueAtTime call
+      // kicked in 1.8 s before the voice, producing a perceptible pop.
+      const MUSIC_RAMP_SECS = 8; // seconds to reach peak from silence
       let startGain: number;
-      if (clampedOffset < resolvedFadeIn) {
-        const rawProgress = clampedOffset / resolvedFadeIn;
-        // Interpolate from FADE_IN_FLOOR → 1.0 of fadeInPeak
-        const flooredProgress = FADE_IN_FLOOR + rawProgress * (1 - FADE_IN_FLOOR);
-        startGain = musicVolume * ARC.fadeInPeak * flooredProgress;
+      if (clampedOffset === 0) {
+        startGain = 0;
+      } else if (clampedOffset < MUSIC_RAMP_SECS) {
+        startGain = musicVolume * ARC.fadeInPeak * (clampedOffset / MUSIC_RAMP_SECS);
       } else {
         startGain = musicVolume * arcLevelAt(clampedOffset, events);
       }
       gainNode.gain.setValueAtTime(startGain, now);
 
-      // Remaining fade-in
-      if (clampedOffset < resolvedFadeIn) {
+      // Ramp to peak quickly — music is clearly audible before voice enters
+      if (clampedOffset < MUSIC_RAMP_SECS) {
         gainNode.gain.linearRampToValueAtTime(
           musicVolume * ARC.fadeInPeak,
-          toCtx(resolvedFadeIn),
+          now + Math.max(0.1, MUSIC_RAMP_SECS - clampedOffset),
         );
       }
 
