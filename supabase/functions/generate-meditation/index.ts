@@ -125,7 +125,7 @@ const LENGTH_BANDS: Record<Tenure, {
 
 // --- System prompt builder ------------------------------------------------
 
-function buildSystemPrompt(tenure: Tenure, monthNumber: number): string {
+function buildSystemPrompt(tenure: Tenure, monthNumber: number, userName: string): string {
   const band = LENGTH_BANDS[tenure];
 
   // Deterministic monthly rotation
@@ -248,7 +248,7 @@ SECTION 6 — Vision (${sw.becoming} words)
 From the formless space, something begins to form — not a scene that is described TO the listener, but a feeling that rises FROM them.
 
 FIRST: Name the frequency briefly (2-3 lines max), then move directly into the vision.
-"And now, [user_name], tune in to the frequency of [core feeling]. [long pause 10s] Find it. [long pause 10s] Feel it. [long pause 12s]"
+"And now, ${userName || "[listener's name]"}, tune in to the frequency of [core feeling]. [long pause 10s] Find it. [long pause 10s] Feel it. [long pause 12s]"
 
 THEN: The vision — 4 to 6 slow poetic images that embody the FEELING, not the facts.
 Each image: 1-2 sentences, followed by [long pause 10s].
@@ -390,7 +390,7 @@ serve(async (req) => {
     const monthNum =
       typeof monthNumber === "number" && monthNumber > 0 ? Math.floor(monthNumber) : 1;
 
-    const systemPrompt = buildSystemPrompt(tenure, monthNum);
+    const systemPrompt = buildSystemPrompt(tenure, monthNum, userName || "");
     const answerLines = answers.map((a, i) => `- onboarding_answer_${i + 1}: "${a}"`).join("\n");
 
     const userPrompt = `USER CONTEXT
