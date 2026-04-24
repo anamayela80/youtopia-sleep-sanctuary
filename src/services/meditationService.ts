@@ -371,6 +371,119 @@ export async function getLatestSeeds(userId: string) {
   return data;
 }
 
+/**
+ * Regenerate a meditation for an existing user without re-asking intake
+ * questions. Admin-only tool for testing prompt changes against the user's
+ * saved answers + active theme. Creates a NEW meditation row; the old row
+ * stays in history so you can compare.
+ */
+export async function regenerateMeditationForUser(
+  userId: string,
+  onStatus?: (msg: string) => void,
+): Promise<string> {
+  const status = (m: string) => { onStatus?.(m); console.log("[regenerate]", m); };
+
+  status("Loading user context…");
+  const profile = await getUserProfile(userId);
+  const answersRow = await getUserAnswers(userId);
+  if (!answersRow) throw new Error("No intake answers found for this user");
+
+  // Latest intake → theme
+  const { data: latestIntake } = await supabase
+    .from("user_monthly_intakes")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  let theme: any = null;
+  if (latestIntake?.theme_id) {
+    const { data } = await supabase
+      .from("monthly_themes")
+      .select("*")
+      .eq("id", latestIntake.theme_id)
+      .maybeSingle();
+    theme = data;
+  }
+  if (!theme) theme = await getActiveTheme();
+  if (!theme) throw new Error("No active theme found");
+
+  const rawAnswers: string[] = Array.isArray(latestIntake?.answers)
+    ? (latestIntake!.answers as string[])
+    : [
+        answersRow.question_1 || "",
+        answersRow.question_2 || "",
+        answersRow.question_3 || "",
+      ];
+  const answers = rawAnswers.filter((a) => a && a.trim().length > 0);
+
+  const userName = (profile?.full_name || "").split(" ")[0] || "";
+  const tenureBand = getTenureBand(profile?.membership_start_date);
+  const monthNumber = getMonthNumber(profile?.membership_start_date);
+  const guideVoiceId = theme?.guide_voice_id || "9BDgg2Q7WSrW0x8naPLw";
+  const themeSlug = (theme?.theme || "practice").toLowerCase().replace(/\s+/g, "-");
+  const monthLabel = new Date().toLocaleString("default", { month: "long", year: "numeric" });
+
+  status("Writing your meditation…");
+  const { script, segments } = await generateMeditationScript({
+    answers,
+    userName,
+    monthlyTheme: theme?.theme,
+    themeIntention: theme?.intention,
+    tenureBand,
+    monthNumber,
+  });
+
+  const segmentAudioUrls: string[] = [];
+  for (let i = 0; i < segments.length && i < 4; i++) {
+    status(`Recording segment ${i + 1} of ${Math.min(segments.length, 4)}…`);
+    const audioBlob = await narrateSegment(segments[i].text, guideVoiceId, i + 1);
+    if (!audioBlob || audioBlob.size === 0) throw new Error(`Segment ${i + 1} narration failed`);
+    const audioUrl = await uploadSegmentAudio(userId, audioBlob, themeSlug, i + 1);
+    segmentAudioUrls.push(audioUrl);
+  }
+
+  status("Saving meditation…");
+  const meditationId = await saveMeditation({
+    userId,
+    title: `${theme?.theme || "Monthly"} Meditation`,
+    script,
+    voiceId: guideVoiceId,
+    musicMood: "theme",
+    month: monthLabel,
+    themeId: theme?.id,
+    meditationName: null,
+    messageForYou: null,
+    meditationArtworkUrl: null,
+  });
+  for (let i = 0; i < segmentAudioUrls.length; i++) {
+    await saveMeditationSegment(meditationId, i + 1, segmentAudioUrls[i]);
+  }
+
+  status("Composing monthly message…");
+  try {
+    await generateMonthlyPackage({
+      meditationId,
+      userName,
+      monthlyTheme: theme?.theme,
+      themeIntention: theme?.intention,
+      answers,
+    });
+    try {
+      status("Painting artwork…");
+      await generateMeditationArtwork({ meditationId });
+    } catch (e) {
+      console.warn("Artwork failed (non-blocking):", e);
+    }
+  } catch (e) {
+    console.warn("Monthly package failed (non-blocking):", e);
+  }
+
+  status("Done");
+  return meditationId;
+}
+
 export async function getAllMeditations(userId: string) {
   const { data } = await supabase
     .from("meditations")
