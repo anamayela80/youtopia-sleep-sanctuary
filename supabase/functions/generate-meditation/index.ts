@@ -276,6 +276,10 @@ CORRECT EXAMPLE — for a fictional user whose answers included: used to run mar
 WRONG — literal answer playback (never do this):
   "There is Scott. There is a morning and a beach and breakfast beside someone you love. Your app is helping people. You are financially free."
 
+WRONG — third-person action narration (never do this, ever):
+  "She is pedaling the bicycle. She is climbing the hill. She is doing this. She is doing that."
+  This is sports commentary. It is absolutely forbidden. The listener is not watching themselves — they ARE themselves. Write from inside the experience: the body moving without asking, the legs knowing, the wind, what it costs nothing. Never "she is ___ing." Always the inner texture of the moment.
+
 WRONG — too abstract (never do this):
   "Tune in to the frequency of love. Feel it. Come back."
 

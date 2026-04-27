@@ -195,9 +195,12 @@ serve(async (req) => {
     }
     if (current.trim()) groupedChunks.push(current.trim());
 
-    // Apply delivery tags to the first chunk only — sets the opening tone
-    // without risking artifacts on every subsequent stitch point.
-    const chunks = groupedChunks.map((c, i) => i === 0 ? wrapV3(c, true) : c);
+    // Apply delivery tags only to the first chunk that contains actual spoken
+    // words (letters). If the very first chunk is all dots/whitespace (a pure
+    // pause), applying wrapV3 to it causes ElevenLabs v3 to produce a
+    // vocalization artifact ("mavi", "ma", etc.) instead of silence.
+    const firstWordIdx = groupedChunks.findIndex((c) => /[a-zA-Z]/.test(c));
+    const chunks = groupedChunks.map((c, i) => i === firstWordIdx ? wrapV3(c, true) : c);
     console.log(`Split into ${chunks.length} chunk(s)`);
 
     const processChunk = async (chunkText: string, idx: number): Promise<Uint8Array> => {
