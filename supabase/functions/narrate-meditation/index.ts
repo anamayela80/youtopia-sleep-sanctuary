@@ -94,7 +94,7 @@ serve(async (req) => {
 
     const doTTS = async (vid: string, text: string) => {
       return await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${vid}?output_format=mp3_44100_128`,
+        `https://api.elevenlabs.io/v1/text-to-speech/${vid}?output_format=pcm_22050`,
         {
           method: "POST",
           headers: {
@@ -121,17 +121,37 @@ serve(async (req) => {
       );
     };
 
-    const stripId3Tag = (buffer: Uint8Array) => {
-      if (buffer.length < 10) return buffer;
-      if (buffer[0] !== 0x49 || buffer[1] !== 0x44 || buffer[2] !== 0x33) return buffer;
-      const size =
-        ((buffer[6] & 0x7f) << 21) |
-        ((buffer[7] & 0x7f) << 14) |
-        ((buffer[8] & 0x7f) << 7) |
-        (buffer[9] & 0x7f);
-      const footerSize = (buffer[5] & 0x10) !== 0 ? 10 : 0;
-      const offset = Math.min(buffer.length, 10 + size + footerSize);
-      return buffer.slice(offset);
+    // Build a minimal 44-byte WAV header for 16-bit PCM mono.
+    // ElevenLabs pcm_22050 returns raw signed 16-bit little-endian samples at
+    // 22050 Hz mono — no container, no headers. We wrap all chunks in one WAV
+    // so the browser can decode it with decodeAudioData() without any MP3
+    // frame-boundary artifacts.
+    const buildWavHeader = (dataByteLength: number): Uint8Array => {
+      const SAMPLE_RATE = 22050;
+      const NUM_CHANNELS = 1;
+      const BITS_PER_SAMPLE = 16;
+      const byteRate = SAMPLE_RATE * NUM_CHANNELS * BITS_PER_SAMPLE / 8;
+      const blockAlign = NUM_CHANNELS * BITS_PER_SAMPLE / 8;
+
+      const header = new ArrayBuffer(44);
+      const v = new DataView(header);
+      // RIFF chunk descriptor
+      v.setUint32(0,  0x52494646, false); // "RIFF"
+      v.setUint32(4,  36 + dataByteLength, true); // file size - 8 bytes
+      v.setUint32(8,  0x57415645, false); // "WAVE"
+      // fmt sub-chunk
+      v.setUint32(12, 0x666d7420, false); // "fmt "
+      v.setUint32(16, 16, true);          // sub-chunk size (PCM = 16)
+      v.setUint16(20, 1,  true);          // audio format (1 = PCM)
+      v.setUint16(22, NUM_CHANNELS, true);
+      v.setUint32(24, SAMPLE_RATE, true);
+      v.setUint32(28, byteRate, true);
+      v.setUint16(32, blockAlign, true);
+      v.setUint16(34, BITS_PER_SAMPLE, true);
+      // data sub-chunk
+      v.setUint32(36, 0x64617461, false); // "data"
+      v.setUint32(40, dataByteLength, true);
+      return new Uint8Array(header);
     };
 
     // Per-phrase chunking (2-3 lines per call) to prevent hallucination while
@@ -246,21 +266,22 @@ serve(async (req) => {
       throw err;
     }
 
-    const audioBuffers = rawBuffers.map((b, i) => i === 0 ? b : stripId3Tag(b));
-
-
-    const totalLength = audioBuffers.reduce((sum, b) => sum + b.byteLength, 0);
-    const audioBuffer = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const buf of audioBuffers) {
-      audioBuffer.set(buf, offset);
-      offset += buf.byteLength;
+    // Concatenate all raw PCM chunks — no frame boundaries, no bit-reservoir
+    // resets. Each chunk is just raw 16-bit samples; stitching is seamless.
+    const totalPcmLength = rawBuffers.reduce((sum, b) => sum + b.byteLength, 0);
+    const wavHeader = buildWavHeader(totalPcmLength);
+    const audioBuffer = new Uint8Array(44 + totalPcmLength);
+    audioBuffer.set(wavHeader, 0);
+    let pcmOffset = 44;
+    for (const buf of rawBuffers) {
+      audioBuffer.set(buf, pcmOffset);
+      pcmOffset += buf.byteLength;
     }
 
     return new Response(audioBuffer, {
       headers: {
         ...corsHeaders,
-        "Content-Type": "audio/mpeg",
+        "Content-Type": "audio/wav",
         "Content-Length": audioBuffer.byteLength.toString(),
       },
     });
