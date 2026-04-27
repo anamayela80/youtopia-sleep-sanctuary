@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Play, Pause, Moon, Headphones, SkipForward, SkipBack, Sun, ArrowLeft,
+  Play, Pause, Moon, Headphones, SkipForward, SkipBack, Sun, ArrowLeft, Download,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
@@ -133,6 +133,55 @@ const MyMonth = () => {
       setRegenStatus("");
     } finally {
       setRegenerating(false);
+    }
+  };
+
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (!meditation || isDownloading) return;
+    setIsDownloading(true);
+
+    const slug = (theme?.theme || "meditation").replace(/\s+/g, "-").toLowerCase();
+
+    try {
+      // 1. Script as plain text
+      if (meditation.script) {
+        const scriptBlob = new Blob([meditation.script], { type: "text/plain" });
+        const scriptUrl = URL.createObjectURL(scriptBlob);
+        const a = document.createElement("a");
+        a.href = scriptUrl;
+        a.download = `${slug}-script.txt`;
+        a.click();
+        URL.revokeObjectURL(scriptUrl);
+        await new Promise((r) => setTimeout(r, 400));
+      }
+
+      // 2. Each audio segment in order
+      const segs = (meditation.meditation_segments || [])
+        .slice()
+        .sort((a: any, b: any) => a.segment_number - b.segment_number);
+
+      for (const seg of segs) {
+        if (!seg.audio_url) continue;
+        try {
+          const resp = await fetch(seg.audio_url);
+          const blob = await resp.blob();
+          const ext = blob.type.includes("wav") ? "wav" : "mp3";
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${slug}-part-${seg.segment_number}.${ext}`;
+          a.click();
+          URL.revokeObjectURL(url);
+          // Small delay so the browser doesn't block rapid-fire downloads
+          await new Promise((r) => setTimeout(r, 600));
+        } catch (e) {
+          console.warn(`Segment ${seg.segment_number} download failed:`, e);
+        }
+      }
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -277,8 +326,35 @@ const MyMonth = () => {
                 </button>
               </div>
 
+              {/* Download button — always visible so users can keep their content */}
+              <div className="mt-6 pt-5 border-t" style={{ borderColor: "rgba(160, 120, 70, 0.18)" }}>
+                <button
+                  onClick={handleDownload}
+                  disabled={isDownloading}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-full font-body text-xs tracking-wide transition-all active:scale-95 disabled:opacity-50"
+                  style={{ background: "rgba(107, 158, 143, 0.10)", color: "hsl(var(--sage-soft))" }}
+                >
+                  {isDownloading ? (
+                    <>
+                      <motion.div
+                        className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent"
+                        style={{ borderColor: "hsl(var(--sage-soft))" }}
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      />
+                      <span>Downloading your meditation…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download size={13} />
+                      <span>Download to keep</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
               {isAdmin && (
-                <div className="mt-6 pt-5 border-t" style={{ borderColor: "rgba(160, 120, 70, 0.18)" }}>
+                <div className="mt-3">
                   <button
                     onClick={handleRegenerate}
                     disabled={regenerating}
