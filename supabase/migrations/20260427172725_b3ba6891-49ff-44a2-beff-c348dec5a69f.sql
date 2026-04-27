@@ -1,0 +1,2 @@
+ALTER TABLE public.meditation_segments DROP CONSTRAINT IF EXISTS meditation_segments_segment_number_check;
+ALTER TABLE public.meditation_segments ADD CONSTRAINT meditation_segments_segment_number_check CHECK (segment_number >= 1 AND segment_number <= 10);
