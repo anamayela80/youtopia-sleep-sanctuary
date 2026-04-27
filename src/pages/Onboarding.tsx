@@ -369,6 +369,8 @@ const Onboarding = () => {
       ? "I'm ready"
       : currentKind === "science"
       ? "Begin"
+      : currentKind === "before"
+      ? "I'm ready"
       : currentKind === "theme"
       ? "I'm ready for my questions"
       : currentKind === "voice"
