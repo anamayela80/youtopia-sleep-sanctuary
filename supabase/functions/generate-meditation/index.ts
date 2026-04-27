@@ -194,10 +194,12 @@ For the vision images (Section 6):
   "Not wishing for this. In it."
 
 For the anchor / integration (Section 7):
-  "Let this be a knowing. Not a memory."
+  "Stay here."
+  "Let it settle further."
+  "The body is holding this."
+  "Let it be woven in."
   "Into the marrow."
   "Carry it back."
-  "The body is learning something new."
 
 For the return (Section 8):
   "Something has shifted."
@@ -328,7 +330,7 @@ Follow the HOW TO BUILD THE VISION steps above exactly. Use ALL intake answers. 
 Open with the user's name and a single brief line naming the feeling, then move directly into images:
   "${userName || "listen"} — [pause 6s] something is forming. [long pause 12s]"
 
-Build one image per answer. Each image: 1-3 sentences + [long pause 10s] or [long pause 12s]. Leave a blank line between images. Let each one arrive separately.
+Build one image per answer. Each image: 1-3 slow sentences + [long pause 10s] or [long pause 12s]. Then — on its own line — a single presence invitation chosen from: "Feel it." / "Stay with this." / "How does this feel." followed by [long pause 15s]. Leave a blank line between image blocks. Let each image be fully felt before the next one arrives. Do not rush from image to image.
 
 Close the vision:
   "${userName || "listen"} — [long pause 12s]"
@@ -344,24 +346,29 @@ Drop one presence anchor: "Remember." on its own line. [long pause 20s] after.
 Then: "[segment break]" on its own line — this is the third and final segment break.
 
 SECTION 7 — Anchor (${sw.anchor} words)
-Short. Sparse. The body is encoding what was felt — this is how future memory is made.
-  "The body is encoding this. [long pause 12s]"
-  "Into memory. [long pause 12s]"
-  "The nervous system is learning something new. [long pause 12s]"
-  "Carry it back. [long pause 12s]"
+The listener is still deep. This section is a gentle landing — not a clinical announcement. Let the anchor arrive like a hand placed softly.
+  "Stay here. [long pause 15s]"
+  "Let it settle further. [long pause 20s]"
+  "The body is holding this. [long pause 20s]"
+  "Let it be woven in. [long pause 20s]"
+  "Carry it back. [long pause 15s]"
   "Into everything. [long pause 20s]"
-Maximum 5-6 lines total. Do NOT write "not a memory" — we ARE creating a memory of the future.
+Maximum 6 lines total. Do NOT write "not a memory" — visualization creates genuine future memory. The brain encodes it as real.
 
 SECTION 8 — Return (${sw.return} words)
-  "And now, slowly — come back. [long pause 10s]"
-  "Into the room. [pause 6s]"
-  "Into this day. [long pause 10s]"
-  "Something has shifted. [long pause 10s]"
-  Address the user by name once.
-  "When you're ready — [pause 4s] open your eyes. [pause 6s]"
+The return must feel like surfacing from deep water — unhurried. Give the listener time. Do not rush them back.
+  "And now, slowly. [long pause 12s]"
+  "Begin to come back. [long pause 12s]"
+  "Into the body. [long pause 10s]"
+  "Into the room. [long pause 10s]"
+  "Into this day. [long pause 12s]"
+  "Something has shifted. [long pause 15s]"
+  Address the user by name once, gently — a quiet acknowledgment, not a wake-up call.
+  "Take your time. [long pause 10s]"
+  "When you're ready — [pause 6s] open your eyes. [pause 8s]"
   "Welcome to your new reality."
 The final line "Welcome to your new reality." is always the last words of the script. No pause marker after it.
-Never say "the meditation is ending." Never say "well done" or "good work." Never say "a new body."
+Never say "the meditation is ending." Never say "well done" or "good work." Never say "a new body." Never say "the practice is complete."
 
 ${band.extraDepth}
 

@@ -50,10 +50,19 @@ interface UseSegmentedMixerOptions {
  *   settling    → ~28 min  (7 min narration + 21 min music/silence)
  *   established → ~38 min  (9 min narration + 29 min music/silence)
  */
+/**
+ * Bridge timing notes:
+ *   Bridge 1 (after Arrival/Heart/Energy)  → generous: listener settles
+ *   Bridge 2 (before Space of Nowhere)     → longest: deep drop into formlessness
+ *   Bridge 3 (before Return/Anchor)        → shorter: vision has already landed,
+ *                                             don't leave them floating too long
+ *   FadeOut (after "open your eyes")       → brief: don't hold them in music
+ *                                             after the session has ended
+ */
 const TENURE_TIMING = {
-  orienting:   { fadeIn: 60, bridges: [0, 210, 240, 210], fadeOut: 180 },
-  settling:    { fadeIn: 75, bridges: [0, 270, 300, 270], fadeOut: 210 },
-  established: { fadeIn: 90, bridges: [0, 360, 420, 360], fadeOut: 270 },
+  orienting:   { fadeIn: 60, bridges: [0, 210, 240, 150], fadeOut: 75 },
+  settling:    { fadeIn: 75, bridges: [0, 270, 300, 180], fadeOut: 90 },
+  established: { fadeIn: 90, bridges: [0, 360, 420, 240], fadeOut: 120 },
 };
 
 // Ducking
