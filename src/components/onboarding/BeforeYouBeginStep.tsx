@@ -49,19 +49,22 @@ const BeforeYouBeginStep = ({ showSkip = false, onSkip }: BeforeYouBeginStepProp
     <div className="max-w-md mx-auto w-full text-left">
       <Section title="When to meditate">
         <p>
+          Youtopia is built as a daily cycle with two ends: morning and evening.
+          Doing both is what closes the loop. The morning sets the tone, the evening lets it
+          settle into the subconscious overnight. Together they compound. On their own, they still work,
+          but the cycle is where the real shift happens.
+        </p>
+        <p>
           <span className="italic">Morning</span> is one of the most powerful windows.
           Your brain is still close to sleep, still porous. The day hasn't filled you yet.
           This is the time to set the tone, to meet your future self before the noise arrives.
           Do it as early as you can, ideally before checking your phone.
         </p>
         <p>
-          <span className="italic">Night</span> works differently. As you drift toward sleep,
+          <span className="italic">Evening</span> works differently. As you drift toward sleep,
           your brain enters a state of high suggestibility. The critical, analytical mind quiets.
-          What you place in that space goes deeper. Youtopia uses this: your night session plants
-          the seeds while the subconscious is most open to receive them.
-        </p>
-        <p>
-          Both windows work. What matters most is that you choose one and return to it daily.
+          What you place in that space goes deeper. Youtopia uses this: your evening Seeds plant
+          the intention while the subconscious is most open to receive them.
         </p>
       </Section>
 
@@ -106,15 +109,22 @@ const BeforeYouBeginStep = ({ showSkip = false, onSkip }: BeforeYouBeginStepProp
 
       <Divider />
 
-      <Section title="About the voice">
+      <Section title="About the voices">
         <p>
-          Your narrator is always optional. But there is something worth knowing: your own voice,
-          heard in a relaxed state, bypasses resistance in a way no other voice can. When you
-          hear yourself speak something, the brain registers it differently. It cannot dismiss
-          it as coming from outside.
+          Your <span className="italic">morning</span> meditation is led by a guiding voice we have
+          chosen for this part of the day. It is warm, steady, and unhurried, the kind of voice
+          that helps you arrive without effort. You do not need to do anything here. Just let it
+          lead you in.
         </p>
         <p>
-          The voice feature is available when you are ready for it. There is no rush.
+          Your <span className="italic">evening</span> Seeds are different. This is where your own
+          voice belongs. Heard in a relaxed state, it bypasses resistance in a way no other voice can.
+          When you hear yourself speak something on the edge of sleep, the brain registers it
+          differently. It cannot dismiss it as coming from outside.
+        </p>
+        <p>
+          Recording your voice is optional, and only for the evening. You can do it whenever you
+          are ready. There is no rush.
         </p>
       </Section>
 
