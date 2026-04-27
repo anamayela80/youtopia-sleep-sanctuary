@@ -232,6 +232,7 @@ const Onboarding = () => {
       const themeSlug = (theme?.theme || "practice").toLowerCase().replace(/\s+/g, "-");
       const segmentAudioUrls: string[] = [];
       for (let i = 0; i < segments.length; i++) {
+        if (!segments[i].text || segments[i].text.trim().length === 0) continue;
         setGenerationStatus(`Recording your meditation (${i + 1} of ${segments.length})…`);
         const audioBlob = await narrateSegment(segments[i].text, guideVoiceId, i + 1);
         if (!audioBlob || audioBlob.size === 0) throw new Error(`Segment ${i + 1} narration failed`);

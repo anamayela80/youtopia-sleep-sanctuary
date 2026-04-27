@@ -117,7 +117,8 @@ export async function narrateSegment(segmentText: string, voiceId: string, segme
 }
 
 export async function uploadSegmentAudio(userId: string, audioBlob: Blob, month: string, segmentNumber: number): Promise<string> {
-  const fileName = `${userId}/segments/${month}-seg${segmentNumber}-${Date.now()}.mp3`;
+  const ext = audioBlob.type === "audio/wav" ? "wav" : "mp3";
+  const fileName = `${userId}/segments/${month}-seg${segmentNumber}-${Date.now()}.${ext}`;
   const { error: uploadError } = await supabase.storage
     .from("meditations")
     .upload(fileName, audioBlob, { contentType: audioBlob.type || "audio/mpeg" });
@@ -437,6 +438,7 @@ export async function regenerateMeditationForUser(
 
   const segmentAudioUrls: string[] = [];
   for (let i = 0; i < segments.length; i++) {
+    if (!segments[i].text || segments[i].text.trim().length === 0) continue;
     status(`Recording segment ${i + 1} of ${segments.length}…`);
     const audioBlob = await narrateSegment(segments[i].text, guideVoiceId, i + 1);
     if (!audioBlob || audioBlob.size === 0) throw new Error(`Segment ${i + 1} narration failed`);

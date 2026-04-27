@@ -410,16 +410,13 @@ PACING RULES
  * The mixer inserts 2–2.5 min of music between segments automatically.
  */
 function splitIntoSegments(text: string): string[] {
-  // Primary: honour explicit [segment break] markers placed by the model
+  // Primary: honour explicit [segment break] markers placed by the model.
+  // Accept any split of 3–7 parts — never pad with empty strings, which would
+  // cause narrate-meditation to receive an empty script and return a 400 error.
   const BREAK = /\[segment break\]/i;
   if (BREAK.test(text)) {
     const parts = text.split(BREAK).map((s) => s.trim()).filter(Boolean);
-    if (parts.length === 6) return parts;
-    // If the model placed fewer/more markers, pad or trim gracefully
-    if (parts.length > 1) {
-      while (parts.length < 6) parts.push("");
-      return parts.slice(0, 6).map((s) => s || "(continue)");
-    }
+    if (parts.length >= 3) return parts.slice(0, 7);
   }
 
   // Fallback: weight-based paragraph split across 6 segments
@@ -451,7 +448,7 @@ function splitIntoSegments(text: string): string[] {
     groups[groupIdx].push(p);
     runningLen += p.length;
     const accumulatedTarget = targets.slice(0, groupIdx + 1).reduce((s, t) => s + t, 0);
-    if (runningLen >= accumulatedTarget && groupIdx < 3) groupIdx++;
+    if (runningLen >= accumulatedTarget && groupIdx < 5) groupIdx++;
   }
   return groups.filter((g) => g.length > 0).map((g) => g.join("\n\n"));
 }
