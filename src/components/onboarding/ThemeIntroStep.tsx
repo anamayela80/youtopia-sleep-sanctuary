@@ -37,14 +37,6 @@ const ThemeIntroStep = ({ themeName, description, intention }: ThemeIntroStepPro
       </motion.p>
     )}
 
-    <motion.p
-      className="font-body text-sm text-muted-foreground italic max-w-xs leading-relaxed"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.7, delay: 0.7 }}
-    >
-      Your five questions are drawn from this theme.
-    </motion.p>
   </motion.div>
 );
 
