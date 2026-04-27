@@ -126,6 +126,10 @@ const BeforeYouBeginStep = ({ showSkip = false, onSkip }: BeforeYouBeginStepProp
           Recording your voice is optional, and only for the evening. You can do it whenever you
           are ready. There is no rush.
         </p>
+        <p>
+          And if you fall asleep during your evening Seeds, that is fine. It is part of how this
+          works. The words still reach you. Sleep is where they take root.
+        </p>
       </Section>
 
       <Divider />
