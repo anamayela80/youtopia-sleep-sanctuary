@@ -30,6 +30,7 @@ import {
 } from "@/services/intakeService";
 import WelcomeStep from "@/components/onboarding/WelcomeStep";
 import ScienceStep from "@/components/onboarding/ScienceStep";
+import BeforeYouBeginStep from "@/components/onboarding/BeforeYouBeginStep";
 import ThemeIntroStep from "@/components/onboarding/ThemeIntroStep";
 import QuestionsStep from "@/components/onboarding/QuestionsStep";
 import VoiceCaptureStep from "@/components/onboarding/VoiceCaptureStep";
@@ -119,10 +120,10 @@ const Onboarding = () => {
   }, [navigate, toast, forceFull]);
 
   // Build the dynamic step list once we know the gating
-  const stepList: Array<"welcome" | "science" | "theme" | "question" | "voice"> = (() => {
+  const stepList: Array<"welcome" | "science" | "before" | "theme" | "question" | "voice"> = (() => {
     if (isFirstEver === null) return [];
-    const list: Array<"welcome" | "science" | "theme" | "question" | "voice"> = [];
-    if (isFirstEver) list.push("welcome", "science");
+    const list: Array<"welcome" | "science" | "before" | "theme" | "question" | "voice"> = [];
+    if (isFirstEver) list.push("welcome", "science", "before");
     list.push("theme");
     for (let i = 0; i < questions.length; i++) list.push("question");
     list.push("voice");
@@ -161,7 +162,7 @@ const Onboarding = () => {
   };
 
   const canProceed = () => {
-    if (currentKind === "welcome" || currentKind === "science" || currentKind === "theme") return true;
+    if (currentKind === "welcome" || currentKind === "science" || currentKind === "before" || currentKind === "theme") return true;
     if (currentKind === "question") return (answers[questionIndex] || "").trim().length > 0;
     if (currentKind === "voice") return hasExistingClone || hasRecording || usePresetVoice;
     return false;
@@ -368,6 +369,8 @@ const Onboarding = () => {
       ? "I'm ready"
       : currentKind === "science"
       ? "Begin"
+      : currentKind === "before"
+      ? "I'm ready"
       : currentKind === "theme"
       ? "I'm ready for my questions"
       : currentKind === "voice"
@@ -408,6 +411,7 @@ const Onboarding = () => {
             <WelcomeStep key="welcome" userFirstName={userFirstName} />
           )}
           {currentKind === "science" && <ScienceStep key="science" />}
+          {currentKind === "before" && <BeforeYouBeginStep key="before" />}
           {currentKind === "theme" && (
             <ThemeIntroStep
               key="theme"
