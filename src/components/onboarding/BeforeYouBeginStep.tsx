@@ -86,9 +86,16 @@ const BeforeYouBeginStep = ({ showSkip = false, onSkip }: BeforeYouBeginStepProp
 
       <Section title="What the questions are for">
         <p>
-          The intake questions are not a survey. They are the raw material your meditation is
-          built from. Youtopia takes what you share and weaves it into the vision you will hear,
-          translated into feeling, not read back to you literally.
+          Every month, Youtopia opens with a new theme. The theme is the lens for the next
+          thirty days, a different territory of your inner life to work with: belonging, courage,
+          rest, abundance, presence. Each month moves you somewhere new, so the practice never
+          flattens into routine.
+        </p>
+        <p>
+          The five intake questions are shaped around that month's theme. They are not a survey.
+          They are the raw material your meditation is built from. Youtopia takes what you share
+          and weaves it into the vision you will hear, translated into feeling, not read back to
+          you literally.
         </p>
         <p>
           The more honest your answers, the more specific the images. Specificity is what makes
