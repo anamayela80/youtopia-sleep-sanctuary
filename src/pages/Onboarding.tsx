@@ -123,7 +123,8 @@ const Onboarding = () => {
   const stepList: Array<"welcome" | "science" | "before" | "theme" | "question" | "voice"> = (() => {
     if (isFirstEver === null) return [];
     const list: Array<"welcome" | "science" | "before" | "theme" | "question" | "voice"> = [];
-    if (isFirstEver) list.push("welcome", "science", "before");
+    if (isFirstEver) list.push("welcome", "science");
+    list.push("before");
     list.push("theme");
     for (let i = 0; i < questions.length; i++) list.push("question");
     list.push("voice");
@@ -411,7 +412,13 @@ const Onboarding = () => {
             <WelcomeStep key="welcome" userFirstName={userFirstName} />
           )}
           {currentKind === "science" && <ScienceStep key="science" />}
-          {currentKind === "before" && <BeforeYouBeginStep key="before" />}
+          {currentKind === "before" && (
+            <BeforeYouBeginStep
+              key="before"
+              showSkip={!isFirstEver}
+              onSkip={handleNext}
+            />
+          )}
           {currentKind === "theme" && (
             <ThemeIntroStep
               key="theme"
