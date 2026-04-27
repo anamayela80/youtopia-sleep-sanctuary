@@ -436,8 +436,8 @@ export async function regenerateMeditationForUser(
   });
 
   const segmentAudioUrls: string[] = [];
-  for (let i = 0; i < segments.length && i < 4; i++) {
-    status(`Recording segment ${i + 1} of ${Math.min(segments.length, 4)}…`);
+  for (let i = 0; i < segments.length; i++) {
+    status(`Recording segment ${i + 1} of ${segments.length}…`);
     const audioBlob = await narrateSegment(segments[i].text, guideVoiceId, i + 1);
     if (!audioBlob || audioBlob.size === 0) throw new Error(`Segment ${i + 1} narration failed`);
     const audioUrl = await uploadSegmentAudio(userId, audioBlob, themeSlug, i + 1);

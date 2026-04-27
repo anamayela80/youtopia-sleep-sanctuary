@@ -231,8 +231,8 @@ const Onboarding = () => {
       // 4. Narrate segments
       const themeSlug = (theme?.theme || "practice").toLowerCase().replace(/\s+/g, "-");
       const segmentAudioUrls: string[] = [];
-      for (let i = 0; i < segments.length && i < 4; i++) {
-        setGenerationStatus(`Recording your meditation (${i + 1} of ${Math.min(segments.length, 4)})…`);
+      for (let i = 0; i < segments.length; i++) {
+        setGenerationStatus(`Recording your meditation (${i + 1} of ${segments.length})…`);
         const audioBlob = await narrateSegment(segments[i].text, guideVoiceId, i + 1);
         if (!audioBlob || audioBlob.size === 0) throw new Error(`Segment ${i + 1} narration failed`);
         const audioUrl = await uploadSegmentAudio(user.id, audioBlob, themeSlug, i + 1);
