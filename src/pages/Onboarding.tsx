@@ -123,7 +123,8 @@ const Onboarding = () => {
   const stepList: Array<"welcome" | "science" | "before" | "theme" | "question" | "voice"> = (() => {
     if (isFirstEver === null) return [];
     const list: Array<"welcome" | "science" | "before" | "theme" | "question" | "voice"> = [];
-    if (isFirstEver) list.push("welcome", "science", "before");
+    if (isFirstEver) list.push("welcome", "science");
+    list.push("before");
     list.push("theme");
     for (let i = 0; i < questions.length; i++) list.push("question");
     list.push("voice");
