@@ -15,7 +15,12 @@ const Divider = () => (
   <div className="my-8 mx-auto h-px w-16 bg-accent/20" aria-hidden />
 );
 
-const BeforeYouBeginStep = () => (
+interface BeforeYouBeginStepProps {
+  showSkip?: boolean;
+  onSkip?: () => void;
+}
+
+const BeforeYouBeginStep = ({ showSkip = false, onSkip }: BeforeYouBeginStepProps) => (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
@@ -28,8 +33,17 @@ const BeforeYouBeginStep = () => (
         Before You Begin
       </h1>
       <p className="font-body text-accent/80 text-base leading-relaxed max-w-md mx-auto">
-        A few things worth knowing before your first session.
+        A few things worth knowing before your session.
       </p>
+      {showSkip && onSkip && (
+        <button
+          type="button"
+          onClick={onSkip}
+          className="mt-4 font-body text-sm text-accent/60 underline underline-offset-4 hover:text-accent transition-colors"
+        >
+          Skip, I've read this before
+        </button>
+      )}
     </header>
 
     <div className="max-w-md mx-auto w-full text-left">
