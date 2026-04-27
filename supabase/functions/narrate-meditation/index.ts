@@ -180,10 +180,23 @@ serve(async (req) => {
       return new Uint8Array(await response.arrayBuffer());
     };
 
-    // Run all chunks in parallel to stay under the edge function timeout
+    // Run chunks with limited concurrency. ElevenLabs caps free/starter plans
+    // at 10 concurrent requests — going over yields 429 concurrent_limit_exceeded.
+    // Cap at 8 to leave headroom for any other in-flight calls (e.g. seeds).
+    const CONCURRENCY = 8;
     let rawBuffers: Uint8Array[];
     try {
-      rawBuffers = await Promise.all(chunks.map((c: string, i: number) => processChunk(c, i)));
+      const results: Uint8Array[] = new Array(chunks.length);
+      let nextIdx = 0;
+      const workers = Array.from({ length: Math.min(CONCURRENCY, chunks.length) }, async () => {
+        while (true) {
+          const i = nextIdx++;
+          if (i >= chunks.length) return;
+          results[i] = await processChunk(chunks[i], i);
+        }
+      });
+      await Promise.all(workers);
+      rawBuffers = results;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown";
       if (msg === "QUOTA_EXCEEDED") {
