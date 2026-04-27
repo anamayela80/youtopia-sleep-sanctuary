@@ -2,7 +2,7 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { createReverb, createVoiceBus } from "@/lib/audioEffects";
 
 /**
- * Segmented meditation mixer: 4 narration segments spaced over music bridges.
+ * Segmented meditation mixer: 5 narration segments spaced over music bridges.
  *
  * This is the evening / full-length format: ~20 min total with long musical
  * silences between segments so each section can LAND before the next begins.
@@ -51,18 +51,21 @@ interface UseSegmentedMixerOptions {
  *   established → ~38 min  (9 min narration + 29 min music/silence)
  */
 /**
- * Bridge timing notes:
- *   Bridge 1 (after Arrival/Heart/Energy)  → generous: listener settles
- *   Bridge 2 (before Space of Nowhere)     → longest: deep drop into formlessness
- *   Bridge 3 (before Return/Anchor)        → shorter: vision has already landed,
- *                                             don't leave them floating too long
- *   FadeOut (after "open your eyes")       → brief: don't hold them in music
- *                                             after the session has ended
+ * Bridge timing notes (6 segments, 5 active bridges):
+ *   Bridge 0 = 0     (no gap before segment 1 — fadeIn handles the opening)
+ *   Bridge 1         (after Arrival/Heart/Energy, before Deep Release)
+ *   Bridge 2         (after Deep Release, before Space of Nowhere — longest drop)
+ *   Bridge 3         (after Space of Nowhere, before Vision A — listener emerges
+ *                     from formlessness, needs a clear threshold before images)
+ *   Bridge 4         (after Vision A, before Vision B — short breath between
+ *                     image groups, keeps the dream state without breaking it)
+ *   Bridge 5         (after Vision B / Remember, before Anchor + Return)
+ *   FadeOut          (brief — don't hold in music after "open your eyes")
  */
 const TENURE_TIMING = {
-  orienting:   { fadeIn: 60, bridges: [0, 210, 240, 150], fadeOut: 75 },
-  settling:    { fadeIn: 75, bridges: [0, 270, 300, 180], fadeOut: 90 },
-  established: { fadeIn: 90, bridges: [0, 360, 420, 240], fadeOut: 120 },
+  orienting:   { fadeIn: 60, bridges: [0, 150, 210, 90, 60, 90], fadeOut: 75 },
+  settling:    { fadeIn: 75, bridges: [0, 210, 270, 120, 90, 120], fadeOut: 90 },
+  established: { fadeIn: 90, bridges: [0, 270, 390, 150, 120, 150], fadeOut: 120 },
 };
 
 // Ducking

@@ -162,11 +162,13 @@ ABSOLUTE OUTPUT RULES
 5. NO REPEATED PASSAGES. Each phrase appears once only.
 6. NO SECTION LABELS. Continuous narration only.
 7. Start with the first spoken word. Stop after the last word of the Return section.
-8. SEGMENT BREAKS — insert "[segment break]" on its own line exactly 3 times:
+8. SEGMENT BREAKS — insert "[segment break]" on its own line exactly 5 times:
    — After the last line of Section 3 (Energy breath), before Section 4
    — After the last line of Section 4 (Deep release), before Section 5
+   — After the last line of Section 5 (Space of nowhere), before Section 6
+   — After the 2nd or 3rd vision image in Section 6 (roughly halfway through the images), before the remaining images
    — After "Remember." presence anchor at the end of Section 6, before Section 7
-   These are the only 3 segment breaks. Do not add more.
+   These are the only 5 segment breaks. Do not add more.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 YOUTOPIA LANGUAGE — use these words
@@ -323,6 +325,8 @@ Guide the listener into formless awareness using this vocabulary (in your own se
 
 Do NOT use: "the blackness", "beyond you", "behind you", "all around you", "no body no name", "become more of it", "less of you", "the field", "the realm of all possibility".
 Drop one presence anchor here: "Feel it." on its own line. [long pause 25s] after.
+Use at least 8 of the vocabulary phrases listed above. Do not rush through this section — the listener needs time to fully dissolve before the vision begins.
+End Section 5 with: "[segment break]" on its own line — this is the third of the 4 required segment breaks. The music will play for 90 seconds before the vision begins.
 
 SECTION 6 — Vision (${sw.becoming} words)
 Follow the HOW TO BUILD THE VISION steps above exactly. Use ALL intake answers. Distribute images across the section — not clustered, not listed in question order.
@@ -331,6 +335,8 @@ Open with the user's name and a single brief line naming the feeling, then move 
   "${userName || "listen"} — [pause 6s] something is forming. [long pause 12s]"
 
 Build one image per answer. Each image: 1-3 slow sentences + [long pause 10s] or [long pause 12s]. Then — on its own line — a single presence invitation chosen from: "Feel it." / "Stay with this." / "How does this feel." followed by [long pause 15s]. Leave a blank line between image blocks. Let each image be fully felt before the next one arrives. Do not rush from image to image.
+
+After the 2nd or 3rd image (roughly halfway through all the images), insert "[segment break]" on its own line. This is the 4th of the 5 required segment breaks. The music will pause here so the first images can settle before the remaining ones arrive. Then continue with the remaining images using the same image + feel-it invitation pattern.
 
 Close the vision:
   "${userName || "listen"} — [long pause 12s]"
@@ -343,7 +349,7 @@ Close the vision:
   "Into the marrow. [long pause 20s]"
 
 Drop one presence anchor: "Remember." on its own line. [long pause 20s] after.
-Then: "[segment break]" on its own line — this is the third and final segment break.
+Then: "[segment break]" on its own line — this is the fifth and final segment break.
 
 SECTION 7 — Anchor (${sw.anchor} words)
 The listener is still deep. This section is a gentle landing — not a clinical announcement. Let the anchor arrive like a hand placed softly.
@@ -404,31 +410,36 @@ function splitIntoSegments(text: string): string[] {
   const BREAK = /\[segment break\]/i;
   if (BREAK.test(text)) {
     const parts = text.split(BREAK).map((s) => s.trim()).filter(Boolean);
-    if (parts.length === 4) return parts;
+    if (parts.length === 6) return parts;
     // If the model placed fewer/more markers, pad or trim gracefully
     if (parts.length > 1) {
-      while (parts.length < 4) parts.push("");
-      return parts.slice(0, 4).map((s) => s || "(continue)");
+      while (parts.length < 6) parts.push("");
+      return parts.slice(0, 6).map((s) => s || "(continue)");
     }
   }
 
-  // Fallback: weight-based paragraph split (sections 5–6 get ~45% of content)
+  // Fallback: weight-based paragraph split across 6 segments
+  // Seg 1: Arrival/Heart/Energy (~18%), Seg 2: Deep release (~7%),
+  // Seg 3: Space of nowhere (~17%), Seg 4: Vision A (~20%),
+  // Seg 5: Vision B (~23%), Seg 6: Return (~15%)
   const paras = text.split(/\n\s*\n+/).map((p) => p.trim()).filter(Boolean);
   if (paras.length <= 1) {
     const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean);
-    const per = Math.ceil(sentences.length / 4);
+    const per = Math.ceil(sentences.length / 6);
     return [
       sentences.slice(0, per).join(" "),
       sentences.slice(per, per * 2).join(" "),
       sentences.slice(per * 2, per * 3).join(" "),
-      sentences.slice(per * 3).join(" "),
+      sentences.slice(per * 3, per * 4).join(" "),
+      sentences.slice(per * 4, per * 5).join(" "),
+      sentences.slice(per * 5).join(" "),
     ].filter((s) => s.trim().length > 0);
   }
 
   const totalLen = paras.reduce((s, p) => s + p.length, 0);
-  const weights = [0.22, 0.10, 0.48, 0.20];
+  const weights = [0.18, 0.07, 0.17, 0.20, 0.23, 0.15];
   const targets = weights.map((w) => w * totalLen);
-  const groups: string[][] = [[], [], [], []];
+  const groups: string[][] = [[], [], [], [], [], []];
   let groupIdx = 0;
   let runningLen = 0;
 
@@ -541,7 +552,7 @@ Write the meditation script now. Follow the 8-section structure exactly. Use the
       .replace(/—/g, " ")
       .replace(/–/g, " ");
     const segmentTexts = splitIntoSegments(cleanedScript);
-    const titles = ["Arrival", "Coherence", "Becoming", "Return"];
+    const titles = ["Arrival", "Releasing", "Nowhere", "Becoming", "Becoming II", "Return"];
     const segments = segmentTexts.map((text, i) => ({
       number: i + 1,
       title: titles[i] || `Segment ${i + 1}`,
