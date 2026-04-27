@@ -134,25 +134,50 @@ serve(async (req) => {
       return buffer.slice(offset);
     };
 
-    // One phrase per TTS call — the only reliable way to prevent hallucination.
+    // Per-phrase chunking (2-3 lines per call) to prevent hallucination while
+    // avoiding start-of-call audio artifacts.
     //
-    // Paragraph-level chunking caused ElevenLabs v3 to hallucinate in the Space
-    // of Nowhere section: short phrases surrounded by many dots look like noise
-    // and the model fills in invented text ("before the name before the video
-    // the theater the theater..."). Dispenza-style meditations work precisely
-    // because every line is a standalone 5-10 word call with no context to drift.
+    // WHY NOT one-phrase-per-call:
+    //   Applying wrapV3 delivery tags ([softly][slow][warm][intimate]) to every
+    //   individual phrase causes ElevenLabs v3 to produce a small vocalization
+    //   artifact at the start of each call. Stitched together, these sound like
+    //   random syllables ("jana", "ma", "do") between every spoken line.
     //
-    // Process: split raw script on newlines → each line is one phrase + its pause
-    // marker → convert each line independently → one TTS call per line → stitch.
-    const chunks: string[] = (script as string)
-      .replace(/\[segment break\]/gi, "")  // remove splitter markers
+    // WHY NOT paragraph chunks:
+    //   Large chunks (400-1200 chars) of dot-heavy Space of Nowhere text cause
+    //   the model to hallucinate filler text mid-passage.
+    //
+    // SOLUTION: Group 2-3 phrases per call (max 280 chars), NO delivery tags.
+    //   - Short enough to prevent hallucination
+    //   - Fewer stitching points (~10-13 vs 26+) = fewer artifact opportunities
+    //   - Delivery style controlled entirely by voice_settings (stability=0.0
+    //     Creative + speed=0.80 already produces intimate, slow narration)
+    //   - wrapV3 applied only to the very first chunk to set initial tone
+
+    const rawLines = (script as string)
+      .replace(/\[segment break\]/gi, "")
       .split(/\n/)
       .map((line: string) => line.trim())
       .filter((line: string) => line.length > 0)
       .map((line: string) => toNarrationText(line))
-      // Drop lines that are pure whitespace/dots after conversion (blank lines)
-      .filter((line: string) => line.replace(/[\s.]/g, "").length > 0)
-      .map((line: string, i: number) => wrapV3(line, i === 0));
+      .filter((line: string) => line.replace(/[\s.]/g, "").length > 0);
+
+    const MAX_CHUNK_CHARS = 280;
+    const groupedChunks: string[] = [];
+    let current = "";
+    for (const line of rawLines) {
+      if (current && (current + " " + line).length > MAX_CHUNK_CHARS) {
+        groupedChunks.push(current.trim());
+        current = line;
+      } else {
+        current = current ? current + " " + line : line;
+      }
+    }
+    if (current.trim()) groupedChunks.push(current.trim());
+
+    // Apply delivery tags to the first chunk only — sets the opening tone
+    // without risking artifacts on every subsequent stitch point.
+    const chunks = groupedChunks.map((c, i) => i === 0 ? wrapV3(c, true) : c);
     console.log(`Split into ${chunks.length} chunk(s)`);
 
     const processChunk = async (chunkText: string, idx: number): Promise<Uint8Array> => {
