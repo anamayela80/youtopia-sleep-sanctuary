@@ -156,16 +156,22 @@ serve(async (req) => {
     console.log(`Split into ${chunks.length} chunk(s)`);
 
     const processChunk = async (chunkText: string, idx: number): Promise<Uint8Array> => {
-      let response = await doTTS(elevenLabsVoiceId, chunkText);
+      const maxAttempts = 4;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        let response = await doTTS(elevenLabsVoiceId, chunkText);
 
-      if (response.status === 404 && elevenLabsVoiceId !== fallbackVoiceId) {
-        console.warn(`Voice ${elevenLabsVoiceId} not found, falling back to default`);
-        response = await doTTS(fallbackVoiceId, chunkText);
-      }
+        if (response.status === 404 && elevenLabsVoiceId !== fallbackVoiceId) {
+          console.warn(`Voice ${elevenLabsVoiceId} not found, falling back to default`);
+          response = await doTTS(fallbackVoiceId, chunkText);
+        }
 
-      if (!response.ok) {
+        if (response.ok) {
+          return new Uint8Array(await response.arrayBuffer());
+        }
+
         const errorText = await response.text();
-        console.error(`ElevenLabs error chunk ${idx + 1}:`, response.status, errorText);
+        console.error(`ElevenLabs error chunk ${idx + 1} (attempt ${attempt}):`, response.status, errorText);
+
         try {
           const parsed = JSON.parse(errorText);
           if (parsed?.detail?.status === "quota_exceeded") {
@@ -174,10 +180,18 @@ serve(async (req) => {
         } catch (e) {
           if (e instanceof Error && e.message === "QUOTA_EXCEEDED") throw e;
         }
+
+        // Retry on 429 (concurrent limit) and 5xx with jittered backoff
+        const retryable = response.status === 429 || response.status >= 500;
+        if (retryable && attempt < maxAttempts) {
+          const backoff = 500 * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 400);
+          await new Promise((r) => setTimeout(r, backoff));
+          continue;
+        }
+
         throw new Error(`ElevenLabs TTS failed: ${response.status}`);
       }
-
-      return new Uint8Array(await response.arrayBuffer());
+      throw new Error("ElevenLabs TTS failed: retries exhausted");
     };
 
     // Run chunks with limited concurrency. ElevenLabs caps free/starter plans
