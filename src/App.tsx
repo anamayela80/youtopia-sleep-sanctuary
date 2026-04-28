@@ -15,6 +15,7 @@ import Reflect from "./pages/Reflect.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import PreviewLoading from "./pages/PreviewLoading.tsx";
 import HomePreview from "./pages/HomePreview.tsx";
+import FlowPreview from "./pages/FlowPreview.tsx";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/reflect" element={<Reflect />} />
           <Route path="/preview-loading" element={<PreviewLoading />} />
           <Route path="/home-preview" element={<HomePreview />} />
+          <Route path="/flow-preview" element={<FlowPreview />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
