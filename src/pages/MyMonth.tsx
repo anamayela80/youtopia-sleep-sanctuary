@@ -161,26 +161,6 @@ const MyMonth = () => {
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, "0")}`;
 
-  const handleRegenerate = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    if (!confirm("Regenerate this user's meditation with the current prompt? The previous version stays in history.")) return;
-    setRegenerating(true);
-    setRegenStatus("Starting…");
-    try {
-      meditationMixer.stop?.();
-      await regenerateMeditationForUser(user.id, (msg) => setRegenStatus(msg));
-      setRegenStatus("Reloading…");
-      await loadData();
-      setRegenStatus("");
-    } catch (e: any) {
-      console.error("Regenerate failed:", e);
-      alert(`Regenerate failed: ${e?.message || e}`);
-      setRegenStatus("");
-    } finally {
-      setRegenerating(false);
-    }
-  };
 
   const [isDownloading, setIsDownloading] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
