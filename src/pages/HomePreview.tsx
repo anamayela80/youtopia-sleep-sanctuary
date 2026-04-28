@@ -340,6 +340,7 @@ const MockHome = ({ monthsCompleted }: { monthsCompleted: number }) => {
                         <div className="px-4 pb-4 space-y-2">
                           <PracticeItem icon={<SunGlyph />} iconBg="#F5E4C0" title="Morning Meditation" subtitle="Revisit this practice" done />
                           <PracticeItem icon={<MoonGlyph />} iconBg="#DDD0EE" title="Evening Seeds" subtitle="Revisit this practice" done />
+                          <PracticeItem icon={<JournalGlyph />} iconBg="#C8DED8" title="Reflect" subtitle="Reread your journal entries" done />
                         </div>
                       </motion.div>
                     )}
