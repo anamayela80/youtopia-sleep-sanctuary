@@ -232,6 +232,49 @@ const MockHome = ({ monthsCompleted }: { monthsCompleted: number }) => {
         </div>
       </div>
 
+      {/* Mood over time */}
+      <div className="mb-7">
+        <SectionLabel>Mood Over Time</SectionLabel>
+        <div
+          className="mx-4 rounded-2xl px-4 py-4"
+          style={{ background: "hsl(var(--folder))", border: "1px solid rgba(160, 120, 70, 0.12)" }}
+        >
+          <div className="space-y-2">
+            {moodHistory.map((row, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <span
+                  className="text-[10px] uppercase italic w-8 flex-shrink-0"
+                  style={{ letterSpacing: "0.12em", color: "hsl(var(--subtitle))", fontFamily: "Georgia, serif" }}
+                >
+                  {row.label}
+                </span>
+                <div className="flex flex-wrap gap-[3px] flex-1">
+                  {row.days.map((m, i) => (
+                    <div
+                      key={i}
+                      className="rounded-full"
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        background: m !== null ? MOOD_COLORS[m - 1] : "transparent",
+                        border: m === null ? "1px solid rgba(160, 120, 70, 0.18)" : "none",
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-center gap-1.5 mt-4 pt-3" style={{ borderTop: "1px solid rgba(160, 120, 70, 0.12)" }}>
+            <span className="text-[9px] italic mr-1" style={{ color: "hsl(var(--subtitle))" }}>low</span>
+            {MOOD_COLORS.map((c, i) => (
+              <div key={i} className="w-2.5 h-2.5 rounded-full" style={{ background: c }} />
+            ))}
+            <span className="text-[9px] italic ml-1" style={{ color: "hsl(var(--subtitle))" }}>high</span>
+          </div>
+        </div>
+      </div>
+
       {/* Current chapter */}
       <div className="mb-7">
         <SectionLabel>Current Chapter</SectionLabel>
