@@ -5,47 +5,26 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Convert Claude bracket pause markers into ElevenLabs v3 audio-tag pacing
-// plus ellipses (which the model interprets as natural pauses). We deliberately
-// do NOT wrap in <speak> or use <break> SSML, eleven_v3 reads those literally
-// or paces them poorly, which made the narration sound rushed and triggered
-// hallucinated additions on long inputs.
-//
-// Dot density calibration:
-//   ElevenLabs v3 with [slow][drawn out] delivery renders each dot at roughly
-//   0.35–0.45 s. We use a modest increase over baseline to add breathing room
-//   WITHOUT flooding the model with dots — dot-heavy inputs cause hallucination
-//   in the Space of Nowhere section where phrases are short and pauses are long.
-//   Duration is primarily controlled by the music bridge lengths in the mixer.
-//
-//   Mapping (target → dots → expected render):
-//     ≤4s  →  7 dots  → ~2.5–3 s
-//      6s  → 10 dots  → ~3.5–4.5 s
-//     10s  → 14 dots  → ~5–6 s
-//     12s  → 17 dots  → ~6–7.5 s
-//     15s  → 19 dots  → ~7–8.5 s
-//     20s  → 21 dots  → ~7.5–9.5 s
-function pausesFor(seconds: number): string {
-  if (seconds <= 4)  return " ....... ";
-  if (seconds <= 6)  return " .......... ";
-  if (seconds <= 10) return " .............. ";
-  if (seconds <= 14) return " ................. ";
-  return " ..................... ";
-}
-
+// Convert Claude bracket pause markers into ElevenLabs v3 native [silence: Xs] tags.
+// ElevenLabs v3 handles [silence: Xs] natively — no hallucination risk.
+// Dots were previously used but caused hallucinations ("vad", "mavi", etc.)
+// in dot-dense sections like Space of Nowhere. [silence: Xs] is the correct format.
 function toNarrationText(raw: string): string {
   let s = raw;
 
   // Strip any SSML the model may have leaked in
   s = s.replace(/<\/?speak>/gi, "");
-  s = s.replace(/<break\s+time="(\d+)s"\s*\/?>/gi, (_m, sec) => pausesFor(parseInt(sec, 10)));
-  s = s.replace(/<[^>]+>/g, " "); // remove any other stray tags
+  s = s.replace(/<break\s+time="(\d+)s"\s*\/?>/gi, (_m, sec) => `[silence: ${sec}s]`);
+  s = s.replace(/<[^>]+>/g, " ");
 
-  // Convert all bracket pause markers to ellipsis pacing
-  s = s.replace(/\[[^\]]*?(\d{1,2})s[^\]]*?\]/gi, (_m, sec) => pausesFor(parseInt(sec, 10)));
+  // Convert bracket pause markers → ElevenLabs native silence tags
+  s = s.replace(/\[long\s+pause\s+(\d{1,2})s\]/gi, (_m, sec) => `[silence: ${sec}s]`);
+  s = s.replace(/\[pause\s+(\d{1,2})s\]/gi, (_m, sec) => `[silence: ${sec}s]`);
+  // Generic fallback: any remaining [... Xs ...] pattern
+  s = s.replace(/\[[^\]]*?(\d{1,2})s[^\]]*?\]/gi, (_m, sec) => `[silence: ${sec}s]`);
 
-  // Strip any remaining bracket markers (so they aren't read aloud)
-  s = s.replace(/\[[^\]]*\]/g, "");
+  // Strip any remaining bracket markers — but preserve [silence: Xs] tags
+  s = s.replace(/\[(?!silence:)[^\]]*\]/g, "");
 
   // Collapse whitespace
   s = s.replace(/\s+/g, " ").trim();
