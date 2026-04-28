@@ -76,6 +76,8 @@ const JournalEntryCard = ({ entry }: { entry: JournalRow }) => {
           fontFamily: "Georgia, serif",
           lineHeight: 1.7,
           whiteSpace: "pre-wrap",
+          overflowWrap: "anywhere",
+          wordBreak: "break-word",
         }}
       >
         {shown}
