@@ -236,9 +236,11 @@ const MyMonth = () => {
           </div>
         </div>
 
+        {/* Row 1: Seeds (left) + Morning Meditation (right) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 items-start">
         {/* Morning Meditation */}
         {hasMeditation && (
-          <section className="mb-8">
+          <section className="md:order-2">
             <SectionLabel>Morning Meditation</SectionLabel>
             <div
               className="rounded-3xl p-6"
@@ -395,8 +397,9 @@ const MyMonth = () => {
         )}
 
         {/* Evening Seeds */}
+        {/* Evening Seeds */}
         {hasSeeds && (
-          <section className="mb-8">
+          <section className="md:order-1">
             <SectionLabel>Evening Seeds</SectionLabel>
             <div
               className="rounded-3xl p-6"
@@ -475,63 +478,71 @@ const MyMonth = () => {
             </div>
           </section>
         )}
+        </div>
 
-        {/* A message for you */}
-        {messageForYou && (
-          <section className="mb-8">
+        {/* Row 2: A Message For You + This Month's Practice + What You Shared */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-start">
+          {/* A message for you */}
+          <section>
             <SectionLabel>A Message For You</SectionLabel>
             <div
               className="rounded-3xl p-6"
               style={{ background: TONE_FOLDER, border: SOFT_BORDER }}
             >
-              <p className="font-body text-base text-accent/90 leading-relaxed">{messageForYou}</p>
+              {messageForYou ? (
+                <p className="font-body text-base text-accent/90 leading-relaxed">{messageForYou}</p>
+              ) : (
+                <p className="font-body text-sm text-muted-foreground/80 italic leading-relaxed">
+                  Your personal message will appear here.
+                </p>
+              )}
             </div>
           </section>
-        )}
 
-        {/* This month's practice */}
-        {tenureIntro && (
-          <section className="mb-8">
-            <SectionLabel>This Month's Practice</SectionLabel>
-            <div
-              className="rounded-3xl p-6"
-              style={{ background: TONE_PAGE, border: "1px solid rgba(160, 120, 70, 0.18)" }}
-            >
-              <div className="font-body text-sm text-accent/85 leading-relaxed whitespace-pre-wrap line-clamp-3">
-                {tenureIntro}
-              </div>
-              <button
-                onClick={() => navigate("/practice")}
-                className="mt-3 text-xs font-body font-medium hover:opacity-80 text-secondary"
+          {/* This month's practice */}
+          {tenureIntro && (
+            <section>
+              <SectionLabel>This Month's Practice</SectionLabel>
+              <div
+                className="rounded-3xl p-6"
+                style={{ background: TONE_PAGE, border: "1px solid rgba(160, 120, 70, 0.18)" }}
               >
-                Read More →
-              </button>
-            </div>
-          </section>
-        )}
-
-        {/* What you shared */}
-        {answerList.length > 0 && (
-          <section className="mb-8">
-            <SectionLabel>What You Shared</SectionLabel>
-            <div className="space-y-3">
-              {answerList.map((item, i) => (
-                <div
-                  key={i}
-                  className="rounded-3xl px-5 py-5"
-                  style={{ background: TONE_FOLDER, border: SOFT_BORDER }}
-                >
-                  <p className="font-body text-sm text-accent leading-relaxed mb-2">{item.q}</p>
-                  {item.a ? (
-                    <p className="font-body text-[15px] text-accent/75 leading-relaxed italic">{item.a}</p>
-                  ) : (
-                    <p className="font-body text-sm text-muted-foreground/70 italic">Your answer will appear here</p>
-                  )}
+                <div className="font-body text-sm text-accent/85 leading-relaxed whitespace-pre-wrap line-clamp-3">
+                  {tenureIntro}
                 </div>
-              ))}
-            </div>
-          </section>
-        )}
+                <button
+                  onClick={() => navigate("/practice")}
+                  className="mt-3 text-xs font-body font-medium hover:opacity-80 text-secondary"
+                >
+                  Read More →
+                </button>
+              </div>
+            </section>
+          )}
+
+          {/* What you shared */}
+          {answerList.length > 0 && (
+            <section>
+              <SectionLabel>What You Shared</SectionLabel>
+              <div className="space-y-3">
+                {answerList.map((item, i) => (
+                  <div
+                    key={i}
+                    className="rounded-3xl px-5 py-5"
+                    style={{ background: TONE_FOLDER, border: SOFT_BORDER }}
+                  >
+                    <p className="font-body text-sm text-accent leading-relaxed mb-2">{item.q}</p>
+                    {item.a ? (
+                      <p className="font-body text-[15px] text-accent/75 leading-relaxed italic">{item.a}</p>
+                    ) : (
+                      <p className="font-body text-sm text-muted-foreground/70 italic">Your answer will appear here</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
       </div>
     </div>
   );
