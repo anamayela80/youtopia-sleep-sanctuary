@@ -26,6 +26,51 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
   </p>
 );
 
+// Collapses content to ~8 lines with a Read More toggle.
+const Expandable = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
+  const [expanded, setExpanded] = useState(false);
+  const [overflowing, setOverflowing] = useState(false);
+  const ref = useState<HTMLDivElement | null>(null);
+  const [el, setEl] = ref;
+
+  useEffect(() => {
+    if (!el) return;
+    const check = () => setOverflowing(el.scrollHeight > el.clientHeight + 2);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [el, children]);
+
+  return (
+    <div className={className}>
+      <div
+        ref={setEl}
+        style={
+          expanded
+            ? undefined
+            : {
+                display: "-webkit-box",
+                WebkitLineClamp: 8,
+                WebkitBoxOrient: "vertical" as const,
+                overflow: "hidden",
+              }
+        }
+      >
+        {children}
+      </div>
+      {(overflowing || expanded) && (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-3 text-xs font-body font-medium hover:opacity-80 text-secondary"
+        >
+          {expanded ? "Show Less ↑" : "Read More ↓"}
+        </button>
+      )}
+    </div>
+  );
+};
+
 // Two warm beige tones to alternate between sections
 const TONE_PAGE = "hsl(var(--background))"; // #F2EAD8
 const TONE_FOLDER = "hsl(var(--folder))";   // #E8DCC8
@@ -495,13 +540,15 @@ const MyMonth = () => {
               className="rounded-3xl p-6"
               style={{ background: TONE_FOLDER, border: SOFT_BORDER }}
             >
-              {messageForYou ? (
-                <p className="font-body text-base text-accent/90 leading-relaxed">{messageForYou}</p>
-              ) : (
-                <p className="font-body text-sm text-muted-foreground/80 italic leading-relaxed">
-                  Your personal message will appear here.
-                </p>
-              )}
+              <Expandable>
+                {messageForYou ? (
+                  <p className="font-body text-base text-accent/90 leading-relaxed">{messageForYou}</p>
+                ) : (
+                  <p className="font-body text-sm text-muted-foreground/80 italic leading-relaxed">
+                    Your personal message will appear here.
+                  </p>
+                )}
+              </Expandable>
             </div>
           </section>
 
@@ -513,15 +560,11 @@ const MyMonth = () => {
                 className="rounded-3xl p-6"
                 style={{ background: TONE_PAGE, border: "1px solid rgba(160, 120, 70, 0.18)" }}
               >
-                <div className="font-body text-sm text-accent/85 leading-relaxed whitespace-pre-wrap line-clamp-3">
-                  {tenureIntro}
-                </div>
-                <button
-                  onClick={() => navigate("/practice")}
-                  className="mt-3 text-xs font-body font-medium hover:opacity-80 text-secondary"
-                >
-                  Read More →
-                </button>
+                <Expandable>
+                  <div className="font-body text-sm text-accent/85 leading-relaxed whitespace-pre-wrap">
+                    {tenureIntro}
+                  </div>
+                </Expandable>
               </div>
             </section>
           )}
@@ -530,21 +573,24 @@ const MyMonth = () => {
           {answerList.length > 0 && (
             <section>
               <SectionLabel>What You Shared</SectionLabel>
-              <div className="space-y-3">
-                {answerList.map((item, i) => (
-                  <div
-                    key={i}
-                    className="rounded-3xl px-5 py-5"
-                    style={{ background: TONE_FOLDER, border: SOFT_BORDER }}
-                  >
-                    <p className="font-body text-sm text-accent leading-relaxed mb-2">{item.q}</p>
-                    {item.a ? (
-                      <p className="font-body text-[15px] text-accent/75 leading-relaxed italic">{item.a}</p>
-                    ) : (
-                      <p className="font-body text-sm text-muted-foreground/70 italic">Your answer will appear here</p>
-                    )}
+              <div
+                className="rounded-3xl p-6"
+                style={{ background: TONE_FOLDER, border: SOFT_BORDER }}
+              >
+                <Expandable>
+                  <div className="space-y-4">
+                    {answerList.map((item, i) => (
+                      <div key={i}>
+                        <p className="font-body text-sm text-accent leading-relaxed mb-1">{item.q}</p>
+                        {item.a ? (
+                          <p className="font-body text-[15px] text-accent/75 leading-relaxed italic">{item.a}</p>
+                        ) : (
+                          <p className="font-body text-sm text-muted-foreground/70 italic">Your answer will appear here</p>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </Expandable>
               </div>
             </section>
           )}
