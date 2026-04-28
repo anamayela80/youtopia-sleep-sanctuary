@@ -122,6 +122,45 @@ const StatTile = ({ icon, value, label }: { icon: React.ReactNode; value: string
 );
 
 // ===== Mock home for a given completed-month count =====
+// Mood palette from MoodOrb (1=low → 5=high)
+const MOOD_COLORS = ["#7A9BB5", "#9B8BBE", "#B89A6A", "#C4A030", "#C4604A"];
+
+// Deterministic pseudo-random so colors stay stable per render.
+const rand = (seed: number) => {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+};
+
+// Build mock mood history: one row per past month + current (in-progress) month.
+const buildMoodHistory = (monthsCompleted: number) => {
+  const months: { label: string; days: (number | null)[] }[] = [];
+  // oldest first
+  for (let m = monthsCompleted; m >= 0; m--) {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - m);
+    const label = d.toLocaleDateString(undefined, { month: "short" });
+    const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const isCurrent = m === 0;
+    const today = new Date();
+    const fillThrough = isCurrent ? today.getDate() : daysInMonth;
+    // Trend: gently rising mood as journey progresses
+    const baseMood = 2.4 + (monthsCompleted - m) * 0.18;
+    const days: (number | null)[] = [];
+    for (let i = 1; i <= daysInMonth; i++) {
+      if (i > fillThrough) { days.push(null); continue; }
+      const r = rand(m * 100 + i);
+      // 88% checkin rate
+      if (r > 0.88) { days.push(null); continue; }
+      const noise = (rand(m * 31 + i * 7) - 0.5) * 1.6;
+      const score = Math.max(1, Math.min(5, Math.round(baseMood + noise)));
+      days.push(score);
+    }
+    months.push({ label, days });
+  }
+  return months;
+};
+
 const MockHome = ({ monthsCompleted }: { monthsCompleted: number }) => {
   // Current chapter is the next one in the sequence
   const currentTheme = ALL_THEMES[monthsCompleted % ALL_THEMES.length];
@@ -134,7 +173,6 @@ const MockHome = ({ monthsCompleted }: { monthsCompleted: number }) => {
   const [openKey, setOpenKey] = useState<string | null>(null);
 
   // Derived stats
-  const totalSessions = monthsCompleted * 28; // ~daily morning + seeds blend
   const totalMinutes = monthsCompleted * 28 * 12; // ~12 min average
   const streak = Math.min(monthsCompleted * 9, 180);
 
@@ -142,6 +180,9 @@ const MockHome = ({ monthsCompleted }: { monthsCompleted: number }) => {
     totalMinutes >= 60
       ? `${Math.round(totalMinutes / 60)}h`
       : `${totalMinutes}m`;
+
+  const moodHistory = buildMoodHistory(monthsCompleted);
+
 
   return (
     <div className="bg-background flex flex-col rounded-3xl overflow-hidden shadow-[0_20px_60px_-30px_rgba(120,90,60,0.4)]" style={{ border: "1px solid rgba(160,120,70,0.18)" }}>
@@ -188,6 +229,49 @@ const MockHome = ({ monthsCompleted }: { monthsCompleted: number }) => {
           <StatTile icon={<Headphones size={16} />} value={String(monthsCompleted)} label="months" />
           <StatTile icon={<Flame size={16} />} value={String(streak)} label="day streak" />
           <StatTile icon={<Clock size={16} />} value={hoursLabel} label="practiced" />
+        </div>
+      </div>
+
+      {/* Mood over time */}
+      <div className="mb-7">
+        <SectionLabel>Mood Over Time</SectionLabel>
+        <div
+          className="mx-4 rounded-2xl px-4 py-4"
+          style={{ background: "hsl(var(--folder))", border: "1px solid rgba(160, 120, 70, 0.12)" }}
+        >
+          <div className="space-y-2">
+            {moodHistory.map((row, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <span
+                  className="text-[10px] uppercase italic w-8 flex-shrink-0"
+                  style={{ letterSpacing: "0.12em", color: "hsl(var(--subtitle))", fontFamily: "Georgia, serif" }}
+                >
+                  {row.label}
+                </span>
+                <div className="flex flex-wrap gap-[3px] flex-1">
+                  {row.days.map((m, i) => (
+                    <div
+                      key={i}
+                      className="rounded-full"
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        background: m !== null ? MOOD_COLORS[m - 1] : "transparent",
+                        border: m === null ? "1px solid rgba(160, 120, 70, 0.18)" : "none",
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-center gap-1.5 mt-4 pt-3" style={{ borderTop: "1px solid rgba(160, 120, 70, 0.12)" }}>
+            <span className="text-[9px] italic mr-1" style={{ color: "hsl(var(--subtitle))" }}>low</span>
+            {MOOD_COLORS.map((c, i) => (
+              <div key={i} className="w-2.5 h-2.5 rounded-full" style={{ background: c }} />
+            ))}
+            <span className="text-[9px] italic ml-1" style={{ color: "hsl(var(--subtitle))" }}>high</span>
+          </div>
         </div>
       </div>
 
