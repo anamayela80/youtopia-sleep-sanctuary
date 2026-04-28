@@ -236,29 +236,35 @@ const MyMonth = () => {
           </div>
         </div>
 
-        {/* Row 1: Seeds (left) + Morning Meditation (right) */}
+        {/* Centered artwork */}
+        {hasMeditation && (
+          <div className="mb-8 flex justify-center">
+            <div className="w-[220px] h-[220px] aspect-square rounded-2xl overflow-hidden relative shadow-[0_8px_24px_-12px_hsl(var(--accent)/0.25)]">
+              {artworkUrl ? (
+                <img src={artworkUrl} alt={meditationName} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-cream via-coral-light to-coral/40 flex items-center justify-center">
+                  <motion.div
+                    className="w-16 h-16 rounded-full bg-gradient-to-br from-cream-light/60 to-coral/20 blur-xl"
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Row 1: Morning Meditation (left) + Seeds (right) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 items-start">
         {/* Morning Meditation */}
         {hasMeditation && (
-          <section className="md:order-2">
+          <section>
             <SectionLabel>Morning Meditation</SectionLabel>
             <div
               className="rounded-3xl p-6"
               style={{ background: TONE_FOLDER, border: SOFT_BORDER }}
             >
-              <div className="w-[220px] h-[220px] mx-auto aspect-square rounded-2xl overflow-hidden mb-5 relative shadow-[0_8px_24px_-12px_hsl(var(--accent)/0.25)]">
-                {artworkUrl ? (
-                  <img src={artworkUrl} alt={meditationName} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-cream via-coral-light to-coral/40 flex items-center justify-center">
-                    <motion.div
-                      className="w-16 h-16 rounded-full bg-gradient-to-br from-cream-light/60 to-coral/20 blur-xl"
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    />
-                  </div>
-                )}
-              </div>
 
               <h3 className="font-heading text-xl text-accent text-center mb-2">{meditationName}</h3>
               <p className="font-body text-xs text-muted-foreground text-center flex items-center justify-center gap-1.5 mb-5">
@@ -399,7 +405,7 @@ const MyMonth = () => {
         {/* Evening Seeds */}
         {/* Evening Seeds */}
         {hasSeeds && (
-          <section className="md:order-1">
+          <section>
             <SectionLabel>Evening Seeds</SectionLabel>
             <div
               className="rounded-3xl p-6"
