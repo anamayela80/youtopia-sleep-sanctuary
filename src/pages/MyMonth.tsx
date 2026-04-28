@@ -236,9 +236,11 @@ const MyMonth = () => {
           </div>
         </div>
 
+        {/* Row 1: Seeds (left) + Morning Meditation (right) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 items-start">
         {/* Morning Meditation */}
         {hasMeditation && (
-          <section className="mb-8">
+          <section className="md:order-2">
             <SectionLabel>Morning Meditation</SectionLabel>
             <div
               className="rounded-3xl p-6"
