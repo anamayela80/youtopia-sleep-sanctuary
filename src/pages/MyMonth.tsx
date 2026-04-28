@@ -125,14 +125,7 @@ const MyMonth = () => {
       getUserAnswers(user.id),
     ]);
 
-    // Admin check — gates the regenerate button
-    const { data: roleRow } = await sb
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "admin")
-      .maybeSingle();
-    setIsAdmin(!!roleRow);
+
 
     setIntake(currentIntake);
     let displayTheme: any = null;
