@@ -145,43 +145,45 @@ const MyMonth = () => {
     const slug = (theme?.theme || "meditation").replace(/\s+/g, "-").toLowerCase();
 
     try {
-      // 1. Script as plain text
-      if (meditation.script) {
-        const scriptBlob = new Blob([meditation.script], { type: "text/plain" });
-        const scriptUrl = URL.createObjectURL(scriptBlob);
-        const a = document.createElement("a");
-        a.href = scriptUrl;
-        a.download = `${slug}-script.txt`;
-        a.click();
-        URL.revokeObjectURL(scriptUrl);
-        await new Promise((r) => setTimeout(r, 400));
-      }
-
-      // 2. Each audio segment in order
       const segs = (meditation.meditation_segments || [])
         .slice()
-        .sort((a: any, b: any) => a.segment_number - b.segment_number);
+        .sort((a: any, b: any) => a.segment_number - b.segment_number)
+        .filter((s: any) => s.audio_url);
 
-      for (const seg of segs) {
-        if (!seg.audio_url) continue;
-        try {
+      // Fetch all audio blobs in parallel BEFORE triggering any downloads.
+      // Calling a.click() after an await loses the browser's user-gesture
+      // context, which causes downloads to be silently blocked. By fetching
+      // everything first and then clicking synchronously we stay in one
+      // continuous gesture-safe code path.
+      const fetched = await Promise.all(
+        segs.map(async (seg: any) => {
           const resp = await fetch(seg.audio_url);
           const blob = await resp.blob();
           const ext = blob.type.includes("wav") ? "wav" : "mp3";
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `${slug}-part-${seg.segment_number}.${ext}`;
+          return { seg, blob, ext };
+        })
+      );
+
+      // Trigger all downloads synchronously — no await between clicks
+      fetched.forEach(({ seg, blob, ext }, i) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${slug}-part-${seg.segment_number}.${ext}`;
+        document.body.appendChild(a);
+        // Stagger by 80 ms so browser queues rather than blocks them
+        setTimeout(() => {
           a.click();
+          document.body.removeChild(a);
           URL.revokeObjectURL(url);
-          // Small delay so the browser doesn't block rapid-fire downloads
-          await new Promise((r) => setTimeout(r, 600));
-        } catch (e) {
-          console.warn(`Segment ${seg.segment_number} download failed:`, e);
-        }
-      }
+        }, i * 80);
+      });
+    } catch (e) {
+      console.error("Download failed:", e);
     } finally {
-      setIsDownloading(false);
+      // Keep spinner until all staggered clicks have fired
+      const total = (meditation.meditation_segments?.length || 0) * 80 + 500;
+      setTimeout(() => setIsDownloading(false), total);
     }
   };
 
