@@ -338,7 +338,27 @@ Follow the HOW TO BUILD THE VISION steps above exactly. Use ALL intake answers. 
 Open with the user's name and a single brief line naming the feeling, then move directly into images:
   "${userName || "listen"} — [pause 6s] something is forming. [long pause 12s]"
 
-Build one image per answer. Each image: 1-3 slow sentences + [long pause 10s] or [long pause 12s]. Then — on its own line — a single presence invitation chosen from: "Feel it." / "Stay with this." / "How does this feel." followed by [long pause 15s]. Leave a blank line between image blocks. Let each image be fully felt before the next one arrives. Do not rush from image to image.
+PAUSE MARKERS for visualization — output these exactly as written, on their own line before "Feel it." and "Remember.":
+  [pause:10]  before "Feel it." after a shorter image
+  [pause:14]  before "Feel it." when it closes an image set
+  [pause:16]  before "Feel it." when it closes a longer section
+  [pause:12]  before "Remember." — always, without exception
+"Feel it." and "Remember." are NEVER written immediately after the previous line. They always have a [pause:N] on the line before them. Do not add [pause:N] markers anywhere outside the visualization section.
+
+Build one image per answer. Each image: 1-3 slow sentences + [long pause 10s] or [long pause 12s]. Then [pause:N] on its own line, then "Feel it." on its own line. Leave a blank line between image blocks.
+
+CORRECT visualization example:
+  There is a morning.
+  No alarm in it.
+  No number to check.
+  [pause:14]
+  Feel it.
+
+  Something that has both of you in it.
+  The jaw has let go.
+  Enough.
+  [pause:16]
+  Feel it.
 
 After the 2nd or 3rd image (roughly halfway through all the images), insert "[segment break]" on its own line. This is the 4th of the 5 required segment breaks. The music will pause here so the first images can settle before the remaining ones arrive. Then continue with the remaining images using the same image + feel-it invitation pattern.
 
@@ -352,7 +372,7 @@ Close the vision:
   "Let it settle. [long pause 15s]"
   "Into the marrow. [long pause 20s]"
 
-Drop one presence anchor: "Remember." on its own line. [long pause 20s] after.
+Drop one presence anchor: [pause:12] on its own line, then "Remember." on its own line. [long pause 20s] after.
 Then: "[segment break]" on its own line — this is the fifth and final segment break.
 
 SECTION 7 — Anchor (${sw.anchor} words)

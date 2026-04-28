@@ -5,14 +5,57 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Convert Claude bracket pause markers into ElevenLabs v3 native [silence: Xs] tags.
-// ElevenLabs v3 handles [silence: Xs] natively — no hallucination risk.
-// Dots were previously used but caused hallucinations ("vad", "mavi", etc.)
-// in dot-dense sections like Space of Nowhere. [silence: Xs] is the correct format.
+const SAMPLE_RATE = 22050; // matches pcm_22050 output from ElevenLabs
+
+// ── Silence generator ────────────────────────────────────────────────────────
+// [pause:N] markers → exact N seconds of silent PCM. Never sent to ElevenLabs.
+function generateSilence(seconds: number): Uint8Array {
+  // 16-bit mono PCM: 2 bytes per sample, all zeros = silence
+  return new Uint8Array(Math.floor(SAMPLE_RATE * seconds) * 2);
+}
+
+// ── Echo phrases ─────────────────────────────────────────────────────────────
+// "Feel it." and "Remember." get a warm hall reverb tail after TTS.
+const ECHO_PHRASES = new Set(["feel it.", "feel it", "remember.", "remember"]);
+
+function isEchoPhrase(text: string): boolean {
+  return ECHO_PHRASES.has(text.trim().toLowerCase());
+}
+
+// ── Reverb / echo ────────────────────────────────────────────────────────────
+// Three delay taps — close reflection, mid room, far fade — ~0.9 s tail.
+function applyEcho(pcmBytes: Uint8Array): Uint8Array {
+  const taps = [
+    { delayMs: 120, gain: 0.50 },
+    { delayMs: 300, gain: 0.28 },
+    { delayMs: 520, gain: 0.14 },
+  ];
+  const tailSamples = Math.floor(SAMPLE_RATE * 0.9);
+  const samples = new Int16Array(pcmBytes.buffer, pcmBytes.byteOffset, pcmBytes.byteLength / 2);
+  const output  = new Int16Array(samples.length + tailSamples);
+
+  for (let i = 0; i < samples.length; i++) output[i] = samples[i];
+
+  for (const tap of taps) {
+    const delay = Math.floor((SAMPLE_RATE * tap.delayMs) / 1000);
+    for (let i = 0; i < samples.length; i++) {
+      const idx = i + delay;
+      if (idx < output.length) {
+        const mixed = output[idx] + Math.round(samples[i] * tap.gain);
+        output[idx] = Math.max(-32768, Math.min(32767, mixed));
+      }
+    }
+  }
+  return new Uint8Array(output.buffer);
+}
+
+// ── Pause marker cleanup for ElevenLabs text ─────────────────────────────────
+// Converts bracket pause markers to ElevenLabs native [silence: Xs] tags.
+// [pause:N] markers are extracted BEFORE this step (handled as PCM silence).
 function toNarrationText(raw: string): string {
   let s = raw;
 
-  // Strip any SSML the model may have leaked in
+  // Strip SSML the model may have leaked
   s = s.replace(/<\/?speak>/gi, "");
   s = s.replace(/<break\s+time="(\d+)s"\s*\/?>/gi, (_m, sec) => `[silence: ${sec}s]`);
   s = s.replace(/<[^>]+>/g, " ");
@@ -20,29 +63,21 @@ function toNarrationText(raw: string): string {
   // Convert bracket pause markers → ElevenLabs native silence tags
   s = s.replace(/\[long\s+pause\s+(\d{1,2})s\]/gi, (_m, sec) => `[silence: ${sec}s]`);
   s = s.replace(/\[pause\s+(\d{1,2})s\]/gi, (_m, sec) => `[silence: ${sec}s]`);
-  // Generic fallback: any remaining [... Xs ...] pattern
   s = s.replace(/\[[^\]]*?(\d{1,2})s[^\]]*?\]/gi, (_m, sec) => `[silence: ${sec}s]`);
 
-  // Strip any remaining bracket markers — but preserve [silence: Xs] tags
+  // Strip remaining brackets but preserve [silence: Xs]
   s = s.replace(/\[(?!silence:)[^\]]*\]/g, "");
 
-  // Collapse whitespace
-  s = s.replace(/\s+/g, " ").trim();
-
-  return s;
+  return s.replace(/\s+/g, " ").trim();
 }
 
-// Wrap each chunk for v3 with calm pacing tags. These ARE interpreted by
-// eleven_v3 as delivery hints (not read aloud). [softly] + [slow] +
-// [warm] + [drawn out] keep the delivery intimate and unhurried.
+// ── Delivery tag wrapper ──────────────────────────────────────────────────────
+// First chunk of segment: full pacing set. Echo phrases: [softly] only.
+// Everything else: no tags (stability=0.0 Creative already sets the tone).
 function wrapV3(text: string, isFirst: boolean): string {
-  // [intimate] + [drawn out] lean hard into the soulful, unhurried delivery
-  // the user wants during the vision section. Applied to every chunk so the
-  // pacing doesn't snap back to neutral mid-meditation.
-  const opener = isFirst
-    ? "[softly][slow][warm][intimate][drawn out] "
-    : "[softly][slow][warm][intimate] ";
-  return `${opener}${text}`;
+  if (isFirst) return `[softly][slow][warm][intimate][drawn out] ${text}`;
+  if (isEchoPhrase(text)) return `[softly] ${text}`;
+  return `[softly][slow][warm][intimate] ${text}`;
 }
 
 serve(async (req) => {
@@ -106,7 +141,6 @@ serve(async (req) => {
     // so the browser can decode it with decodeAudioData() without any MP3
     // frame-boundary artifacts.
     const buildWavHeader = (dataByteLength: number): Uint8Array => {
-      const SAMPLE_RATE = 22050;
       const NUM_CHANNELS = 1;
       const BITS_PER_SAMPLE = 16;
       const byteRate = SAMPLE_RATE * NUM_CHANNELS * BITS_PER_SAMPLE / 8;
@@ -133,111 +167,130 @@ serve(async (req) => {
       return new Uint8Array(header);
     };
 
-    // Per-phrase chunking (2-3 lines per call) to prevent hallucination while
-    // avoiding start-of-call audio artifacts.
-    //
-    // WHY NOT one-phrase-per-call:
-    //   Applying wrapV3 delivery tags ([softly][slow][warm][intimate]) to every
-    //   individual phrase causes ElevenLabs v3 to produce a small vocalization
-    //   artifact at the start of each call. Stitched together, these sound like
-    //   random syllables ("jana", "ma", "do") between every spoken line.
-    //
-    // WHY NOT paragraph chunks:
-    //   Large chunks (400-1200 chars) of dot-heavy Space of Nowhere text cause
-    //   the model to hallucinate filler text mid-passage.
-    //
-    // SOLUTION: Group 2-3 phrases per call (max 280 chars), NO delivery tags.
-    //   - Short enough to prevent hallucination
-    //   - Fewer stitching points (~10-13 vs 26+) = fewer artifact opportunities
-    //   - Delivery style controlled entirely by voice_settings (stability=0.0
-    //     Creative + speed=0.80 already produces intimate, slow narration)
-    //   - wrapV3 applied only to the very first chunk to set initial tone
+    // ── Step 1: Parse lines into typed tokens ─────────────────────────────
+    // [pause:N] lines  → silence tokens (real PCM silence, no ElevenLabs call)
+    // Echo phrases     → solo TTS tokens (isolated so echo is applied cleanly)
+    // Everything else  → text tokens (grouped into ≤280-char chunks below)
+
+    type SilenceToken = { kind: "silence"; seconds: number };
+    type TtsToken     = { kind: "tts"; text: string; isEcho: boolean };
+    type Token        = SilenceToken | TtsToken;
 
     const rawLines = (script as string)
       .replace(/\[segment break\]/gi, "")
       .split(/\n/)
-      .map((line: string) => line.trim())
-      .filter((line: string) => line.length > 0)
-      .map((line: string) => toNarrationText(line))
-      .filter((line: string) => line.replace(/[\s.]/g, "").length > 0);
+      .map((l: string) => l.trim())
+      .filter((l: string) => l.length > 0);
 
-    const MAX_CHUNK_CHARS = 280;
-    const groupedChunks: string[] = [];
-    let current = "";
+    const parsedTokens: Token[] = [];
     for (const line of rawLines) {
-      if (current && (current + " " + line).length > MAX_CHUNK_CHARS) {
-        groupedChunks.push(current.trim());
-        current = line;
-      } else {
-        current = current ? current + " " + line : line;
+      const pauseMatch = line.match(/^\[pause:(\d+)\]$/i);
+      if (pauseMatch) {
+        parsedTokens.push({ kind: "silence", seconds: parseInt(pauseMatch[1]) });
+        continue;
       }
+      const processed = toNarrationText(line);
+      if (processed.replace(/[\s.]/g, "").length === 0) continue;
+      parsedTokens.push({ kind: "tts", text: processed, isEcho: isEchoPhrase(line) });
     }
-    if (current.trim()) groupedChunks.push(current.trim());
 
-    // Apply delivery tags only to the first chunk that contains actual spoken
-    // words (letters). If the very first chunk is all dots/whitespace (a pure
-    // pause), applying wrapV3 to it causes ElevenLabs v3 to produce a
-    // vocalization artifact ("mavi", "ma", etc.) instead of silence.
-    const firstWordIdx = groupedChunks.findIndex((c) => /[a-zA-Z]/.test(c));
-    const chunks = groupedChunks.map((c, i) => i === firstWordIdx ? wrapV3(c, true) : c);
-    console.log(`Split into ${chunks.length} chunk(s)`);
+    // ── Step 2: Group text tokens into ≤280-char chunks ───────────────────
+    // Silence tokens and echo phrases are never merged — each stays solo.
+    const MAX_CHUNK_CHARS = 280;
+    const queue: Token[] = [];
+    let currentText = "";
 
-    const processChunk = async (chunkText: string, idx: number): Promise<Uint8Array> => {
+    const flushText = () => {
+      if (!currentText.trim()) return;
+      queue.push({ kind: "tts", text: currentText.trim(), isEcho: false });
+      currentText = "";
+    };
+
+    for (const token of parsedTokens) {
+      if (token.kind === "silence") { flushText(); queue.push(token); continue; }
+      if (token.isEcho)             { flushText(); queue.push(token); continue; }
+      const merged = currentText ? currentText + " " + token.text : token.text;
+      if (currentText && merged.length > MAX_CHUNK_CHARS) { flushText(); currentText = token.text; }
+      else currentText = merged;
+    }
+    flushText();
+
+    // ── Step 3: Apply wrapV3 delivery tags to TTS items ───────────────────
+    // First TTS item with actual letters gets the full pacing opener.
+    const firstTtsIdx = queue.findIndex(
+      (item) => item.kind === "tts" && /[a-zA-Z]/.test((item as TtsToken).text)
+    );
+    const taggedQueue = queue.map((item, i) => {
+      if (item.kind !== "tts") return item;
+      return { ...item, text: wrapV3(item.text, i === firstTtsIdx) } as TtsToken;
+    });
+
+    console.log(
+      `Queue: ${taggedQueue.length} items — ` +
+      `${taggedQueue.filter((q) => q.kind === "tts").length} TTS, ` +
+      `${taggedQueue.filter((q) => q.kind === "silence").length} silence`
+    );
+
+    // ── Step 4: TTS helper ─────────────────────────────────────────────────
+    const processTtsItem = async (text: string, idx: number): Promise<Uint8Array> => {
       const maxAttempts = 4;
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        let response = await doTTS(elevenLabsVoiceId, chunkText);
-
+        let response = await doTTS(elevenLabsVoiceId, text);
         if (response.status === 404 && elevenLabsVoiceId !== fallbackVoiceId) {
           console.warn(`Voice ${elevenLabsVoiceId} not found, falling back to default`);
-          response = await doTTS(fallbackVoiceId, chunkText);
+          response = await doTTS(fallbackVoiceId, text);
         }
-
-        if (response.ok) {
-          return new Uint8Array(await response.arrayBuffer());
-        }
+        if (response.ok) return new Uint8Array(await response.arrayBuffer());
 
         const errorText = await response.text();
-        console.error(`ElevenLabs error chunk ${idx + 1} (attempt ${attempt}):`, response.status, errorText);
-
+        console.error(`ElevenLabs error item ${idx} attempt ${attempt}:`, response.status, errorText);
         try {
-          const parsed = JSON.parse(errorText);
-          if (parsed?.detail?.status === "quota_exceeded") {
-            throw new Error("QUOTA_EXCEEDED");
-          }
-        } catch (e) {
-          if (e instanceof Error && e.message === "QUOTA_EXCEEDED") throw e;
-        }
+          if (JSON.parse(errorText)?.detail?.status === "quota_exceeded") throw new Error("QUOTA_EXCEEDED");
+        } catch (e) { if (e instanceof Error && e.message === "QUOTA_EXCEEDED") throw e; }
 
-        // Retry on 429 (concurrent limit) and 5xx with jittered backoff
         const retryable = response.status === 429 || response.status >= 500;
         if (retryable && attempt < maxAttempts) {
-          const backoff = 500 * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 400);
-          await new Promise((r) => setTimeout(r, backoff));
+          await new Promise((r) => setTimeout(r, 500 * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 400)));
           continue;
         }
-
         throw new Error(`ElevenLabs TTS failed: ${response.status}`);
       }
       throw new Error("ElevenLabs TTS failed: retries exhausted");
     };
 
-    // Run chunks with limited concurrency. ElevenLabs caps free/starter plans
-    // at 10 concurrent requests — going over yields 429 concurrent_limit_exceeded.
-    // Cap at 8 to leave headroom for any other in-flight calls (e.g. seeds).
+    // ── Step 5: Process queue — silence sync, TTS concurrent ──────────────
     const CONCURRENCY = 8;
+    const orderedResults: Uint8Array[] = new Array(taggedQueue.length);
+
+    // Fill silence slots immediately (no async needed)
+    for (let i = 0; i < taggedQueue.length; i++) {
+      const item = taggedQueue[i];
+      if (item.kind === "silence") orderedResults[i] = generateSilence(item.seconds);
+    }
+
+    // TTS slots: process with concurrency pool, apply echo where flagged
+    const ttsIndices = taggedQueue
+      .map((item, i) => ({ item, i }))
+      .filter(({ item }) => item.kind === "tts")
+      .map(({ i }) => i);
+
+    let nextTts = 0;
     let rawBuffers: Uint8Array[];
     try {
-      const results: Uint8Array[] = new Array(chunks.length);
-      let nextIdx = 0;
-      const workers = Array.from({ length: Math.min(CONCURRENCY, chunks.length) }, async () => {
-        while (true) {
-          const i = nextIdx++;
-          if (i >= chunks.length) return;
-          results[i] = await processChunk(chunks[i], i);
-        }
-      });
-      await Promise.all(workers);
-      rawBuffers = results;
+      await Promise.all(
+        Array.from({ length: Math.min(CONCURRENCY, ttsIndices.length) }, async () => {
+          while (true) {
+            const local = nextTts++;
+            if (local >= ttsIndices.length) return;
+            const qi   = ttsIndices[local];
+            const item = taggedQueue[qi] as TtsToken;
+            let pcm    = await processTtsItem(item.text, qi);
+            if (item.isEcho) pcm = applyEcho(pcm);
+            orderedResults[qi] = pcm;
+          }
+        })
+      );
+      rawBuffers = orderedResults;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown";
       if (msg === "QUOTA_EXCEEDED") {
