@@ -109,43 +109,7 @@ const PastEntriesFolders = ({ entries }: { entries: JournalRow[] }) => {
                     >
                       <div className="px-4 pb-4 pt-1 space-y-3">
                         {g.items.map((e) => (
-                          <div
-                            key={e.id}
-                            style={{
-                              background: "#F1E6D0",
-                              borderRadius: "12px",
-                              padding: "14px",
-                              border: SOFT_BORDER,
-                            }}
-                          >
-                            <p
-                              className="italic mb-2"
-                              style={{
-                                fontSize: "10px",
-                                letterSpacing: "0.14em",
-                                color: "#9A7B5A",
-                                textTransform: "uppercase",
-                                fontFamily: "Georgia, serif",
-                              }}
-                            >
-                              {new Date(e.created_at).toLocaleDateString(undefined, {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
-                              })}
-                            </p>
-                            <p
-                              style={{
-                                fontSize: "15px",
-                                color: "#3D2E1E",
-                                fontFamily: "Georgia, serif",
-                                lineHeight: 1.7,
-                                whiteSpace: "pre-wrap",
-                              }}
-                            >
-                              {e.entry_text}
-                            </p>
-                          </div>
+                          <JournalEntryCard key={e.id} entry={e} />
                         ))}
                       </div>
                     </motion.div>
