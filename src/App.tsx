@@ -35,6 +35,7 @@ const App = () => (
           <Route path="/month" element={<MyMonth />} />
           <Route path="/reflect" element={<Reflect />} />
           <Route path="/preview-loading" element={<PreviewLoading />} />
+          <Route path="/home-preview" element={<HomePreview />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
