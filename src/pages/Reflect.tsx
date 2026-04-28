@@ -34,6 +34,132 @@ type JournalRow = { id: string; entry_text: string; created_at: string; chapter_
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
+// Group journal entries into folders by calendar month + chapter theme.
+const PastEntriesFolders = ({ entries }: { entries: JournalRow[] }) => {
+  // Build groups preserving newest-first order
+  const groups = useMemo(() => {
+    const map = new Map<string, { key: string; label: string; theme: string | null; items: JournalRow[] }>();
+    for (const e of entries) {
+      const d = new Date(e.created_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}|${e.chapter_theme ?? ""}`;
+      const label = d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+      if (!map.has(key)) map.set(key, { key, label, theme: e.chapter_theme, items: [] });
+      map.get(key)!.items.push(e);
+    }
+    return Array.from(map.values());
+  }, [entries]);
+
+  // Default: current (newest) folder open
+  const [openKey, setOpenKey] = useState<string | null>(groups[0]?.key ?? null);
+
+  return (
+    <>
+      <Divider />
+      <section className="px-6">
+        <SectionLabel>previous entries</SectionLabel>
+        <div className="space-y-3">
+          {groups.map((g) => {
+            const open = openKey === g.key;
+            return (
+              <div
+                key={g.key}
+                style={{
+                  background: "#E8DCC8",
+                  border: SOFT_BORDER,
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                }}
+              >
+                <button
+                  onClick={() => setOpenKey(open ? null : g.key)}
+                  className="w-full flex items-center gap-3 text-left"
+                  style={{ padding: "14px 18px" }}
+                >
+                  <span
+                    className="flex-1 min-w-0 italic font-heading truncate"
+                    style={{ fontSize: "15px", color: "#3D2E1E", fontFamily: "Georgia, serif" }}
+                  >
+                    {g.theme || g.label}
+                  </span>
+                  <span
+                    className="text-[10px] italic"
+                    style={{ color: "#9A7B5A", fontFamily: "Georgia, serif" }}
+                  >
+                    {g.theme ? g.label : ""} · {g.items.length}
+                  </span>
+                  <span
+                    className="inline-block transition-transform"
+                    style={{
+                      color: "#9A7B5A",
+                      fontSize: "12px",
+                      transform: open ? "rotate(90deg)" : "rotate(0deg)",
+                    }}
+                  >
+                    ▸
+                  </span>
+                </button>
+                <AnimatePresence initial={false}>
+                  {open && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 pb-4 pt-1 space-y-3">
+                        {g.items.map((e) => (
+                          <div
+                            key={e.id}
+                            style={{
+                              background: "#F1E6D0",
+                              borderRadius: "12px",
+                              padding: "14px",
+                              border: SOFT_BORDER,
+                            }}
+                          >
+                            <p
+                              className="italic mb-2"
+                              style={{
+                                fontSize: "10px",
+                                letterSpacing: "0.14em",
+                                color: "#9A7B5A",
+                                textTransform: "uppercase",
+                                fontFamily: "Georgia, serif",
+                              }}
+                            >
+                              {new Date(e.created_at).toLocaleDateString(undefined, {
+                                weekday: "short",
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </p>
+                            <p
+                              style={{
+                                fontSize: "15px",
+                                color: "#3D2E1E",
+                                fontFamily: "Georgia, serif",
+                                lineHeight: 1.7,
+                                whiteSpace: "pre-wrap",
+                              }}
+                            >
+                              {e.entry_text}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    </>
+  );
+};
+
 const Reflect = () => {
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
