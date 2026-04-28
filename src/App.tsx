@@ -14,6 +14,7 @@ import MyMonth from "./pages/MyMonth.tsx";
 import Reflect from "./pages/Reflect.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import PreviewLoading from "./pages/PreviewLoading.tsx";
+import HomePreview from "./pages/HomePreview.tsx";
 
 const queryClient = new QueryClient();
 
