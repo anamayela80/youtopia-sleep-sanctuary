@@ -477,6 +477,7 @@ const MyMonth = () => {
               </div>
             </div>
           </section>
+        )}
         </div>
 
         {/* Row 2: A Message For You + This Month's Practice + What You Shared */}
