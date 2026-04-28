@@ -195,69 +195,28 @@ const MockHome = ({ monthsCompleted }: { monthsCompleted: number }) => {
         </div>
       </div>
 
-      {/* Greeting + mini mood calendar */}
-      <div className="px-[22px] pt-3 pb-5 flex items-start gap-3">
-        <div className="flex-1 min-w-0">
-          <p className="italic mb-2 lowercase" style={{ fontSize: "12px", letterSpacing: "0.14em", color: "hsl(var(--sage))" }}>
-            good morning
-          </p>
-          <h1 className="font-heading leading-tight" style={{ fontSize: "34px", color: "hsl(var(--foreground))", fontFamily: "Georgia, serif" }}>
-            friend<span style={{ color: "hsl(var(--coral))" }}>.</span>
-          </h1>
-          <div className="mt-3">
-            <span
-              className="inline-block italic"
-              style={{
-                background: "rgba(107, 158, 143, 0.12)",
-                border: "1px solid rgba(107, 158, 143, 0.35)",
-                color: "#4E8C7A",
-                fontSize: "11px",
-                padding: "5px 14px",
-                borderRadius: "20px",
-              }}
-            >
-              {currentTheme}
-            </span>
-          </div>
-        </div>
-
-        {/* Mini mood calendar (top right) */}
-        <div
-          className="rounded-xl px-2 py-2 flex-shrink-0"
-          style={{ background: "hsl(var(--folder))", border: "1px solid rgba(160, 120, 70, 0.14)" }}
-        >
-          <p
-            className="text-[8px] uppercase mb-1.5 text-center"
-            style={{ letterSpacing: "0.18em", color: "hsl(var(--subtitle))" }}
+      {/* Greeting */}
+      <div className="px-[22px] pt-3 pb-5">
+        <p className="italic mb-2 lowercase" style={{ fontSize: "12px", letterSpacing: "0.14em", color: "hsl(var(--sage))" }}>
+          good morning
+        </p>
+        <h1 className="font-heading leading-tight" style={{ fontSize: "34px", color: "hsl(var(--foreground))", fontFamily: "Georgia, serif" }}>
+          friend<span style={{ color: "hsl(var(--coral))" }}>.</span>
+        </h1>
+        <div className="mt-3">
+          <span
+            className="inline-block italic"
+            style={{
+              background: "rgba(107, 158, 143, 0.12)",
+              border: "1px solid rgba(107, 158, 143, 0.35)",
+              color: "#4E8C7A",
+              fontSize: "11px",
+              padding: "5px 14px",
+              borderRadius: "20px",
+            }}
           >
-            mood
-          </p>
-          <div className="space-y-[2px]">
-            {moodHistory.map((row, idx) => (
-              <div key={idx} className="flex items-center gap-1">
-                <span
-                  className="text-[7px] italic w-3 flex-shrink-0 text-right lowercase"
-                  style={{ color: "hsl(var(--subtitle))", fontFamily: "Georgia, serif" }}
-                >
-                  {row.label.slice(0, 1)}
-                </span>
-                <div className="flex gap-[1.5px]">
-                  {row.days.map((m, i) => (
-                    <div
-                      key={i}
-                      className="rounded-full"
-                      style={{
-                        width: "3px",
-                        height: "3px",
-                        background: m !== null ? MOOD_COLORS[m - 1] : "transparent",
-                        border: m === null ? "0.5px solid rgba(160, 120, 70, 0.18)" : "none",
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+            {currentTheme}
+          </span>
         </div>
       </div>
 
@@ -270,6 +229,56 @@ const MockHome = ({ monthsCompleted }: { monthsCompleted: number }) => {
           <StatTile icon={<Headphones size={16} />} value={String(monthsCompleted)} label="months" />
           <StatTile icon={<Flame size={16} />} value={String(streak)} label="day streak" />
           <StatTile icon={<Clock size={16} />} value={hoursLabel} label="practiced" />
+        </div>
+      </div>
+
+      {/* Mood over time — grid of month cards */}
+      <div className="mb-7">
+        <SectionLabel>Mood Over Time</SectionLabel>
+        <div className="px-4 grid grid-cols-2 gap-2.5">
+          {moodHistory.map((row, idx) => (
+            <div
+              key={idx}
+              className="rounded-xl p-2.5"
+              style={{
+                background: "hsl(var(--background))",
+                border: "1px solid rgba(160, 120, 70, 0.14)",
+                boxShadow: "0 2px 8px -4px rgba(120, 90, 60, 0.15)",
+              }}
+            >
+              <p
+                className="font-heading mb-1.5 text-center"
+                style={{
+                  fontSize: "11px",
+                  color: "hsl(var(--foreground))",
+                  fontFamily: "Georgia, serif",
+                }}
+              >
+                {row.label}
+              </p>
+              <div
+                className="grid gap-[2px] mx-auto"
+                style={{
+                  gridTemplateColumns: "repeat(7, 1fr)",
+                  maxWidth: "98px",
+                }}
+              >
+                {row.days.map((m, i) => (
+                  <div
+                    key={i}
+                    className="rounded-[2px] aspect-square"
+                    style={{
+                      background: m !== null ? MOOD_COLORS[m - 1] : "transparent",
+                      border:
+                        m === null
+                          ? "1px solid rgba(160, 120, 70, 0.22)"
+                          : "1px solid rgba(160, 120, 70, 0.18)",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
