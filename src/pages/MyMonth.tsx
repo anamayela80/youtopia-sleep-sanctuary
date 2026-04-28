@@ -12,6 +12,7 @@ import {
   getLatestMeditation, getLatestSeeds, getActiveTheme, getUserProfile,
   getUserAnswers, getTenureBand, regenerateMeditationForUser,
 } from "@/services/meditationService";
+import { renderMixedAudio } from "@/lib/renderMixedAudio";
 import { RefreshCw } from "lucide-react";
 import { getCurrentIntake, type UserIntake } from "@/services/intakeService";
 import { supabase as sb } from "@/integrations/supabase/client";
@@ -137,53 +138,46 @@ const MyMonth = () => {
   };
 
   const [isDownloading, setIsDownloading] = useState(false);
+  const [renderProgress, setRenderProgress] = useState(0);
 
   const handleDownload = async () => {
     if (!meditation || isDownloading) return;
     setIsDownloading(true);
+    setRenderProgress(0);
 
     const slug = (theme?.theme || "meditation").replace(/\s+/g, "-").toLowerCase();
+    const musicUrl = theme?.morning_music_url || theme?.music_file_url || null;
+    const tenure = getTenureBand(profile?.membership_start_date) as "orienting" | "settling" | "established";
+
+    const segmentUrls = (meditation.meditation_segments || [])
+      .slice()
+      .sort((a: any, b: any) => a.segment_number - b.segment_number)
+      .filter((s: any) => s.audio_url)
+      .map((s: any) => s.audio_url);
 
     try {
-      const segs = (meditation.meditation_segments || [])
-        .slice()
-        .sort((a: any, b: any) => a.segment_number - b.segment_number)
-        .filter((s: any) => s.audio_url);
-
-      // Fetch all audio blobs in parallel BEFORE triggering any downloads.
-      // Calling a.click() after an await loses the browser's user-gesture
-      // context, which causes downloads to be silently blocked. By fetching
-      // everything first and then clicking synchronously we stay in one
-      // continuous gesture-safe code path.
-      const fetched = await Promise.all(
-        segs.map(async (seg: any) => {
-          const resp = await fetch(seg.audio_url);
-          const blob = await resp.blob();
-          const ext = blob.type.includes("wav") ? "wav" : "mp3";
-          return { seg, blob, ext };
-        })
+      const wav = await renderMixedAudio(
+        segmentUrls,
+        musicUrl,
+        tenure,
+        0.42,
+        0.72,
+        (pct) => setRenderProgress(pct),
       );
 
-      // Trigger all downloads synchronously — no await between clicks
-      fetched.forEach(({ seg, blob, ext }, i) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${slug}-part-${seg.segment_number}.${ext}`;
-        document.body.appendChild(a);
-        // Stagger by 80 ms so browser queues rather than blocks them
-        setTimeout(() => {
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }, i * 80);
-      });
+      const url = URL.createObjectURL(wav);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${slug}.wav`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } catch (e) {
       console.error("Download failed:", e);
     } finally {
-      // Keep spinner until all staggered clicks have fired
-      const total = (meditation.meditation_segments?.length || 0) * 80 + 500;
-      setTimeout(() => setIsDownloading(false), total);
+      setIsDownloading(false);
+      setRenderProgress(0);
     }
   };
 
@@ -337,15 +331,31 @@ const MyMonth = () => {
                   style={{ background: "rgba(107, 158, 143, 0.10)", color: "hsl(var(--sage-soft))" }}
                 >
                   {isDownloading ? (
-                    <>
-                      <motion.div
-                        className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent"
-                        style={{ borderColor: "hsl(var(--sage-soft))" }}
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      />
-                      <span>Downloading your meditation…</span>
-                    </>
+                    <div className="w-full flex flex-col items-center gap-1.5">
+                      <div className="flex items-center gap-2">
+                        <motion.div
+                          className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent"
+                          style={{ borderColor: "hsl(var(--sage-soft))" }}
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        />
+                        <span>
+                          {renderProgress < 50
+                            ? "Loading audio…"
+                            : renderProgress < 90
+                            ? "Mixing your meditation…"
+                            : "Almost ready…"}
+                        </span>
+                      </div>
+                      <div className="w-full h-0.5 rounded-full bg-current/10 overflow-hidden">
+                        <motion.div
+                          className="h-full rounded-full"
+                          style={{ background: "hsl(var(--sage-soft))" }}
+                          animate={{ width: `${renderProgress}%` }}
+                          transition={{ duration: 0.3 }}
+                        />
+                      </div>
+                    </div>
                   ) : (
                     <>
                       <Download size={13} />
