@@ -265,7 +265,6 @@ const MyMonth = () => {
               className="rounded-3xl p-6"
               style={{ background: TONE_FOLDER, border: SOFT_BORDER }}
             >
-              </div>
 
               <h3 className="font-heading text-xl text-accent text-center mb-2">{meditationName}</h3>
               <p className="font-body text-xs text-muted-foreground text-center flex items-center justify-center gap-1.5 mb-5">
