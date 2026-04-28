@@ -418,31 +418,6 @@ const MyMonth = () => {
                 </button>
               </div>
 
-              {isAdmin && (
-                <div className="mt-3">
-                  <button
-                    onClick={handleRegenerate}
-                    disabled={regenerating}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-accent/10 text-accent font-body text-xs tracking-wide uppercase transition-all active:scale-95 disabled:opacity-60"
-                  >
-                    {regenerating ? (
-                      <>
-                        <motion.div
-                          className="w-3.5 h-3.5 rounded-full border-2 border-accent border-t-transparent"
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        />
-                        <span>{regenStatus || "Regenerating…"}</span>
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw size={13} />
-                        <span>Regenerate (admin)</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
             </div>
           </section>
         )}
