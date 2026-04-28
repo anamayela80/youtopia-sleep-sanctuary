@@ -157,7 +157,7 @@ ABSOLUTE OUTPUT RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 1. PLAIN TEXT ONLY. No markdown, headers, labels, asterisks, or bullet points.
 2. NO VOICE DELIVERY TAGS. Never write [softly], [slow], [warm], [intimate], [drawn out], [whisper], or any similar delivery instruction. They are added by the audio system — writing them here doubles them and ruins the recording.
-3. PAUSE MARKERS ONLY. The only allowed brackets: [pause Xs], [long pause Xs], and [segment break]. Nothing else.
+3. PAUSE MARKERS ONLY. The only allowed brackets: [pause Xs], [long pause Xs], [segment break], and [pause:N] (visualization only). Nothing else.
 4. STANDALONE LINES for presence anchors: "Remember." / "Feel it." / "Breathe." — each on its own line, never inside a sentence.
 5. NO REPEATED PASSAGES. Each phrase appears once only.
 6. NO SECTION LABELS. Continuous narration only.
@@ -338,27 +338,61 @@ Follow the HOW TO BUILD THE VISION steps above exactly. Use ALL intake answers. 
 Open with the user's name and a single brief line naming the feeling, then move directly into images:
   "${userName || "listen"} — [pause 6s] something is forming. [long pause 12s]"
 
-PAUSE MARKERS for visualization — output these exactly as written, on their own line before "Feel it." and "Remember.":
+PAUSE MARKERS — use these exactly as written, on their own line. [pause:N] markers are only for the visualization section (Sections 6A and 6B). Do NOT use them in Sections 1–5.
+
+  [pause:6]   between two separate vision images
+  [pause:8]   between major vision concepts
   [pause:10]  before "Feel it." after a shorter image
   [pause:14]  before "Feel it." when it closes an image set
   [pause:16]  before "Feel it." when it closes a longer section
+  [pause:18]  before "Feel it." after the longest, most emotional section
   [pause:12]  before "Remember." — always, without exception
-"Feel it." and "Remember." are NEVER written immediately after the previous line. They always have a [pause:N] on the line before them. Do not add [pause:N] markers anywhere outside the visualization section.
 
-Build one image per answer. Each image: 1-3 slow sentences + [long pause 10s] or [long pause 12s]. Then [pause:N] on its own line, then "Feel it." on its own line. Leave a blank line between image blocks.
+RULES:
+- Every vision image ends with "Feel it." preceded by a [pause:N] on its own line.
+- "Feel it." and "Remember." are NEVER written immediately after the previous line.
+- "Stay with this." is NOT used anywhere in the visualization.
+- "Feel it." appears after each major vision image.
+- "Remember." appears exactly once — at the very end of Segment 5, before the Anchor bridge.
+- Short phrases within the same image need no pause marker — natural delivery handles it.
+- Between two separate images, place [pause:6] or [pause:8] before moving to the next image.
+
+BODY SENSATION in the financial/security image: when you write the image about financial relief or "enough", always add one or two body sensation lines before "Feel it." — what the body does when financial fear lifts:
+  The jaw has let go.
+  The space between the ribs has opened.
+These lines go between the last thought of the image and the [pause:N] before "Feel it."
+
+Build one image per answer. Each image: 1-3 sentences. Then [pause:N] on its own line. Then "Feel it." on its own line. Leave a blank line between image blocks.
 
 CORRECT visualization example:
   There is a morning.
   No alarm in it.
   No number to check.
+  No calculation before the first breath.
   [pause:14]
+  The body waking
+  and finding nothing to brace against.
+  [pause:18]
   Feel it.
-
-  Something that has both of you in it.
-  The jaw has let go.
-  Enough.
+  [pause:6]
+  something that has both of you in it.
   [pause:16]
+  And the bills?
+  Not a worry this month.
+  The month after,
+  the thinking about the thinking,
+  gone.
+  The jaw has let go.
+  The space between the ribs has opened.
+  Enough.
+  This is what enough feels like.
+  [pause:10]
   Feel it.
+  [pause:6]
+  Let it settle
+  into the marrow.
+  [pause:12]
+  Remember.
 
 After the 2nd or 3rd image (roughly halfway through all the images), insert "[segment break]" on its own line. This is the 4th of the 5 required segment breaks. The music will pause here so the first images can settle before the remaining ones arrive. Then continue with the remaining images using the same image + feel-it invitation pattern.
 
