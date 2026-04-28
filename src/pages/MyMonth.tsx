@@ -267,7 +267,6 @@ const MyMonth = () => {
               style={{ background: TONE_FOLDER, border: SOFT_BORDER }}
             >
 
-              <h3 className="font-heading text-xl text-accent text-center mb-2">{meditationName}</h3>
               <p className="font-body text-xs text-muted-foreground text-center flex items-center justify-center gap-1.5 mb-5">
                 <Headphones className="w-3.5 h-3.5" />
                 Best with headphones and eyes closed
