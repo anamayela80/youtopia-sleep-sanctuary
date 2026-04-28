@@ -32,7 +32,7 @@ import WelcomeStep from "@/components/onboarding/WelcomeStep";
 import ScienceStep from "@/components/onboarding/ScienceStep";
 import BeforeYouBeginStep from "@/components/onboarding/BeforeYouBeginStep";
 import ThemeIntroStep from "@/components/onboarding/ThemeIntroStep";
-import QuestionsStep from "@/components/onboarding/QuestionsStep";
+import QuestionsStep, { ThemeQuestion } from "@/components/onboarding/QuestionsStep";
 import VoiceCaptureStep from "@/components/onboarding/VoiceCaptureStep";
 import GeneratingStep from "@/components/onboarding/GeneratingStep";
 import FolderUnlockStep from "@/components/onboarding/FolderUnlockStep";
@@ -53,7 +53,7 @@ const Onboarding = () => {
   const [step, setStep] = useState(0);
   const [isFirstEver, setIsFirstEver] = useState<boolean | null>(null);
   const [theme, setTheme] = useState<any>(null);
-  const [questions, setQuestions] = useState<string[]>([]);
+  const [questions, setQuestions] = useState<(string | ThemeQuestion)[]>([]);
   const [answers, setAnswers] = useState<string[]>([]);
   const [userFirstName, setUserFirstName] = useState<string>("");
   const [hasExistingClone, setHasExistingClone] = useState(false);
@@ -94,15 +94,27 @@ const Onboarding = () => {
 
       setTheme(nextTheme);
 
-      // Parse questions from theme
-      let qs: string[] = [];
+      // Parse questions from theme — supports plain strings or {label, text, placeholder} objects
+      let qs: (string | ThemeQuestion)[] = [];
       try {
         const raw = nextTheme.questions;
         const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
         if (Array.isArray(parsed)) {
           qs = parsed
-            .map((q: any) => (typeof q === "string" ? q.trim() : ""))
-            .filter((s: string) => s.length > 0)
+            .map((q: any) => {
+              if (typeof q === "string") return q.trim();
+              if (q && typeof q === "object" && q.label) {
+                return {
+                  label: (q.label || "").trim(),
+                  text: (q.text || "").trim(),
+                  placeholder: (q.placeholder || "").trim(),
+                } as ThemeQuestion;
+              }
+              return "";
+            })
+            .filter((q: any) =>
+              typeof q === "string" ? q.length > 0 : (q as ThemeQuestion).label.length > 0
+            )
             .slice(0, 5);
         }
       } catch {}

@@ -4,6 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 
+type AdminQuestion = {
+  label: string;
+  text: string;
+  placeholder: string;
+};
+
 type Theme = {
   id: string;
   month_key: string;
@@ -17,20 +23,29 @@ type Theme = {
   about: string | null;
   science: string | null;
   practice: string | null;
-  questions: string[];
+  questions: AdminQuestion[];
   guide_voice_id: string | null;
   seed_voice_id: string | null;
   allow_voice_clone: boolean;
 };
 
-const parseQuestions = (q: any): string[] => {
+const emptyQ = (): AdminQuestion => ({ label: "", text: "", placeholder: "" });
+
+const parseQuestions = (q: any): AdminQuestion[] => {
   let arr: any = q;
   if (typeof q === "string") {
     try { arr = JSON.parse(q); } catch { arr = []; }
   }
   if (!Array.isArray(arr)) arr = [];
-  const out = arr.map((x: any) => (typeof x === "string" ? x : ""));
-  while (out.length < 5) out.push("");
+  const out: AdminQuestion[] = arr.map((x: any) => {
+    if (typeof x === "string") return { label: x, text: "", placeholder: "" };
+    return {
+      label: (x?.label || ""),
+      text: (x?.text || ""),
+      placeholder: (x?.placeholder || ""),
+    };
+  });
+  while (out.length < 5) out.push(emptyQ());
   return out.slice(0, 5);
 };
 
@@ -58,12 +73,12 @@ export const AdminThemes = () => {
     setThemes((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
   };
 
-  const updateQuestion = (id: string, idx: number, value: string) => {
+  const updateQuestion = (id: string, idx: number, field: keyof AdminQuestion, value: string) => {
     setThemes((prev) =>
       prev.map((t) => {
         if (t.id !== id) return t;
         const qs = [...t.questions];
-        qs[idx] = value;
+        qs[idx] = { ...qs[idx], [field]: value };
         return { ...t, questions: qs };
       })
     );
@@ -210,17 +225,29 @@ export const AdminThemes = () => {
             />
           </div>
 
-          <div className="space-y-2 pt-2 border-t border-border">
-            <p className="text-[11px] uppercase tracking-wider font-body text-accent">Onboarding questions (5)</p>
+          <div className="space-y-3 pt-2 border-t border-border">
+            <p className="text-[11px] uppercase tracking-wider font-body text-accent">Onboarding questions (up to 5)</p>
             <p className="text-[11px] font-body text-muted-foreground -mt-1">Shown to users during onboarding for this month. Use {"{name}"} to insert the user's first name.</p>
             {[0,1,2,3,4].map((i) => (
-              <div key={i} className="flex gap-2 items-start">
-                <span className="text-xs font-body text-muted-foreground pt-2 w-6 shrink-0">Q{i+1}</span>
+              <div key={i} className="space-y-1 border border-border/50 rounded-xl p-3 bg-background/50">
+                <p className="text-[11px] font-body text-accent uppercase tracking-wider mb-2">Q{i+1}</p>
+                <input
+                  value={t.questions[i]?.label || ""}
+                  onChange={(e) => updateQuestion(t.id, i, "label", e.target.value)}
+                  placeholder={`Question ${i+1} label (short heading shown to user)`}
+                  className="w-full px-3 py-2 rounded-lg bg-background border border-border font-body text-sm text-foreground"
+                />
                 <textarea
-                  value={t.questions[i] || ""}
-                  onChange={(e) => updateQuestion(t.id, i, e.target.value)}
-                  placeholder={`Question ${i+1}`}
+                  value={t.questions[i]?.text || ""}
+                  onChange={(e) => updateQuestion(t.id, i, "text", e.target.value)}
+                  placeholder="Body text (longer description shown below the heading)"
                   className="w-full h-16 px-3 py-2 rounded-lg bg-background border border-border font-body text-sm text-foreground resize-none"
+                />
+                <input
+                  value={t.questions[i]?.placeholder || ""}
+                  onChange={(e) => updateQuestion(t.id, i, "placeholder", e.target.value)}
+                  placeholder="Textarea placeholder (example answer to guide the user)"
+                  className="w-full px-3 py-2 rounded-lg bg-background border border-border font-body text-xs text-muted-foreground italic"
                 />
               </div>
             ))}

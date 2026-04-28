@@ -1,11 +1,17 @@
 import { motion } from "framer-motion";
 
+export interface ThemeQuestion {
+  label: string;
+  text?: string;
+  placeholder?: string;
+}
+
 interface QuestionsStepProps {
   questionIndex: number;
   totalQuestions: number;
   answer: string;
   onAnswer: (answer: string) => void;
-  question: string;
+  question: string | ThemeQuestion;
   userFirstName?: string;
   themeName?: string;
 }
@@ -19,7 +25,15 @@ const QuestionsStep = ({
   userFirstName,
   themeName,
 }: QuestionsStepProps) => {
-  const rendered = (question || "").replace(/\{name\}/gi, userFirstName || "friend");
+  const isRich = typeof question === "object" && question !== null;
+  const labelRaw = isRich ? (question as ThemeQuestion).label : (question as string);
+  const bodyText = isRich ? ((question as ThemeQuestion).text || "") : "";
+  const placeholderText = isRich
+    ? ((question as ThemeQuestion).placeholder || "Take your time…")
+    : "Take your time…";
+
+  const rendered = (labelRaw || "").replace(/\{name\}/gi, userFirstName || "friend");
+  const renderedBody = bodyText.replace(/\{name\}/gi, userFirstName || "friend");
 
   return (
     <motion.div
@@ -41,15 +55,21 @@ const QuestionsStep = ({
       <h2 className="font-heading text-3xl text-coral-dark mb-3 whitespace-pre-line leading-snug">
         {rendered}
       </h2>
-      <p className="font-body text-sm text-muted-foreground italic mb-6">
-        There's no wrong answer. Speak from your heart.
-      </p>
+      {renderedBody ? (
+        <p className="font-body text-sm text-muted-foreground mb-6 leading-relaxed">
+          {renderedBody}
+        </p>
+      ) : (
+        <p className="font-body text-sm text-muted-foreground italic mb-6">
+          There's no wrong answer. Speak from your heart.
+        </p>
+      )}
 
       <textarea
         value={answer}
         onChange={(e) => onAnswer(e.target.value)}
         className="w-full h-44 px-4 py-4 rounded-2xl bg-cream-light border border-border font-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all resize-none leading-relaxed"
-        placeholder="Take your time…"
+        placeholder={placeholderText}
         maxLength={500}
       />
       <div className="flex justify-end mt-2">
