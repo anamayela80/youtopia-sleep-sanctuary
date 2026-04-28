@@ -228,7 +228,7 @@ export const AdminThemes = () => {
           <div className="space-y-3 pt-2 border-t border-border">
             <p className="text-[11px] uppercase tracking-wider font-body text-accent">Onboarding questions (up to 5)</p>
             <p className="text-[11px] font-body text-muted-foreground -mt-1">Shown to users during onboarding for this month. Use {"{name}"} to insert the user's first name.</p>
-            {[0,1,2,3,4].map((i) => (
+            {[0,1,2].map((i) => (
               <div key={i} className="space-y-1 border border-border/50 rounded-xl p-3 bg-background/50">
                 <p className="text-[11px] font-body text-accent uppercase tracking-wider mb-2">Q{i+1}</p>
                 <input
