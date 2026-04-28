@@ -26,6 +26,51 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
   </p>
 );
 
+// Collapses content to ~8 lines with a Read More toggle.
+const Expandable = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
+  const [expanded, setExpanded] = useState(false);
+  const [overflowing, setOverflowing] = useState(false);
+  const ref = useState<HTMLDivElement | null>(null);
+  const [el, setEl] = ref;
+
+  useEffect(() => {
+    if (!el) return;
+    const check = () => setOverflowing(el.scrollHeight > el.clientHeight + 2);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [el, children]);
+
+  return (
+    <div className={className}>
+      <div
+        ref={setEl}
+        style={
+          expanded
+            ? undefined
+            : {
+                display: "-webkit-box",
+                WebkitLineClamp: 8,
+                WebkitBoxOrient: "vertical" as const,
+                overflow: "hidden",
+              }
+        }
+      >
+        {children}
+      </div>
+      {(overflowing || expanded) && (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-3 text-xs font-body font-medium hover:opacity-80 text-secondary"
+        >
+          {expanded ? "Show Less ↑" : "Read More ↓"}
+        </button>
+      )}
+    </div>
+  );
+};
+
 // Two warm beige tones to alternate between sections
 const TONE_PAGE = "hsl(var(--background))"; // #F2EAD8
 const TONE_FOLDER = "hsl(var(--folder))";   // #E8DCC8
