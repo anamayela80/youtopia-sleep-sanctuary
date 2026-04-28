@@ -397,8 +397,9 @@ const MyMonth = () => {
         )}
 
         {/* Evening Seeds */}
+        {/* Evening Seeds */}
         {hasSeeds && (
-          <section className="mb-8">
+          <section className="md:order-1">
             <SectionLabel>Evening Seeds</SectionLabel>
             <div
               className="rounded-3xl p-6"
