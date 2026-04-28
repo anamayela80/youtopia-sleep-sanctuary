@@ -532,15 +532,15 @@ const MyMonth = () => {
         </div>
 
         {/* Row 2: A Message For You + This Month's Practice + What You Shared */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-stretch">
           {/* A message for you */}
-          <section>
+          <section className="flex flex-col h-full">
             <SectionLabel>A Message For You</SectionLabel>
             <div
-              className="rounded-3xl p-6"
+              className="rounded-3xl p-6 flex-1 flex flex-col"
               style={{ background: TONE_FOLDER, border: SOFT_BORDER }}
             >
-              <Expandable>
+              <Expandable className="flex-1">
                 {messageForYou ? (
                   <p className="font-body text-base text-accent/90 leading-relaxed">{messageForYou}</p>
                 ) : (
@@ -554,13 +554,13 @@ const MyMonth = () => {
 
           {/* This month's practice */}
           {tenureIntro && (
-            <section>
+            <section className="flex flex-col h-full">
               <SectionLabel>This Month's Practice</SectionLabel>
               <div
-                className="rounded-3xl p-6"
+                className="rounded-3xl p-6 flex-1 flex flex-col"
                 style={{ background: TONE_PAGE, border: "1px solid rgba(160, 120, 70, 0.18)" }}
               >
-                <Expandable>
+                <Expandable className="flex-1">
                   <div className="font-body text-sm text-accent/85 leading-relaxed whitespace-pre-wrap">
                     {tenureIntro}
                   </div>
@@ -571,13 +571,13 @@ const MyMonth = () => {
 
           {/* What you shared */}
           {answerList.length > 0 && (
-            <section>
+            <section className="flex flex-col h-full">
               <SectionLabel>What You Shared</SectionLabel>
               <div
-                className="rounded-3xl p-6"
+                className="rounded-3xl p-6 flex-1 flex flex-col"
                 style={{ background: TONE_FOLDER, border: SOFT_BORDER }}
               >
-                <Expandable>
+                <Expandable className="flex-1">
                   <div className="space-y-4">
                     {answerList.map((item, i) => (
                       <div key={i}>
