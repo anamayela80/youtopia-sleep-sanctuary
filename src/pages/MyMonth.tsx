@@ -10,10 +10,9 @@ import { useSegmentedMixer } from "@/hooks/useSegmentedMixer";
 import { useSeedsPlayer } from "@/hooks/useSeedsPlayer";
 import {
   getLatestMeditation, getLatestSeeds, getActiveTheme, getUserProfile,
-  getUserAnswers, getTenureBand, regenerateMeditationForUser,
+  getUserAnswers, getTenureBand,
 } from "@/services/meditationService";
 import { renderMixedAudio } from "@/lib/renderMixedAudio";
-import { RefreshCw } from "lucide-react";
 import { getCurrentIntake, type UserIntake } from "@/services/intakeService";
 import { supabase as sb } from "@/integrations/supabase/client";
 
