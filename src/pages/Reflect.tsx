@@ -393,56 +393,8 @@ const Reflect = () => {
         </>
       )}
 
-      {/* ===== Section 4: Past entries ===== */}
-      {pastEntries.length > 0 && (
-        <>
-          <Divider />
-          <section className="px-6">
-            <SectionLabel>previous entries</SectionLabel>
-            <div className="space-y-4">
-              <AnimatePresence initial={false}>
-                {pastEntries.map((e) => (
-                  <motion.div
-                    key={e.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    style={{
-                      background: "#E8DCC8",
-                      borderRadius: "16px",
-                      padding: "16px",
-                      border: "1px solid rgba(160, 120, 70, 0.08)",
-                    }}
-                  >
-                    <p
-                      style={{
-                        fontSize: "15px",
-                        color: "#3D2E1E",
-                        fontFamily: "Georgia, serif",
-                        lineHeight: 1.7,
-                        whiteSpace: "pre-wrap",
-                      }}
-                    >
-                      {e.entry_text}
-                    </p>
-                    {e.chapter_theme && (
-                      <p
-                        className="italic mt-3"
-                        style={{
-                          fontSize: "11px",
-                          color: "#9A7B5A",
-                          fontFamily: "Georgia, serif",
-                        }}
-                      >
-                        written during · {e.chapter_theme}
-                      </p>
-                    )}
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          </section>
-        </>
-      )}
+      {/* ===== Section 4: Past entries (grouped into folders by month) ===== */}
+      {pastEntries.length > 0 && <PastEntriesFolders entries={pastEntries} />}
 
       <BottomNav />
     </div>
