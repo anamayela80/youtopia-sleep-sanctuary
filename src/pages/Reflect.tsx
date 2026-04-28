@@ -34,7 +34,72 @@ type JournalRow = { id: string; entry_text: string; created_at: string; chapter_
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
-// Group journal entries into folders by calendar month + chapter theme.
+// Single past entry with read-more toggle for long text.
+const COLLAPSED_CHAR_LIMIT = 320;
+const JournalEntryCard = ({ entry }: { entry: JournalRow }) => {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = entry.entry_text.length > COLLAPSED_CHAR_LIMIT;
+  const shown =
+    expanded || !isLong
+      ? entry.entry_text
+      : entry.entry_text.slice(0, COLLAPSED_CHAR_LIMIT).trimEnd() + "…";
+
+  return (
+    <div
+      style={{
+        background: "#F1E6D0",
+        borderRadius: "12px",
+        padding: "14px",
+        border: SOFT_BORDER,
+      }}
+    >
+      <p
+        className="italic mb-2"
+        style={{
+          fontSize: "10px",
+          letterSpacing: "0.14em",
+          color: "#9A7B5A",
+          textTransform: "uppercase",
+          fontFamily: "Georgia, serif",
+        }}
+      >
+        {new Date(entry.created_at).toLocaleDateString(undefined, {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        })}
+      </p>
+      <p
+        style={{
+          fontSize: "15px",
+          color: "#3D2E1E",
+          fontFamily: "Georgia, serif",
+          lineHeight: 1.7,
+          whiteSpace: "pre-wrap",
+        }}
+      >
+        {shown}
+      </p>
+      {isLong && (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-2 italic"
+          style={{
+            fontSize: "12px",
+            color: "#9A7B5A",
+            fontFamily: "Georgia, serif",
+            textDecoration: "underline",
+            textUnderlineOffset: "3px",
+          }}
+        >
+          {expanded ? "show less" : "read more"}
+        </button>
+      )}
+    </div>
+  );
+};
+
+
 const PastEntriesFolders = ({ entries }: { entries: JournalRow[] }) => {
   // Build groups preserving newest-first order
   const groups = useMemo(() => {
