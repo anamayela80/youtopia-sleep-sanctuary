@@ -10,10 +10,9 @@ import { useSegmentedMixer } from "@/hooks/useSegmentedMixer";
 import { useSeedsPlayer } from "@/hooks/useSeedsPlayer";
 import {
   getLatestMeditation, getLatestSeeds, getActiveTheme, getUserProfile,
-  getUserAnswers, getTenureBand, regenerateMeditationForUser,
+  getUserAnswers, getTenureBand,
 } from "@/services/meditationService";
 import { renderMixedAudio } from "@/lib/renderMixedAudio";
-import { RefreshCw } from "lucide-react";
 import { getCurrentIntake, type UserIntake } from "@/services/intakeService";
 import { supabase as sb } from "@/integrations/supabase/client";
 
@@ -86,9 +85,6 @@ const MyMonth = () => {
   const [intakeQuestions, setIntakeQuestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [userFirstName, setUserFirstName] = useState("");
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [regenerating, setRegenerating] = useState(false);
-  const [regenStatus, setRegenStatus] = useState("");
   const navigate = useNavigate();
 
   const segmentUrls = meditation?.meditation_segments
@@ -125,14 +121,7 @@ const MyMonth = () => {
       getUserAnswers(user.id),
     ]);
 
-    // Admin check — gates the regenerate button
-    const { data: roleRow } = await sb
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "admin")
-      .maybeSingle();
-    setIsAdmin(!!roleRow);
+
 
     setIntake(currentIntake);
     let displayTheme: any = null;
@@ -161,26 +150,6 @@ const MyMonth = () => {
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, "0")}`;
 
-  const handleRegenerate = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    if (!confirm("Regenerate this user's meditation with the current prompt? The previous version stays in history.")) return;
-    setRegenerating(true);
-    setRegenStatus("Starting…");
-    try {
-      meditationMixer.stop?.();
-      await regenerateMeditationForUser(user.id, (msg) => setRegenStatus(msg));
-      setRegenStatus("Reloading…");
-      await loadData();
-      setRegenStatus("");
-    } catch (e: any) {
-      console.error("Regenerate failed:", e);
-      alert(`Regenerate failed: ${e?.message || e}`);
-      setRegenStatus("");
-    } finally {
-      setRegenerating(false);
-    }
-  };
 
   const [isDownloading, setIsDownloading] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
@@ -418,31 +387,6 @@ const MyMonth = () => {
                 </button>
               </div>
 
-              {isAdmin && (
-                <div className="mt-3">
-                  <button
-                    onClick={handleRegenerate}
-                    disabled={regenerating}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-accent/10 text-accent font-body text-xs tracking-wide uppercase transition-all active:scale-95 disabled:opacity-60"
-                  >
-                    {regenerating ? (
-                      <>
-                        <motion.div
-                          className="w-3.5 h-3.5 rounded-full border-2 border-accent border-t-transparent"
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        />
-                        <span>{regenStatus || "Regenerating…"}</span>
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw size={13} />
-                        <span>Regenerate (admin)</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
             </div>
           </section>
         )}
