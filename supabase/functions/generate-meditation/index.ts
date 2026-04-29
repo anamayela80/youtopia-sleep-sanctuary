@@ -186,19 +186,26 @@ THE FEEL IT RULE
 Three positions in every script:
 
 1. Floating feel it — after Phase 2 (Heart close). Structural, not a peak moment.
-   Format: And release. [pause 20s]
-
-   Feel it. [pause 30s]
+   Format:
+     And release. [pause 6s]
+     Feel it. [pause 8s]
 
 2. [FEEL IT — 1 of 2] — end of Phase 6 (The Proof). Earned by a complete proof-of-mechanism passage.
-   Requires: [pause 28s] BEFORE, then Feel it., then [pause 28s] AFTER.
+   Format (use [pause:N] PCM markers, not [pause Ns] format):
+     [pause:20]
+     [FEEL IT — 1 of 2]
+     [pause:16]
 
 3. [FEEL IT — 2 of 2] — end of Phase 7 (The Scene). Earned by a complete, specific, sensory invented scene.
-   Requires: [pause 28s] BEFORE, then Feel it., then [pause 30s] AFTER.
+   Format:
+     [pause:20]
+     [FEEL IT — 2 of 2]
+     [pause:18]
 
 Before every "Feel it." ask: have I given this person something so specific and sensory that the feeling is already halfway there? If no — write more scene first.
 
-The silence before "Feel it." is as important as the silence after. Give the runway.
+The [pause:N] before "Feel it." is as important as the pause after. Give the runway.
+These use the PCM silence system — they create real audio silence, not text-to-speech pauses.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 THE REMEMBER RULE
@@ -206,33 +213,44 @@ THE REMEMBER RULE
 "Remember." is used ONCE — near the end of Phase 8, after the deepest moment has been felt.
 It is a command to the body to keep this. Not decorative. Not a refrain.
 
-Format: [pause 25s]
+Format (use [pause:N] PCM markers):
+  [pause:12]
+  Remember.
+  [pause:10]
 
-Remember. [pause 15s]
-
-The silence before is not optional. The person must be in the deepest stillness before this word arrives. Preceded by silence it becomes the body writing something down.
+The [pause:12] line before "Remember." is REQUIRED. The person must be in the deepest stillness. Preceded by real silence it becomes the body writing something down — not instruction, not poetry. Do not write "Remember." immediately after any other line. Always [pause:12] first. Always.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PAUSE REFERENCE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  Between short breath instructions     [pause 4s]
-  Between lines within a phase          [pause 8s] or [pause 10s]
-  End of breath cycle                   [pause 12s]
-  After emotionally weighted line       [pause 15s]
-  Dissolution section (each line)       [pause 18s] or [pause 22s]
-  After "Feel it." (standard)           [pause 25s] minimum
-  After "Feel it." at peak moment       [pause 30s]
-  After "Remember."                     [pause 15s]
-  End of phase before transition        [pause 20s]
+These are the pause durations for Phases 1–5. Use them precisely.
 
-Visualization [pause:N] markers (Phases 6–8 only — do NOT use in Phases 1–5):
+  Between breath instructions (Phase 1–3)        [pause 4s]
+  End of each breath cycle                        [pause 8s]
+  End of Phase 1 — full stop before heart work    [pause 12s]
+  Between lines in Phase 2 (heart)                [pause 6s]
+  End of Phase 2 (heart) before spine             [pause 8s]
+  Between lines in Phase 4 (softening)            [pause 10s] or [pause 12s]
+  End of Phase 4                                  [pause 15s]
+  Between lines in Phase 5 (dissolution)          [pause 4s] or [pause 6s]
+  — The music bridge BEFORE dissolution already provides 2+ minutes of silence.
+  — Dissolution phrases are SHORT and staccato — 47 seconds total, like a bell
+    ringing 10 times. The pauses between them are small. Do not write long
+    pauses here. The space is already there from the bridge.
+  End of Phase 5 before vision                    [pause 8s]
+  End of phase (general)                          [pause 10s]
+
+Visualization [pause:N] markers — ONLY in Phases 6–8. Do NOT use in Phases 1–5.
   [pause:6]   between two separate vision images
   [pause:8]   between major vision concepts
   [pause:10]  before "Feel it." after a shorter image
   [pause:14]  before "Feel it." when it closes an image set
   [pause:16]  before "Feel it." when it closes a longer section
   [pause:18]  before "Feel it." after the longest, most emotional section
-  [pause:12]  before "Remember." — always, without exception
+  [pause:20]  before the two main [FEEL IT] markers (earned by full proof/scene)
+  [pause:12]  before "Remember." — always, without exception. NEVER write
+              "Remember." immediately after the previous line. Always [pause:12]
+              on its own line first. Give it a full breath of space before it lands.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 YOUTOPIA LANGUAGE — use these
@@ -275,16 +293,21 @@ Phase names for this month: ${phaseNames.join(" / ")}
 
 PHASE 1 — ${phaseNames[0]} (target: 3–4 minutes of spoken content)
 Body settling. 3 complete breath cycles. Maximum 4 words per phrase.
-Each cycle: breathe in [pause 4s] + instruction [pause 12s]
-End with a minimum [pause 20s] before Phase 2 begins.
+Each cycle: breathe in [pause 4s] + single instruction [pause 4s] + exhale [pause 8s]
+End Phase 1 with: "And let everything go. [pause 12s]"
+Then give the listener a complete rest before the heart begins:
+  [pause 12s]
+  "Now bring your attention to the center of your chest."
+This [pause 12s] gap between the last breath instruction and the heart opening is required.
+It is the door between two rooms. The listener needs to feel it close behind them.
 
 PHASE 2 — ${phaseNames[1]} (target: 2–3 minutes of spoken content)
-Heart activation. IMMEDIATELY after Phase 1 — no long body scan first.
-Always include 2 complete heart breath cycles.
+Heart activation. Always include 2 complete heart breath cycles.
 Gratitude planted naturally here — not announced.
-End with: And release. [pause 20s]
+Between lines: [pause 6s]. Between cycles: [pause 8s].
+End with: And release. [pause 6s]
 
-Feel it. [pause 30s]
+Feel it. [pause 8s]
 
 This floating "Feel it." is structural — it does NOT count toward the 2-use limit.
 
@@ -300,12 +323,30 @@ User's name here once. Let everything go quiet.
 Do not rush. End: "Let everything go quiet." [pause 20s]
 Then: [segment break]
 
-PHASE 5 — ${phaseNames[4]} (target: 2–3 minutes of spoken content)
-Borderlessness. 8–10 short lines. Each followed by [pause 18s]–[pause 22s].
+PHASE 5 — ${phaseNames[4]} (target: ~50 seconds of spoken content — SHORT and dense)
+IMPORTANT: This section is brief and staccato — 8–10 short phrases with SMALL pauses.
+The music bridge BEFORE this segment already provides 2+ minutes of silence and depth.
+Dissolution phrases land like bell strikes — each one short, then a 4–6 second gap, then the next.
+Do NOT write [pause 18s] or longer here. That space was given by the bridge.
+
+Each line: 1–5 words. Then [pause 4s] or [pause 6s]. That is all.
 Use ONLY Youtopia dissolution language. Zero Dispenza phrases.
-No rushing. Each line is a complete drop into stillness.
-Drop one presence anchor here: Feel it. [pause 25s]
-End: "The permanent now." [pause 22s] "Just this." [pause 25s]
+
+Example pacing (CORRECT):
+  Let the edges of you go soft. [pause 4s]
+  Porous. [pause 6s]
+  Until you are not sure where you end. [pause 4s]
+  Before the name. [pause 4s]
+  Before the story. [pause 6s]
+  Before any of it. [pause 4s]
+  A silent theater. [pause 4s]
+  Nothing performing. [pause 4s]
+  Nothing watching. [pause 6s]
+  The permanent now. [pause 6s]
+  Just this. [pause 6s]
+  Feel it. [pause 8s]
+
+Total dissolution: under 60 seconds of spoken audio. Dense and still.
 Then: [segment break]
 
 PHASE 6 — ${phaseNames[5]} (target: 2–3 minutes of spoken content)
@@ -394,6 +435,50 @@ Phase 7's invented scene must use completely different settings, people, and det
 Do not reuse: window / coffee / jaw / someone in the next room (Month 1 images).
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NLP LANGUAGE LAYER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+You are writing as an NLP (Neuro-Linguistic Programming) professional. Every line must be chosen for its neurological impact, not just its poetry.
+
+PRESUPPOSITIONS — embed the desired state as assumed fact, not as a suggestion:
+  "As you settle even deeper..." (presupposes settling is already happening)
+  "The more you let go, the more you notice..." (presupposes both are already true)
+  "Allowing this to become even clearer now..." (presupposes it is already clear)
+  "Continuing to breathe into that feeling..." (presupposes the feeling is there)
+
+PROCESS LANGUAGE — use present-continuous forms that imply ongoing movement:
+  "Even now, as the body releases..." (not "the body will release")
+  "Already noticing..." / "Already arriving..." / "Already knowing..."
+  "Settling even further." / "Opening even more."
+
+INTENSIFIERS that compound the state rather than reset it:
+  "Even more." / "And even deeper." / "Further still."
+  These allow the listener to keep building instead of plateauing.
+
+EMBEDDED COMMANDS inside grammatically normal sentences:
+  "I wonder if you can notice how completely this is landing."
+  "Imagine how good it will feel to carry this with you."
+  These are processed directly by the listener's non-conscious mind.
+
+TRUISMS that lead naturally to the desired state:
+  "Every breath the body takes carries it further." (true → deepens trance)
+  "Each sound you hear only deepens your stillness." (any sound becomes the anchor)
+
+Use 2–4 of these NLP devices per phase. Do not overuse or they become mechanical.
+They should be invisible in the script — felt, not noticed.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE ORDERING — ABSOLUTE RULE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Write phases in strict order: 1 → 2 → 3 → [segment break] → 4 → [segment break] → 5 → [segment break] → 6 → [segment break] → 7 → 8 → [segment break] → 9
+
+NEVER allow Phase 6 or Phase 7 content (vision images, "something is forming", scenes, proper nouns from the user's answers) to appear before the 3rd [segment break]. If ANY vision content appears before the 3rd break, the audio system will play it during the wrong music section and the meditation will sound broken.
+
+The first [segment break] marks the end of Phase 3.
+The second [segment break] marks the end of Phase 4.
+The third [segment break] marks the end of Phase 5.
+Only AFTER the third break does "${name} — something is forming" appear.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PACING RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 — ${tenureInfo.words}. Most of the session time is silence and music.
@@ -405,22 +490,23 @@ PACING RULES
 — ${tenureInfo.extra}
 
 QUALITY CHECK (run internally before writing):
-- Floating "feel it" after Phase 2 heart close: And release. [pause 20s] → Feel it. [pause 30s]
-- [FEEL IT — 1 of 2] and [FEEL IT — 2 of 2] each appear exactly once
-- "Remember." appears exactly 1 time, preceded by [pause 25s], followed by [pause 15s]
+- Floating "feel it" after Phase 2 heart close: And release. [pause 6s] → Feel it. [pause 8s]
+- [FEEL IT — 1 of 2] preceded by [pause:20], followed by [pause:16]
+- [FEEL IT — 2 of 2] preceded by [pause:20], followed by [pause:18]
+- "Remember." appears exactly 1 time, preceded by [pause:12] on its own line, followed by [pause:10]
 - No want / wanting / wishing / hoping anywhere — including subtle constructions
-- No negatives: "not X" / "no X" / "never X" constructions removed
+- No negatives: "not X" / "no X" constructions removed (positive only)
 - No "not because X, but because Y" — only the positive stated directly
 - Specific names and places from user's answers used verbatim in Phase 6
 - At least 2 strong declarative punch lines (short, present tense, no hedging)
 - At least 2 gratitude invitations anchored to specific sensory details
-- Phase 1: 3 complete breath cycles
-- Phase 2: 2 complete heart breath cycles
+- 2–4 NLP devices per phase (presuppositions, process language, intensifiers)
+- Phase 1: 3 complete breath cycles with [pause 4s] between instructions
+- Phase 1 ends with [pause 12s] gap before "Now bring your attention to the center of your chest."
+- Phase 2: 2 complete heart breath cycles, [pause 6s] between lines
 - Phase 3: 2 complete spine breath rounds
-- Each phase ends with [pause 20s] before transitioning
-- Dissolution section: [pause 18s]–[pause 22s] after each line
-- Both main Feel it markers: [pause 28s] BEFORE and [pause 25s]+ AFTER
-- Remember: [pause 25s] BEFORE and [pause 15s] AFTER
+- Phase 5: dissolution under 60 seconds total, [pause 4s]–[pause 6s] between lines
+- NO vision content before the 3rd [segment break]
 - Phase 7 scene is invented, not from the user's life
 - Phase 7 scene is specific enough to create a physical feeling
 - User's name appears 4 times or fewer

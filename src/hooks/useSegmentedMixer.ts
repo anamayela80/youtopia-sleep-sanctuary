@@ -62,10 +62,15 @@ interface UseSegmentedMixerOptions {
  *   Bridge 5         (after Vision B / Remember, before Anchor + Return)
  *   FadeOut          (brief — don't hold in music after "open your eyes")
  */
+// Bridge timing targets (Audacity reference: visualization at ~12:44).
+// Bridge 2 (after Softening, before Dissolution) is the biggest lever —
+// reducing it from 210→150s moves visualization ~1 minute earlier.
+// Bridge 3 (after Dissolution, short — includes name announcement) stays ~60s.
+// FadeOut shortened to 60s so the session doesn't drag past Return.
 const TENURE_TIMING = {
-  orienting:   { fadeIn: 60, bridges: [0, 150, 210, 90, 60, 90], fadeOut: 75 },
-  settling:    { fadeIn: 75, bridges: [0, 210, 270, 120, 90, 120], fadeOut: 90 },
-  established: { fadeIn: 90, bridges: [0, 270, 390, 150, 120, 150], fadeOut: 120 },
+  orienting:   { fadeIn: 60, bridges: [0, 120, 150, 60, 60, 90], fadeOut: 60 },
+  settling:    { fadeIn: 75, bridges: [0, 150, 210, 90, 75, 120], fadeOut: 75 },
+  established: { fadeIn: 90, bridges: [0, 210, 300, 120, 90, 150], fadeOut: 90 },
 };
 
 // Ducking
@@ -313,9 +318,14 @@ export function useSegmentedMixer({
         gainNode.gain.linearRampToValueAtTime(arcLevel, toCtx(restoreEnd));
       });
 
-      // Final fade-out
+      // Final fade-out — anchor the gain explicitly at fadeOutStart so the
+      // ramp-to-zero does not interpolate backwards from the initial 8-second
+      // ramp (which would cause a slow, whole-session fade creating perceived
+      // silences at ~9:40, ~15:52, ~19:44).
       const fadeOutStart = totalDuration - resolvedFadeOut;
       if (clampedOffset < fadeOutStart) {
+        const arcAtFade = musicVolume * arcLevelAt(fadeOutStart, events);
+        gainNode.gain.setValueAtTime(arcAtFade, toCtx(fadeOutStart));
         gainNode.gain.linearRampToValueAtTime(0, toCtx(totalDuration));
       } else {
         gainNode.gain.linearRampToValueAtTime(0, now + (totalDuration - clampedOffset));
