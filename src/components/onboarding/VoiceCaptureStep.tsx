@@ -217,7 +217,7 @@ const VoiceCaptureStep = ({
                 <Sparkles size={20} className="text-accent mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="font-body font-semibold text-foreground mb-1">
-                    Serena's voice {presetSelected && "✓"}
+                    The Youtopia voice {presetSelected && "✓"}
                   </p>
                   <p className="font-body text-xs text-muted-foreground leading-relaxed">
                     A warm, calming preset voice, chosen for you. Skip the recording.
