@@ -503,6 +503,39 @@ const MyMonth = () => {
                   </div>
                 </button>
               </div>
+
+              {isAdmin && seeds && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => {
+                      const slug = (theme?.theme || "seeds").replace(/\s+/g, "-").toLowerCase();
+                      const lines = [
+                        `Seeds Transcript — ${theme?.theme || ""}`,
+                        "",
+                        `1. ${seeds.phrase_1 || ""}`,
+                        `2. ${seeds.phrase_2 || ""}`,
+                        `3. ${seeds.phrase_3 || ""}`,
+                        `4. ${seeds.phrase_4 || ""}`,
+                        `5. ${seeds.phrase_5 || ""}`,
+                      ];
+                      const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `${slug}-seeds-transcript.txt`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-full font-body text-[11px] tracking-wide transition-all active:scale-95 border border-dashed"
+                    style={{ borderColor: "rgba(160, 120, 70, 0.35)", color: "hsl(var(--accent))" }}
+                  >
+                    <Download size={12} />
+                    <span>Download seeds transcript (admin)</span>
+                  </button>
+                </div>
+              )}
             </div>
           </section>
         )}
