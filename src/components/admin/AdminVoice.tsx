@@ -52,12 +52,15 @@ export const AdminVoice = () => {
     }
     setPreviewing(true);
     try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess?.session?.access_token;
+      if (!token) throw new Error("Not signed in.");
       const res = await fetch(`${SUPABASE_URL}/functions/v1/preview-voice`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ voiceId: voiceId.trim(), model, stability, style }),
       });
