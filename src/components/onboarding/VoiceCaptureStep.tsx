@@ -168,7 +168,7 @@ const VoiceCaptureStep = ({
     );
   }
 
-  // === Choice screen — record or use preset Serena voice ===
+  // === Choice screen — record or use preset Youtopia voice ===
   if (state === "choose") {
     return (
       <motion.div
