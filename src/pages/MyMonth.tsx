@@ -85,6 +85,7 @@ const MyMonth = () => {
   const [intakeQuestions, setIntakeQuestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [userFirstName, setUserFirstName] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
   const segmentUrls = meditation?.meditation_segments
