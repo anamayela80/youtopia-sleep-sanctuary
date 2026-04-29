@@ -165,7 +165,7 @@ const SettingsPage = () => {
             <div className="grid grid-cols-2 gap-3">
               {([
                 { key: "clone" as SeedPref, label: "Your voice", sub: "Personal clone" },
-                { key: "preset" as SeedPref, label: "Serena", sub: "Preset guide" },
+                { key: "preset" as SeedPref, label: "Youtopia voice", sub: "Preset guide" },
               ]).map((opt) => {
                 const active = seedPref === opt.key;
                 return (
