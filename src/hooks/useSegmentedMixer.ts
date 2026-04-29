@@ -204,10 +204,13 @@ export function useSegmentedMixer({
   /** Which section's peak level applies at this session time */
   const arcLevelAt = (sessionTime: number, events: { startOffset: number; duration: number }[]) => {
     if (events.length === 0) return ARC.fadeInPeak;
-    if (sessionTime < events[0].startOffset) return ARC.fadeInPeak;
+    if (sessionTime < events[0]?.startOffset) return ARC.fadeInPeak;
     if (sessionTime < events[1]?.startOffset) return ARC.fadeInPeak;
     if (sessionTime < events[2]?.startOffset) return ARC.section2;
-    if (sessionTime < events[3]?.startOffset) return ARC.section3;
+    // Keep peak through both visualization segments (events[3] and events[4]).
+    // Only drop to section4 at the Anchor/Return segment (events[5]) so the
+    // bridge between the two vision groups doesn't feel like the session ended.
+    if (sessionTime < events[5]?.startOffset) return ARC.section3;
     return ARC.section4;
   };
 
@@ -275,11 +278,13 @@ export function useSegmentedMixer({
         );
       }
 
-      // Arc waypoints between sections
+      // Arc waypoints between sections.
+      // Music stays at section3 (peak) through both visualization segments
+      // and the bridge between them — only drops to section4 at Anchor/Return.
       const sectionTransitions: { at: number; level: number }[] = [];
       if (events[1]) sectionTransitions.push({ at: events[1].startOffset - 10, level: musicVolume * ARC.section2 });
       if (events[2]) sectionTransitions.push({ at: events[2].startOffset - 10, level: musicVolume * ARC.section3 });
-      if (events[3]) sectionTransitions.push({ at: events[3].startOffset - 10, level: musicVolume * ARC.section4 });
+      if (events[5]) sectionTransitions.push({ at: events[5].startOffset - 10, level: musicVolume * ARC.section4 });
 
       sectionTransitions.forEach(({ at, level }) => {
         if (at > clampedOffset) gainNode.gain.linearRampToValueAtTime(level, toCtx(at));
