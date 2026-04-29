@@ -114,6 +114,14 @@ const MyMonth = () => {
     if (!user) { navigate("/auth?mode=login"); return; }
     setUserFirstName((user.user_metadata?.full_name || "").split(" ")[0] || "");
 
+    const { data: roleRow } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+    setIsAdmin(!!roleRow);
+
     const [med, seedData, currentIntake, prof, ans] = await Promise.all([
       getLatestMeditation(user.id),
       getLatestSeeds(user.id),
