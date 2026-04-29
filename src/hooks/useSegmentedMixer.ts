@@ -62,13 +62,13 @@ interface UseSegmentedMixerOptions {
  *   Bridge 5         (after Vision B / Remember, before Anchor + Return)
  *   FadeOut          (brief — don't hold in music after "open your eyes")
  */
-// Bridge timing targets (Audacity reference: visualization at ~12:44).
-// Bridge 2 (after Softening, before Dissolution) is the biggest lever —
-// reducing it from 210→150s moves visualization ~1 minute earlier.
-// Bridge 3 (after Dissolution, short — includes name announcement) stays ~60s.
-// FadeOut shortened to 60s so the session doesn't drag past Return.
+// Bridge timing targets.
+// Orienting targets ≥20 min: 14 min structure + ~6-7 min narration.
+// Bridge 2 (after Softening, before Dissolution) is the biggest breathing
+// space — the long musical moment before the formlessness section.
+// FadeOut = 90s so the Return doesn't feel cut off.
 const TENURE_TIMING = {
-  orienting:   { fadeIn: 60, bridges: [0, 120, 150, 60, 60, 90], fadeOut: 60 },
+  orienting:   { fadeIn: 75, bridges: [0, 150, 215, 90, 90, 120], fadeOut: 105 },
   settling:    { fadeIn: 75, bridges: [0, 150, 210, 90, 75, 120], fadeOut: 75 },
   established: { fadeIn: 90, bridges: [0, 210, 300, 120, 90, 150], fadeOut: 90 },
 };
@@ -146,9 +146,16 @@ export function useSegmentedMixer({
       t += effectiveDuration;
       if (i < buffers.length - 1) t += resolvedBridges[i + 1] || 60;
     });
-    const totalDur = t + resolvedFadeOut;
-    return { events, totalDuration: totalDur };
-  }, [resolvedFadeIn, resolvedFadeOut, resolvedBridges]);
+    const naturalEnd = t + resolvedFadeOut;
+    // Guarantee minimum session length per tenure band.
+    // If narration audio runs short, the extra time is absorbed into the fade-out
+    // so the session always feels complete, never abruptly ended.
+    const minDuration = tenureBand === "established" ? 38 * 60
+                      : tenureBand === "settling"    ? 28 * 60
+                      :                                20 * 60; // orienting default
+    const totalDuration = Math.max(naturalEnd, minDuration);
+    return { events, totalDuration };
+  }, [resolvedFadeIn, resolvedFadeOut, resolvedBridges, tenureBand]);
 
   useEffect(() => {
     if (segmentUrls.length === 0) return;
@@ -303,7 +310,11 @@ export function useSegmentedMixer({
         if (segEnd <= clampedOffset) return;
 
         const arcLevel = musicVolume * arcLevelAt(evt.startOffset, events);
-        const duckLevel = arcLevel * DUCK_RATIO;
+        // Short segments are dissolution (staccato, ~50-70s of sparse speech).
+        // A 55% duck on top of near-silence sounds like the music has disappeared.
+        // Use a much lighter duck (20%) so the music holds the space through dissolution.
+        const segDuckRatio = evt.duration < 90 ? 0.80 : DUCK_RATIO;
+        const duckLevel = arcLevel * segDuckRatio;
 
         const duckDownStart = Math.max(clampedOffset, evt.startOffset - DUCK_PRE_RAMP);
         const duckDownEnd = evt.startOffset;

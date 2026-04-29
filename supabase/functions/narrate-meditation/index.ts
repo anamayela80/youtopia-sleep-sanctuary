@@ -120,11 +120,12 @@ serve(async (req) => {
             model_id: modelId,
             voice_settings: {
               // Eleven v3 maps stability to 3 presets: Creative=0, Neutral=0.5,
-              // Robust=1. Creative (0.0) is correct for meditation — it lets
-              // the [intimate][drawn out][softly][slow] v3 tags take full
-              // effect. Pacing is controlled by speed: 0.80 + the [slow]
-              // tag, so we don't need stability to slow things down.
-              stability: 0.0,
+              // Robust=1. 0.15 sits just above pure Creative — enough to keep
+              // voice character consistent across chunk boundaries while still
+              // letting [intimate][drawn out][softly][slow] v3 tags take full
+              // effect. Pure Creative (0.0) drifts too much between chunks,
+              // causing perceived voice shifts on short phrases mid-session.
+              stability: 0.15,
               similarity_boost: 0.85,
               style: 0,
               speed: 0.80,
@@ -194,9 +195,10 @@ serve(async (req) => {
       parsedTokens.push({ kind: "tts", text: processed, isEcho: isEchoPhrase(line) });
     }
 
-    // ── Step 2: Group text tokens into ≤280-char chunks ───────────────────
-    // Silence tokens and echo phrases are never merged — each stays solo.
-    const MAX_CHUNK_CHARS = 280;
+    // ── Step 2: Group text tokens into ≤400-char chunks ───────────────────
+    // Larger chunks → fewer ElevenLabs calls → fewer chunk-boundary voice
+    // shifts. Silence tokens and echo phrases are never merged — each stays solo.
+    const MAX_CHUNK_CHARS = 400;
     const queue: Token[] = [];
     let currentText = "";
 

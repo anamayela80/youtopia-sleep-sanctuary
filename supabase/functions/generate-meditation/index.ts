@@ -319,7 +319,8 @@ Then: [segment break]
 
 PHASE 4 — ${phaseNames[3]} (target: 1–2 minutes of spoken content)
 Minimum 3 lines. Each with [pause 12s]–[pause 18s]. Very sparse.
-User's name here once. Let everything go quiet.
+User's name here once — this is the ONLY place the name appears in segments 1–5.
+Let everything go quiet.
 Do not rush. End: "Let everything go quiet." [pause 20s]
 Then: [segment break]
 
@@ -395,7 +396,8 @@ The return must feel like surfacing from deep water — unhurried.
   "Into the room." [pause 10s]
   "Into this day." [pause 12s]
   "Something has shifted." [pause 15s]
-  User's name once — quiet acknowledgment, not a wake-up call.
+  User's name once — quiet acknowledgment, not a wake-up call. This is the SECOND
+  and final use of the name in the entire script. It appears AFTER "Something has shifted."
   "Take your time." [pause 10s]
   "When you're ready — [pause 6s] open your eyes." [pause 8s]
   "Welcome to your new reality."
@@ -482,7 +484,7 @@ Only AFTER the third break does "${name} — something is forming" appear.
 PACING RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 — ${tenureInfo.words}. Most of the session time is silence and music.
-— Use the user's first name 4 times or fewer total. Spread across all phases.
+— User's first name appears EXACTLY TWICE: once in Phase 4 (Softening) and once in Phase 9 (Return). Nowhere else — not in Phase 6, not in Phase 7, not in Phase 8. No exceptions. The two occurrences are separated by the longest music bridge, so hearing the name twice in quick succession is never possible.
 — Every phrase stands alone on its own line followed by a pause marker.
 — Never write more than 2 phrases in a row without a pause marker between them.
 — Leave a blank line between each paragraph / image block.
@@ -509,7 +511,7 @@ QUALITY CHECK (run internally before writing):
 - NO vision content before the 3rd [segment break]
 - Phase 7 scene is invented, not from the user's life
 - Phase 7 scene is specific enough to create a physical feeling
-- User's name appears 4 times or fewer
+- User's name appears EXACTLY TWICE: once in Phase 4, once in Phase 9 — nowhere else
 - Script has exactly 5 [segment break] markers`;
 }
 

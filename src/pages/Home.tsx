@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Settings as SettingsIcon, Check } from "lucide-react";
+import { Menu, Settings as SettingsIcon, Check, Headphones, Flame, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getLatestMeditation, getLatestSeeds, getActiveTheme, getUserProfile,
@@ -25,7 +25,74 @@ type ChapterFolder = {
   hasSeeds: boolean;
 };
 
-// ====== Custom icons (per spec) ======
+type CheckinRow = { checkin_date: string; mood_score: number };
+
+// Mood dot colours — index 0 = score 1 (lowest) … index 4 = score 5 (highest)
+// Matches the MOODS palette in MoodOrb.tsx
+const MOOD_COLORS = ["#7A9BB5", "#9B8BBE", "#B89A6A", "#C4A030", "#C4604A"];
+
+/** Build month-by-month mood dot grid from raw checkin rows. */
+function buildMoodHistory(
+  checkins: CheckinRow[],
+  intakeStartDate: string | null,
+): { label: string; monthKey: string; days: (number | null)[] }[] {
+  const moodMap = new Map<string, number>();
+  checkins.forEach((c) => moodMap.set(c.checkin_date, c.mood_score));
+
+  const now = new Date();
+  const start = intakeStartDate ? new Date(intakeStartDate) : now;
+  const monthsDiff =
+    (now.getFullYear() - start.getFullYear()) * 12 +
+    (now.getMonth() - start.getMonth());
+  const monthsToShow = Math.min(Math.max(monthsDiff + 1, 1), 12);
+
+  const result: { label: string; monthKey: string; days: (number | null)[] }[] = [];
+  for (let m = monthsToShow - 1; m >= 0; m--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - m, 1);
+    const year = d.getFullYear();
+    const month = d.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const isCurrent = m === 0;
+    const fillThrough = isCurrent ? now.getDate() : daysInMonth;
+    const monthKey = `${year}-${String(month + 1).padStart(2, "0")}`;
+
+    const days: (number | null)[] = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+      if (day > fillThrough) { days.push(null); continue; }
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      days.push(moodMap.get(dateStr) ?? null);
+    }
+    result.push({
+      label: d.toLocaleDateString(undefined, { month: "short" }),
+      monthKey,
+      days,
+    });
+  }
+  return result;
+}
+
+/** Count consecutive days with a checkin going backwards from today. */
+function calcStreak(checkins: CheckinRow[]): number {
+  if (checkins.length === 0) return 0;
+  const dateSet = new Set(checkins.map((c) => c.checkin_date));
+  let streak = 0;
+  const cursor = new Date();
+  while (true) {
+    const key = cursor.toISOString().slice(0, 10);
+    if (!dateSet.has(key)) break;
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
+function formatMinutes(totalMinutes: number): string {
+  if (totalMinutes === 0) return "0m";
+  if (totalMinutes < 60) return `${totalMinutes}m`;
+  return `${Math.round(totalMinutes / 60)}h`;
+}
+
+// ====== Custom icons ======
 const SunGlyph = () => (
   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="hsl(var(--gold))" strokeWidth="1.7" strokeLinecap="round">
     <circle cx="12" cy="12" r="3.6" fill="hsl(var(--gold))" stroke="none" />
@@ -52,15 +119,6 @@ const JournalGlyph = () => (
     <line x1="9" y1="8.5" x2="15" y2="8.5" />
     <line x1="9" y1="12" x2="15" y2="12" />
     <line x1="9" y1="15.5" x2="13" y2="15.5" />
-  </svg>
-);
-
-const FaceGlyph = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="hsl(var(--coral))" strokeWidth="1.6" strokeLinecap="round">
-    <circle cx="12" cy="12" r="7.5" />
-    <circle cx="9.3" cy="10.5" r="0.8" fill="hsl(var(--coral))" stroke="none" />
-    <circle cx="14.7" cy="10.5" r="0.8" fill="hsl(var(--coral))" stroke="none" />
-    <path d="M9 14.2c1 1.1 2 1.6 3 1.6s2-.5 3-1.6" />
   </svg>
 );
 
@@ -113,7 +171,21 @@ const PracticeItem = ({
   </button>
 );
 
-// Bottom nav has been moved to <BottomNav /> shared component.
+const StatTile = ({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) => (
+  <div
+    className="flex-1 rounded-2xl px-3 py-3 flex flex-col items-center text-center"
+    style={{ background: "hsl(var(--folder))", border: "1px solid rgba(160, 120, 70, 0.12)" }}
+  >
+    <span className="mb-1.5" style={{ color: "hsl(var(--coral))" }}>{icon}</span>
+    <span
+      className="font-heading leading-none"
+      style={{ fontSize: "20px", color: "hsl(var(--foreground))", fontFamily: "Georgia, serif" }}
+    >
+      {value}
+    </span>
+    <span className="text-[10px] italic mt-1" style={{ color: "hsl(var(--subtitle))" }}>{label}</span>
+  </div>
+);
 
 // ====== Page ======
 const Home = () => {
@@ -123,9 +195,17 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [openChapter, setOpenChapter] = useState<string | null>(null);
   const [userFirstName, setUserFirstName] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<"home" | "month" | "journal" | "settings">("home");
   const [currentChapter, setCurrentChapter] = useState<ChapterFolder | null>(null);
   const [pastChapters, setPastChapters] = useState<ChapterFolder[]>([]);
+
+  // Stats
+  const [monthsCount, setMonthsCount] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [totalMinutes, setTotalMinutes] = useState(0);
+
+  // Mood history
+  const [moodHistory, setMoodHistory] = useState<{ label: string; monthKey: string; days: (number | null)[] }[]>([]);
+  const [hasAnyMood, setHasAnyMood] = useState(false);
 
   // Mid-month check-in card state
   const [checkinPrompt, setCheckinPrompt] = useState<{
@@ -174,6 +254,7 @@ const Home = () => {
     };
     setCurrentChapter(cur);
 
+    // Past chapters from meditation history
     const { data: history } = await sb
       .from("meditations")
       .select("month, theme_id, monthly_themes(theme)")
@@ -197,15 +278,39 @@ const Home = () => {
     });
     setPastChapters(past);
 
-    // ===== Mid-month check-in trigger =====
-    // Question 1 after 10 daily mood checkins, Question 2 after 22.
+    // ── Stats ──────────────────────────────────────────────────────────────
+    // months = past completed + current (always at least 1 once onboarded)
+    const totalMonths = past.length + 1;
+    setMonthsCount(totalMonths);
+
+    // All checkins for streak + mood history
+    const { data: allCheckins } = await sb
+      .from("checkins")
+      .select("checkin_date, mood_score")
+      .eq("user_id", user.id)
+      .order("checkin_date", { ascending: false });
+
+    const checkins: CheckinRow[] = (allCheckins || []).filter(
+      (c: any) => c.checkin_date && typeof c.mood_score === "number",
+    );
+
+    setStreak(calcStreak(checkins));
+
+    // Hours: count meditation records × ~20 min per session (rough estimate
+    // until we have actual session-duration tracking)
+    const { count: medCount } = await sb
+      .from("meditations")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id);
+    setTotalMinutes((medCount ?? 0) * 20);
+
+    // ── Mood history ───────────────────────────────────────────────────────
+    const history2 = buildMoodHistory(checkins, currentIntake?.intake_start_date ?? null);
+    setMoodHistory(history2);
+    setHasAnyMood(checkins.length > 0);
+
+    // ── Mid-month check-in trigger ─────────────────────────────────────────
     if (currentIntake?.id) {
-      const { data: checkinCountData } = await sb
-        .from("checkins")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .gte("checkin_date", currentIntake.intake_start_date);
-      // Note: head:true returns count via a different mechanism; use explicit count instead
       const { count: doneCount } = await sb
         .from("checkins")
         .select("id", { count: "exact", head: true })
@@ -217,7 +322,6 @@ const Home = () => {
       else if ((doneCount ?? 0) >= 10) triggerNumber = 1;
 
       if (triggerNumber) {
-        // Check if already answered or permanently dismissed
         const { data: state } = await sb
           .from("intake_checkin_state")
           .select("*")
@@ -228,7 +332,6 @@ const Home = () => {
 
         const alreadyDone = state?.answered_at || state?.dismissed_permanently;
         if (!alreadyDone) {
-          // Pull question text from app_settings + theme override
           const { data: appSet } = await sb.from("app_settings").select("checkin_question_1, checkin_question_2").maybeSingle();
           const themeQ1 = displayTheme?.checkin_question;
           const themeQ2 = displayTheme?.checkin_question_2;
@@ -247,28 +350,16 @@ const Home = () => {
     if (!checkinPrompt) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-
     if (checkinDismissedThisSession) {
-      // Second dismissal in same session = permanent
       await sb.from("intake_checkin_state").upsert(
-        {
-          user_id: user.id,
-          intake_id: checkinPrompt.intakeId,
-          question_number: checkinPrompt.questionNumber,
-          dismissed_permanently: true,
-        },
-        { onConflict: "user_id,intake_id,question_number" }
+        { user_id: user.id, intake_id: checkinPrompt.intakeId, question_number: checkinPrompt.questionNumber, dismissed_permanently: true },
+        { onConflict: "user_id,intake_id,question_number" },
       );
       setCheckinPrompt(null);
     } else {
-      // First dismissal: postpone, will reappear next open
       await sb.from("intake_checkin_state").upsert(
-        {
-          user_id: user.id,
-          intake_id: checkinPrompt.intakeId,
-          question_number: checkinPrompt.questionNumber,
-        },
-        { onConflict: "user_id,intake_id,question_number" }
+        { user_id: user.id, intake_id: checkinPrompt.intakeId, question_number: checkinPrompt.questionNumber },
+        { onConflict: "user_id,intake_id,question_number" },
       );
       setCheckinDismissedThisSession(true);
       setCheckinPrompt(null);
@@ -309,7 +400,7 @@ const Home = () => {
     );
   }
 
-  // Empty state
+  // Empty state — no content yet at all
   if (currentChapter && !currentChapter.hasMeditation && !currentChapter.hasSeeds && pastChapters.length === 0) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center">
@@ -349,19 +440,12 @@ const Home = () => {
 
       {/* Greeting */}
       <div className="px-[26px] pt-4 pb-6">
-        <p
-          className="italic mb-2 lowercase"
-          style={{ fontSize: "12px", letterSpacing: "0.14em", color: "hsl(var(--sage))" }}
-        >
+        <p className="italic mb-2 lowercase" style={{ fontSize: "12px", letterSpacing: "0.14em", color: "hsl(var(--sage))" }}>
           {greeting}
         </p>
-        <h1
-          className="font-heading leading-tight"
-          style={{ fontSize: "36px", color: "hsl(var(--foreground))", fontFamily: "Georgia, serif" }}
-        >
+        <h1 className="font-heading leading-tight" style={{ fontSize: "36px", color: "hsl(var(--foreground))", fontFamily: "Georgia, serif" }}>
           {displayName}<span style={{ color: "hsl(var(--coral))" }}>.</span>
         </h1>
-
         {currentChapter && (
           <div className="mt-4">
             <span
@@ -384,11 +468,78 @@ const Home = () => {
       {/* Divider */}
       <div className="mx-6 mb-6" style={{ height: "1px", background: "rgba(120, 90, 60, 0.12)" }} />
 
-      {/* Current chapter folder */}
+      {/* ── Your Journey stats ────────────────────────────────────────────── */}
+      <div className="mb-7">
+        <SectionLabel>Your Journey</SectionLabel>
+        <div className="px-4 flex gap-2">
+          <StatTile icon={<Headphones size={16} />} value={String(monthsCount)} label="months" />
+          <StatTile icon={<Flame size={16} />} value={String(streak)} label="day streak" />
+          <StatTile icon={<Clock size={16} />} value={formatMinutes(totalMinutes)} label="practiced" />
+        </div>
+      </div>
+
+      {/* ── Mood Over Time ────────────────────────────────────────────────── */}
+      <div className="mb-7">
+        <SectionLabel>Mood Over Time</SectionLabel>
+        <div
+          className="mx-4 rounded-2xl px-4 py-4"
+          style={{ background: "hsl(var(--folder))", border: "1px solid rgba(160, 120, 70, 0.12)" }}
+        >
+          {hasAnyMood ? (
+            <>
+              <div className="space-y-2">
+                {moodHistory.map((row) => (
+                  <div key={row.monthKey} className="flex items-center gap-2">
+                    <span
+                      className="text-[10px] uppercase italic w-8 flex-shrink-0"
+                      style={{ letterSpacing: "0.12em", color: "hsl(var(--subtitle))", fontFamily: "Georgia, serif" }}
+                    >
+                      {row.label}
+                    </span>
+                    <div className="flex flex-wrap gap-[3px] flex-1">
+                      {row.days.map((score, i) => (
+                        <div
+                          key={i}
+                          className="rounded-full"
+                          style={{
+                            width: "8px",
+                            height: "8px",
+                            background: score !== null ? MOOD_COLORS[score - 1] : "transparent",
+                            border: score === null ? "1px solid rgba(160, 120, 70, 0.18)" : "none",
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Legend */}
+              <div
+                className="flex items-center justify-center gap-1.5 mt-4 pt-3"
+                style={{ borderTop: "1px solid rgba(160, 120, 70, 0.12)" }}
+              >
+                <span className="text-[9px] italic mr-1" style={{ color: "hsl(var(--subtitle))" }}>low</span>
+                {MOOD_COLORS.map((c, i) => (
+                  <div key={i} className="w-2.5 h-2.5 rounded-full" style={{ background: c }} />
+                ))}
+                <span className="text-[9px] italic ml-1" style={{ color: "hsl(var(--subtitle))" }}>high</span>
+              </div>
+            </>
+          ) : (
+            <p
+              className="text-center italic py-4"
+              style={{ fontSize: "12px", color: "hsl(var(--subtitle))", fontFamily: "Georgia, serif" }}
+            >
+              Your mood map will grow here as you check in daily.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* ── Current chapter ───────────────────────────────────────────────── */}
       {currentChapter && (
         <div className="mb-8">
           <SectionLabel>Current Chapter</SectionLabel>
-
           <div
             className="mx-4"
             style={{
@@ -404,7 +555,6 @@ const Home = () => {
             >
               {currentChapter.themeName}
             </h2>
-
             <div className="space-y-2">
               <PracticeItem
                 icon={<SunGlyph />}
@@ -435,7 +585,7 @@ const Home = () => {
         </div>
       )}
 
-      {/* Mid-month check-in question card */}
+      {/* ── Mid-month check-in ────────────────────────────────────────────── */}
       {checkinPrompt && (
         <div
           className="mb-8 mx-4"
@@ -448,23 +598,13 @@ const Home = () => {
         >
           <p
             className="uppercase mb-3"
-            style={{
-              fontSize: "10px",
-              letterSpacing: "0.2em",
-              color: "#9B7BD4",
-              fontFamily: "Georgia, serif",
-            }}
+            style={{ fontSize: "10px", letterSpacing: "0.2em", color: "#9B7BD4", fontFamily: "Georgia, serif" }}
           >
             a question for you
           </p>
           <p
             className="italic mb-4"
-            style={{
-              fontSize: "17px",
-              color: "#3D2E1E",
-              fontFamily: "Georgia, serif",
-              lineHeight: 1.5,
-            }}
+            style={{ fontSize: "17px", color: "#3D2E1E", fontFamily: "Georgia, serif", lineHeight: 1.5 }}
           >
             {checkinPrompt.questionText}
           </p>
@@ -503,11 +643,7 @@ const Home = () => {
             <button
               onClick={dismissCheckin}
               className="lowercase"
-              style={{
-                fontSize: "11px",
-                color: "#C8B090",
-                fontFamily: "Georgia, serif",
-              }}
+              style={{ fontSize: "11px", color: "#C8B090", fontFamily: "Georgia, serif" }}
             >
               maybe later
             </button>
@@ -515,12 +651,19 @@ const Home = () => {
         </div>
       )}
 
+      {/* ── Previous chapters ─────────────────────────────────────────────── */}
       {pastChapters.length > 0 && (
         <div className="mb-8">
           <SectionLabel>Previous Chapters</SectionLabel>
           <div>
             {pastChapters.map((c) => {
               const open = openChapter === c.key;
+              // Derive a human-readable month label from the key (YYYY-MM)
+              const [y, m] = c.key.split("-").map(Number);
+              const monthLabel = new Date(y, m - 1, 1).toLocaleDateString(undefined, {
+                month: "long",
+                year: "numeric",
+              });
               return (
                 <div
                   key={c.key}
@@ -545,12 +688,17 @@ const Home = () => {
                       {c.themeName}
                     </span>
                     <span
+                      className="text-[10px] italic mr-2 flex-shrink-0"
+                      style={{ color: "hsl(var(--subtitle))" }}
+                    >
+                      {monthLabel}
+                    </span>
+                    <span
                       className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
                       style={{ background: "hsl(var(--sage))" }}
                       aria-label="Completed chapter"
                     />
                   </button>
-
                   <AnimatePresence initial={false}>
                     {open && (
                       <motion.div
@@ -568,6 +716,22 @@ const Home = () => {
                             subtitle="Revisit this practice"
                             done
                             onClick={() => navigate(`/month?key=${c.key}`)}
+                          />
+                          <PracticeItem
+                            icon={<MoonGlyph />}
+                            iconBg="#DDD0EE"
+                            title="Evening Seeds"
+                            subtitle="Revisit this practice"
+                            done
+                            onClick={() => navigate(`/month?key=${c.key}&play=seeds`)}
+                          />
+                          <PracticeItem
+                            icon={<JournalGlyph />}
+                            iconBg="#C8DED8"
+                            title="Reflect"
+                            subtitle="Reread your journal entries"
+                            done
+                            onClick={() => navigate("/reflect")}
                           />
                         </div>
                       </motion.div>
