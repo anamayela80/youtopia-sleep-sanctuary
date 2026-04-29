@@ -159,7 +159,7 @@ export const AdminThemes = () => {
             </div>
 
             <div className="space-y-1">
-              <p className="text-[11px] font-body text-muted-foreground">Preset Seed voice (Serena), used when a user opts not to record their own voice. Falls back to the guide voice if blank.</p>
+              <p className="text-[11px] font-body text-muted-foreground">Preset Seed voice (Youtopia voice), used when a user opts not to record their own voice. Falls back to the guide voice if blank.</p>
               <input
                 value={t.seed_voice_id || ""}
                 onChange={(e) => update(t.id, { seed_voice_id: e.target.value })}
