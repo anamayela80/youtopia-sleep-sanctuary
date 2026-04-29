@@ -126,12 +126,12 @@ const SettingsPage = () => {
           {hasVoiceClone ? (
             <>
               <p className="font-body text-sm text-muted-foreground mb-3">
-                Your voice clone is active. You can also use Serena's voice if you prefer.
+                Your voice clone is active. You can also use the Youtopia voice if you prefer.
               </p>
               {showDeleteConfirm ? (
                 <div className="bg-destructive/10 rounded-xl p-4">
                   <p className="font-body text-sm text-foreground mb-3">
-                    Deleting your voice clone will switch your seeds to the preset Serena voice. Are you sure?
+                    Deleting your voice clone will switch your seeds to the preset Youtopia voice. Are you sure?
                   </p>
                   <div className="flex gap-3">
                     <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2 rounded-xl bg-muted font-body text-sm">Cancel</button>
@@ -149,14 +149,9 @@ const SettingsPage = () => {
               )}
             </>
           ) : (
-            <>
-              <p className="font-body text-sm text-muted-foreground mb-3">
-                No voice clone found. Your seeds use Serena's voice. Record your own anytime to personalize them.
-              </p>
-              <button onClick={() => navigate("/onboarding")} className="text-primary font-body text-sm font-medium">
-                Record now →
-              </button>
-            </>
+            <p className="font-body text-sm text-muted-foreground">
+              No voice clone on file. Your seeds use the Youtopia voice.
+            </p>
           )}
         </div>
 
