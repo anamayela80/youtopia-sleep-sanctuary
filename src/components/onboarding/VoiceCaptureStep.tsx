@@ -9,7 +9,7 @@ interface VoiceCaptureStepProps {
   hasExistingClone: boolean;
   /** Whether voice cloning is allowed for this month's theme. */
   allowVoiceClone?: boolean;
-  /** Whether a preset (Serena) voice is configured for this month. */
+  /** Whether a preset (Youtopia) voice is configured for this month. */
   hasPresetVoice?: boolean;
 }
 
