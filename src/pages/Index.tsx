@@ -69,6 +69,26 @@ const Index = () => {
             I already have an account
           </button>
         </div>
+
+        <p className="mt-8 text-center" style={{ fontSize: "11px", color: "#A08060" }}>
+          By signing up you agree to our{" "}
+          <button
+            onClick={() => navigate("/terms")}
+            className="underline underline-offset-2 hover:opacity-80"
+            style={{ color: "#4E8C7A" }}
+          >
+            Terms of Service
+          </button>{" "}
+          and{" "}
+          <button
+            onClick={() => navigate("/privacy")}
+            className="underline underline-offset-2 hover:opacity-80"
+            style={{ color: "#4E8C7A" }}
+          >
+            Privacy Policy
+          </button>
+          .
+        </p>
       </motion.div>
     </div>
   );

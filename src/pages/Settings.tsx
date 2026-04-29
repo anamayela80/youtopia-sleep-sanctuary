@@ -267,6 +267,25 @@ const SettingsPage = () => {
         >
           <LogOut size={18} /> Sign Out
         </button>
+
+        {/* Legal */}
+        <div className="flex items-center justify-center gap-4 pb-4">
+          <button
+            onClick={() => navigate("/privacy")}
+            className="font-body hover:opacity-80"
+            style={{ fontSize: "11px", color: "#A08060", textDecoration: "underline", textUnderlineOffset: "3px" }}
+          >
+            Privacy Policy
+          </button>
+          <span style={{ color: "#C8B090", fontSize: "11px" }}>·</span>
+          <button
+            onClick={() => navigate("/terms")}
+            className="font-body hover:opacity-80"
+            style={{ fontSize: "11px", color: "#A08060", textDecoration: "underline", textUnderlineOffset: "3px" }}
+          >
+            Terms of Service
+          </button>
+        </div>
       </div>
     </div>
   );
