@@ -284,6 +284,15 @@ serve(async (req) => {
             if (local >= ttsIndices.length) return;
             const qi   = ttsIndices[local];
             const item = taggedQueue[qi] as TtsToken;
+            // Skip chunks with no actual letters after stripping bracket tags
+            // (e.g. tag-only text, punctuation-only echoes). ElevenLabs 400s
+            // these with "input_text_empty".
+            const stripped = item.text.replace(/\[[^\]]*\]/g, "").replace(/[^a-zA-Z]/g, "");
+            if (stripped.length === 0) {
+              console.warn(`Skipping empty TTS chunk at idx ${qi}: "${item.text}"`);
+              orderedResults[qi] = new Uint8Array(0);
+              continue;
+            }
             let pcm    = await processTtsItem(item.text, qi);
             if (item.isEcho) pcm = applyEcho(pcm);
             orderedResults[qi] = pcm;
