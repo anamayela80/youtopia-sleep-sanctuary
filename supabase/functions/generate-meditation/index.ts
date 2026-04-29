@@ -33,149 +33,211 @@ const corsHeaders = {
 
 // --- Variation pools (rotate by monthNumber) -------------------------------
 
-const OPENING_DEVICES = [
-  "Guide three unhurried breaths. On each exhale, say the weight of the body is finding the surface beneath it.",
-  "Bring attention to the feet first, then the seat, then the shoulders — each one landing.",
-  "Notice the pull of gravity — something in the body is already letting go. Name that.",
-  "Describe the morning light (or the dark) on the skin. Let the user notice one tactile thing in the room.",
-  "Describe a threshold — a doorway between the day and this practice. The user has already stepped across it.",
+// Phase name sets per month — create 12 distinct thematic naming palettes.
+// The model is prompted to name phases creatively; these are suggestions only.
+const PHASE_NAME_SETS = [
+  // Month 1 — Allowed to Want
+  ["Settling", "Opening the Heart", "Rising", "Softening", "Dissolution", "The Proof", "The Scene", "Anchoring", "Return"],
+  // Month 2 — Trust
+  ["Landing", "Listening", "Expanding", "Quieting", "Formlessness", "Evidence", "The Life", "Holding", "Coming Back"],
+  // Month 3 — Clarity
+  ["Arriving", "Centering", "Seeing", "Stilling", "The Open", "The Knowing", "The Morning", "Settling In", "Emergence"],
+  // Month 4 — Courage
+  ["Rooting", "Igniting", "Ascending", "Releasing", "The Vast", "The Proof of Motion", "The Step", "The Anchor", "Forward"],
+  // Month 5 — Belonging
+  ["Coming Home", "Receiving", "Connecting", "Letting Go", "No Edges", "The Recognition", "The Room", "Held", "Into the Day"],
+  // Month 6 — Rest
+  ["Releasing", "Softening", "Letting Go", "Deepening", "No Horizon", "The Weight Lifted", "The Quiet Morning", "Still", "Awake"],
+  // Month 7 — Abundance
+  ["Arriving", "Opening", "Full Breath", "Dropping", "Spaciousness", "The Evidence of Enough", "The Table", "Receive It", "Open Eyes"],
+  // Month 8 — Love
+  ["Grounding", "The Heart", "Rising", "Melting", "Borderless", "The Proof of Love", "The Scene", "Carry It", "Back"],
+  // Month 9 — Strength
+  ["Steadying", "The Center", "Upward", "Quieting", "The Permanent Now", "What Moved", "The Body in Motion", "Here", "Forward"],
+  // Month 10 — Freedom
+  ["Landing", "Lighting", "Opening", "Softening", "Boundless", "What Released", "The Open Road", "Keep It", "Wake"],
+  // Month 11 — Purpose
+  ["Arriving", "Warming", "Rising", "Quieting", "The Still Point", "The Work", "The Day", "Anchor", "Into It"],
+  // Month 12 — Gratitude as Proof
+  ["Settling", "Opening", "Lifting", "Dropping", "The Before", "Proof", "The Vision", "Hold This", "Return"],
 ];
 
-const LIGHT_METAPHORS = [
-  "a warm light low in the chest",
-  "a slow tide moving through the body",
-  "an open horizon just past the breath",
-  "an inner sun that is already lit",
-  "a still lake behind the eyes",
-  "a quiet river at the base of the spine",
-  "a morning field after rain",
-  "soft rain on warm skin",
-  "rising warmth at the heart",
-  "a single steady star",
-  "an ember that won't go out",
-  "a clearing in a forest, just past the trees",
-];
-
-const COHERENCE_EMOTIONS = ["gratitude", "love", "peace", "awe", "trust"];
-
-const PRESENCE_ANCHORS = [
-  "Remember.",
-  "Feel it.",
-  "Breathe.",
-  "Stay with this.",
-  "This is real.",
-  "You're here.",
-];
-
-// --- Tenure-based length bands --------------------------------------------
-
+// Tenure-based word count targets
 type Tenure = "orienting" | "settling" | "established";
 
-const LENGTH_BANDS: Record<Tenure, {
-  totalWords: string;
-  sectionWords: Record<string, string>;
-  extraDepth: string;
-}> = {
+const TENURE_DEPTH: Record<Tenure, { words: string; extra: string }> = {
   orienting: {
-    totalWords: "420 to 520",
-    sectionWords: {
-      arrival: "20-30",
-      release: "60-80",
-      body: "40-55",
-      coherence: "30-45",
-      nowhere: "60-80",
-      becoming: "100-130",
-      anchor: "40-55",
-      return: "30-40",
-    },
-    extraDepth:
-      "Orienting sessions are the most sparse. Every phrase is short. Silence dominates. Section 5 (Space of nowhere) and Section 6 (Vision) carry the most pause time — not the most words. The music bridges between segments are already 2+ minutes long. Do not try to fill that time with words. Trust the silence.",
+    words: "420 to 520 spoken words total",
+    extra: "Orienting sessions are the most sparse. Phase 1 needs 3 breath cycles, each short. Phase 5 (Dissolution) and Phases 6–7 (Proof + Scene) carry the most pause time, not the most words. The music bridges between segments are already 2+ minutes long — do not fill that time with extra narration. Trust the silence. Every phrase is short. 4 words maximum per breath instruction.",
   },
   settling: {
-    totalWords: "580 to 720",
-    sectionWords: {
-      arrival: "25-35",
-      release: "80-100",
-      body: "55-70",
-      coherence: "40-55",
-      nowhere: "90-120",
-      becoming: "150-200",
-      anchor: "55-70",
-      return: "35-45",
-    },
-    extraDepth:
-      "In Section 2 (Heart awakening), breathe into the feeling three times instead of two — let it expand through the chest and outward before moving on. In Section 5 (Space of nowhere), extend the dissolving with more Youtopia-language phrases: more 'porous', more 'silent theater', more 'permanent now' moments, each with [long pause 15s]. In Section 6 (Vision), each image can be 2-3 sentences instead of 1-2 — give the poetic images more room to breathe.",
+    words: "580 to 720 spoken words total",
+    extra: "In Phase 2 (Heart), breathe into the feeling three times — let it expand through the chest and outward. In Phase 5 (Dissolution), extend each Youtopia phrase: more porous, more silent theater, more permanent now moments. In Phases 6–7 (Proof + Scene), each image can be 2–3 sentences. Let the proof build slowly. Let the scene fill a complete room.",
   },
   established: {
-    totalWords: "800 to 1000",
-    sectionWords: {
-      arrival: "30-40",
-      release: "100-130",
-      body: "70-90",
-      coherence: "55-70",
-      nowhere: "130-170",
-      becoming: "230-300",
-      anchor: "80-100",
-      return: "40-55",
-    },
-    extraDepth:
-      "In Section 3 (Energy breath), guide 3 full breath cycles up the spine instead of 2. In Section 5 (Space of nowhere), extend the dissolving fully — the listener should feel genuinely formless before the vision begins. Use the full Youtopia vocabulary: porous, silent theater, permanent now, before the name, before the story. In Section 6 (Vision), build each image with 2-3 sentences, and let 2-3 of the answers appear twice — first as a brief image, later as a deeper landing. In Section 7 (Anchor), add: 'The body is learning something new. [long pause 12s] Let it learn. [long pause 15s]'",
+    words: "800 to 1000 spoken words total",
+    extra: "In Phase 3 (Spine Breath), guide 3 full breath cycles up the spine instead of 2. In Phase 5 (Dissolution), the listener should feel genuinely formless before the proof begins — extend this section fully. In Phases 6–7, build each image with 2–3 sentences, and let 2–3 answers surface twice — first as a brief image, later as a deeper landing. In Phase 8 (Anchoring), add: 'The body is learning something new. [pause 12s] Let it learn. [pause 15s]'",
   },
 };
 
 // --- System prompt builder ------------------------------------------------
 
 function buildSystemPrompt(tenure: Tenure, monthNumber: number, userName: string): string {
-  const band = LENGTH_BANDS[tenure];
+  const tenureInfo = TENURE_DEPTH[tenure];
+  const phaseNames = PHASE_NAME_SETS[(monthNumber - 1) % PHASE_NAME_SETS.length];
+  const name = userName || "listen";
 
-  // Deterministic monthly rotation
-  const openingDevice = OPENING_DEVICES[(monthNumber - 1) % OPENING_DEVICES.length];
-  const lightMetaphor = LIGHT_METAPHORS[(monthNumber - 1) % LIGHT_METAPHORS.length];
-  const coherenceEmotion = COHERENCE_EMOTIONS[(monthNumber - 1) % COHERENCE_EMOTIONS.length];
+  return `You are writing a guided meditation script for the Youtopia app.
+Every script you write must feel completely different from every other month.
+The phases change names. The language changes. The structure breathes differently.
+Nothing is templated. Nothing repeats. Every meditation is an original.
 
-  const sw = band.sectionWords;
-
-  return `You are writing a guided meditation for the Youtopia app. It will be narrated by a warm, intimate voice over ambient music.
+Before writing the script, run the quality checklist and timing check internally.
+Do NOT include the checklist or a timing table in your output.
+Output ONLY the narrated script — starting with the first spoken word, ending with the last.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-HOW THE SESSION WORKS — READ FIRST
+HOW THE SESSION WORKS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-The script is split into 4 audio segments. Between each segment, 2 to 2.5 minutes of music plays with no voice. The listener sits in that silence naturally — you cannot see it, but the architecture handles it. Your job is NOT to fill time. The music does that. Your job is to write phrases that land and then get out of the way.
+The script is split into 6 audio segments by [segment break] markers. Between segments, music plays for 1–3 minutes. The listener sits in that silence naturally. Your job is NOT to fill time — the music does that. Your job is to write phrases that land, then get out of the way.
 
 The script on the page should look almost empty. That is correct.
 
-Example of correct pacing:
-  Take a breath. [pause 8s]
-  And relax. [pause 10s]
-  Feel the body. [pause 12s]
-  And soften more. [long pause 15s]
+The silence between phrases IS the meditation. Brain changes happen in silence, not in words.
 
-The silence between phrases IS the meditation. The brain changes happen in the silence, not in the words.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+HOW TO USE THE USER'S ANSWERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+The user's answers are NOT content. They are raw material.
+
+Do not describe what they told you. Do not repeat it poetically. Do not narrate their life back to them.
+
+Instead, extract the emotional mechanism underneath the answer.
+Ask: what does this reveal about what their body already knows how to do?
+Then use that mechanism — not the story — to carry the meditation forward.
+
+SPECIFIC NAMES AND PLACES must be used verbatim in Phase 6 (The Proof).
+If the user says "I moved to Dubai" — Dubai goes in.
+If they say "I went to Mexico with Scott" — Mexico and Scott both go in.
+Do NOT replace proper nouns with vague substitutes ("a city", "someone close to you").
+Specificity is the proof. Vague versions of their life carry no weight.
+
+Example:
+- User says: "I moved to Dubai after wanting it for months. Got a 4am phone call and had the job 30 minutes later."
+- WRONG: "There was a phone ringing in the dark. Four in the morning. The answer was yes." (story narration)
+- RIGHT: "Your body has already received what felt impossible. Before your mind caught up — it moved. It said yes. It knows the shape of arrival. That same body is here now. The same mechanism. Already in motion." (extract the proof, point it forward)
+
+Phase 6 uses user answers as mechanism. Phase 7 is fully invented — do not use their answers there.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE LANGUAGE RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FORBIDDEN — never write these in any form:
+  - want / wanted / wishing / hoping (including subtle forms like "you want him in the plan")
+  - "I want this" or any version of it
+  - "Stay with this." anywhere
+  - "someday" unless immediately followed by its contradiction
+  - Any abstract phrase that cannot be touched or seen ("step being taken", "body already knowing" as a standalone phrase)
+  - "not because X, but because Y" constructions (just say Y, full stop)
+  - "The blackness" / "beyond you" / "behind you" / "all around you" / "no body no name" / "become more of it" / "less of you" / "dissolving into nothing" / "the field" / "the realm of all possibility" / "broadcasting into the field" / "synchronize" / "come back to a new body" / "into a whole new future"
+  - "Feel that in your brain" (Dispenza phrase — use "Notice that energy." or "Feel the aliveness at the crown.")
+  - just / simply / try / attempt / deserve / worthy / beautiful / amazing / universe / quantum / unified field / higher self / astral
+
+NO NEGATIVES — EVER.
+The brain does not process "not." When you write "not loud," the brain hears "loud."
+Rule: only write what IS. Never write what isn't.
+  "not loud, not urgent" → "quiet, settled"
+  "nothing missing" → "complete"
+  "not running out of time" → "moving toward the right version of it"
+
+At least 2 STRONG DECLARATIVE PUNCH LINES required.
+Short. Present tense. No hedging. These land at peak moments.
+Examples: "It was inevitable." / "The new ${name} is here." / "She already knew." / "This was always going to happen." / "She held out for the real thing."
+
+REQUIRED language qualities:
+  - Specific and sensory — if it cannot be seen, touched, or physically felt, rewrite it
+  - Present tense or already-completed — nothing desired, everything arriving or arrived
+  - Simple enough to disappear — if the listener notices the word, it is too poetic
+  - Positive only — every line activates what it names, name only what you activate
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ABSOLUTE OUTPUT RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 1. PLAIN TEXT ONLY. No markdown, headers, labels, asterisks, or bullet points.
-2. NO VOICE DELIVERY TAGS. Never write [softly], [slow], [warm], [intimate], [drawn out], [whisper], or any similar delivery instruction. They are added by the audio system — writing them here doubles them and ruins the recording.
-3. PAUSE MARKERS ONLY. The only allowed brackets: [pause Xs], [long pause Xs], [segment break], and [pause:N] (visualization only). Nothing else.
-4. STANDALONE LINES for presence anchors: "Remember." / "Feel it." / "Breathe." — each on its own line, never inside a sentence.
+2. NO VOICE DELIVERY TAGS. Never write [softly], [slow], [warm], [intimate], [drawn out], [whisper]. They are added by the audio system — writing them here ruins the recording.
+3. PAUSE MARKERS ONLY. Allowed brackets: [pause Xs], [long pause Xs], [segment break], [pause:N] (visualization sections only). Nothing else.
+4. STANDALONE LINES for presence anchors — "Feel it." / "Remember." / "Breathe." — each on its own line, never inside a sentence.
 5. NO REPEATED PASSAGES. Each phrase appears once only.
-6. NO SECTION LABELS. Continuous narration only.
-7. Start with the first spoken word. Stop after the last word of the Return section.
+6. NO SECTION LABELS in the output. Continuous narration only.
+7. Start with the first spoken word. Stop after the last word of Phase 9 (Return).
 8. SEGMENT BREAKS — insert "[segment break]" on its own line exactly 5 times:
-   — After the last line of Section 3 (Energy breath), before Section 4
-   — After the last line of Section 4 (Deep release), before Section 5
-   — After the last line of Section 5 (Space of nowhere), before Section 6
-   — After the 2nd or 3rd vision image in Section 6 (roughly halfway through the images), before the remaining images
-   — After "Remember." presence anchor at the end of Section 6, before Section 7
+   — After the last line of Phase 3 (Spine Breath), before Phase 4
+   — After the last line of Phase 4 (Softening), before Phase 5
+   — After the last line of Phase 5 (Dissolution), before Phase 6
+   — After the 2nd or 3rd vision image in Phase 6/7 (roughly halfway), before remaining images
+   — After "Remember." at the end of Phase 8 (Anchoring), before Phase 9
    These are the only 5 segment breaks. Do not add more.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-YOUTOPIA LANGUAGE — use these words
+THE FEEL IT RULE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-These are Youtopia's own words. They are not borrowed from anyone.
+"Feel it." must be earned before it is spoken. Never a shortcut. Never a command without content preceding it.
 
-For the dissolving / formless space (Section 5):
+Three positions in every script:
+
+1. Floating feel it — after Phase 2 (Heart close). Structural, not a peak moment.
+   Format: And release. [pause 20s]
+
+   Feel it. [pause 30s]
+
+2. [FEEL IT — 1 of 2] — end of Phase 6 (The Proof). Earned by a complete proof-of-mechanism passage.
+   Requires: [pause 28s] BEFORE, then Feel it., then [pause 28s] AFTER.
+
+3. [FEEL IT — 2 of 2] — end of Phase 7 (The Scene). Earned by a complete, specific, sensory invented scene.
+   Requires: [pause 28s] BEFORE, then Feel it., then [pause 30s] AFTER.
+
+Before every "Feel it." ask: have I given this person something so specific and sensory that the feeling is already halfway there? If no — write more scene first.
+
+The silence before "Feel it." is as important as the silence after. Give the runway.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+THE REMEMBER RULE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"Remember." is used ONCE — near the end of Phase 8, after the deepest moment has been felt.
+It is a command to the body to keep this. Not decorative. Not a refrain.
+
+Format: [pause 25s]
+
+Remember. [pause 15s]
+
+The silence before is not optional. The person must be in the deepest stillness before this word arrives. Preceded by silence it becomes the body writing something down.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PAUSE REFERENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Between short breath instructions     [pause 4s]
+  Between lines within a phase          [pause 8s] or [pause 10s]
+  End of breath cycle                   [pause 12s]
+  After emotionally weighted line       [pause 15s]
+  Dissolution section (each line)       [pause 18s] or [pause 22s]
+  After "Feel it." (standard)           [pause 25s] minimum
+  After "Feel it." at peak moment       [pause 30s]
+  After "Remember."                     [pause 15s]
+  End of phase before transition        [pause 20s]
+
+Visualization [pause:N] markers (Phases 6–8 only — do NOT use in Phases 1–5):
+  [pause:6]   between two separate vision images
+  [pause:8]   between major vision concepts
+  [pause:10]  before "Feel it." after a shorter image
+  [pause:14]  before "Feel it." when it closes an image set
+  [pause:16]  before "Feel it." when it closes a longer section
+  [pause:18]  before "Feel it." after the longest, most emotional section
+  [pause:12]  before "Remember." — always, without exception
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+YOUTOPIA LANGUAGE — use these
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+For dissolution / formless space (Phase 5):
   "Let the edges of you go soft."
   "Porous."
   "Until you are not sure where you end."
@@ -187,264 +249,182 @@ For the dissolving / formless space (Section 5):
   "Before any of it."
   "Just this."
 
-For the vision images (Section 6):
+For vision images (Phases 6–7):
   "Your body is moving without asking itself first."
-  "Not because you were useful. Because you were you."
   "Something that has both of you in it."
   "Cold outside the glass."
   "The coffee still warm."
-  "Not wishing for this. In it."
+  "In it."
 
-For the anchor / integration (Section 7):
+For anchor / integration (Phase 8):
   "Stay here."
   "Let it settle further."
   "The body is holding this."
-  "Let it be woven in."
-  "Into the marrow."
+  "Let it settle into the marrow."
   "Carry it back."
 
-For the return (Section 8):
+For return (Phase 9):
   "Something has shifted."
   "Into the room. Into this day."
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-BANNED PHRASES — never write these
+9-PHASE STRUCTURE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-These phrases belong to another teacher. Writing them makes Youtopia sound like a cheap copy. They are absolutely forbidden in every section.
+Phase names for this month: ${phaseNames.join(" / ")}
+(Use these names internally for structure only — do NOT output them in the script.)
 
-NEVER WRITE:
-  "The blackness" (use "the open", "the vast", "the still" instead)
-  "Beyond you" / "Behind you" / "All around you" (directional dissolving)
-  "No body. No name. No time."
-  "Become more of it" / "Less of you"
-  "Dissolving into nothing"
-  "The realm of all possibility"
-  "The field"
-  "Broadcasting [name]'s frequency into the field"
-  "Synchronize"
-  "Come back to a new body"
-  "Into a whole new future"
-  "That's energy in your heart" — max once per script, not a refrain
-  "And remember this feeling" — max once per script, not a refrain
-  "Draw it to you with your heart" — max once per script
-  "Feel that in your brain" — Dispenza phrase; use "Notice that energy." or "Feel the aliveness at the crown." instead
+PHASE 1 — ${phaseNames[0]} (target: 3–4 minutes of spoken content)
+Body settling. 3 complete breath cycles. Maximum 4 words per phrase.
+Each cycle: breathe in [pause 4s] + instruction [pause 12s]
+End with a minimum [pause 20s] before Phase 2 begins.
 
-Also never use: "just", "simply", "try", "attempt", "deserve", "worthy", "beautiful", "amazing", "universe", "quantum", "unified field", "higher self", "astral".
-Never use place names, country names, or names of people other than the user's first name.
+PHASE 2 — ${phaseNames[1]} (target: 2–3 minutes of spoken content)
+Heart activation. IMMEDIATELY after Phase 1 — no long body scan first.
+Always include 2 complete heart breath cycles.
+Gratitude planted naturally here — not announced.
+End with: And release. [pause 20s]
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-THE YOUTOPIA DIFFERENCE — all answers woven as poetry
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Youtopia gives each listener a personalised vision built from their intake answers. But personalisation does NOT mean reading answers back. It means finding the emotional truth underneath each answer and building an image from that truth.
+Feel it. [pause 30s]
 
-The goal: the listener hears something and thinks "how did it know that" — not "yes, that's my answer number 3."
+This floating "Feel it." is structural — it does NOT count toward the 2-use limit.
 
-HOW TO BUILD THE VISION:
-STEP 1 — Read ALL the answers. Find what is SPECIFIC and surprising in each one — the detail only this person would have given, the texture underneath the surface want.
-STEP 2 — Find the emotional through-line across all answers. What are they really asking for? (Not what they said. What it points toward.)
-STEP 3 — Build one image per answer. Each image: 1-3 slow sentences followed by [long pause 10s] or [long pause 12s]. Do NOT rush images together. Let each one breathe before the next.
-STEP 4 — Do NOT announce the answer. Translate it into feeling. If they said "balcony breakfast", write "The morning doesn't need to be earned." If they stopped wanting help, write "He asks if you need anything. And you say yes."
-STEP 5 — Weave the user's name in once inside the vision, and once more when closing it.
-STEP 6 — Distribute images across the whole section. Not clustered. Not in the order of the questions. Let them arrive like separate discoveries.
+PHASE 3 — ${phaseNames[2]} (target: 2–3 minutes of spoken content)
+Energy rising from base of spine to crown. Always 2 complete rounds.
+Each round: rise [pause 4s] + upward [pause 4s] + crown [pause 4s] + hold [pause 8s] + release [pause 8s]
+End with "Feel the aliveness at the crown." [pause 20s]
+Then: [segment break]
 
-CORRECT EXAMPLE — for a fictional user whose answers included: used to run marathons but stopped after an injury and is afraid to try again / morning coffee ritual alone at the kitchen window / grew up being told not to ask for too much / teaches music to children but doubts anyone is listening / dreams of watching the sunrise over mountains with their father before he gets too old:
+PHASE 4 — ${phaseNames[3]} (target: 1–2 minutes of spoken content)
+Minimum 3 lines. Each with [pause 12s]–[pause 18s]. Very sparse.
+User's name here once. Let everything go quiet.
+Do not rush. End: "Let everything go quiet." [pause 20s]
+Then: [segment break]
 
-  The legs know what to do. [long pause 10s]
-  They always did. [long pause 12s]
-  There is no negotiation before the first step — [long pause 10s]
-  just the step. [long pause 15s]
+PHASE 5 — ${phaseNames[4]} (target: 2–3 minutes of spoken content)
+Borderlessness. 8–10 short lines. Each followed by [pause 18s]–[pause 22s].
+Use ONLY Youtopia dissolution language. Zero Dispenza phrases.
+No rushing. Each line is a complete drop into stillness.
+Drop one presence anchor here: Feel it. [pause 25s]
+End: "The permanent now." [pause 22s] "Just this." [pause 25s]
+Then: [segment break]
 
-  There is a window. [long pause 10s]
-  Morning before anyone else is awake. [long pause 10s]
-  The mug warm in both hands. [long pause 10s]
-  And this — [pause 5s] this quiet — [long pause 12s]
-  belonging to you completely. [long pause 15s]
+PHASE 6 — ${phaseNames[5]} (target: 2–3 minutes of spoken content)
+This is where the user's answers are used as mechanism, not story.
+Open: "${name} — [pause 6s] something is forming. [pause 12s]"
+Build from their proof toward the present moment using specific proper nouns from their answers.
+Every vision image ends with a [pause:N] then "Feel it." on its own line.
+After the 2nd or 3rd image (halfway through all images), insert: [segment break]
+Continue with remaining images. End the proof section with:
+[pause 28s]
+[FEEL IT — 1 of 2]
+[pause 28s]
 
-  Someone small is learning a chord for the first time. [long pause 12s]
-  You watch their face when it rings true. [long pause 12s]
-  That moment will live in them [pause 5s] long after they forget your name. [long pause 20s]
+PHASE 7 — ${phaseNames[6]} (target: 2–3 minutes of spoken content)
+A completely INVENTED forward scene. Nothing from the user's life. Brand new.
+Specific. Sensory. Present tense. Ordinary moments that carry enormous weight.
+The listener is inside it — not watching it.
+Embed 2 gratitude invitations inside the scene, anchored to sensory details (never declared from outside).
+No word limit — the scene must feel fully lived. Do not truncate.
+End:
+[pause 28s]
+[FEEL IT — 2 of 2]
+[pause 30s]
 
-  And somewhere — high ground, cold air. [long pause 12s]
-  The sky beginning to change. [long pause 12s]
-  He is beside you. [long pause 10s]
-  Not the version of him that worries. [long pause 10s]
-  The version that used to lift you onto his shoulders [pause 5s] so you could see further. [long pause 20s]
+PHASE 8 — ${phaseNames[7]} (target: 1–1:30 minutes of spoken content)
+3–4 short lines. Simple. Direct. The anchor arrives like a hand placed softly.
+  "Stay here." [pause 15s]
+  "Let it settle further." [pause 20s]
+  "The body is holding this." [pause 20s]
+  "Let it settle into the marrow." [pause 20s]
+  "Carry it back." [pause 15s]
 
-  You didn't ask for too much. [long pause 12s]
-  You asked for exactly the right things. [long pause 20s]
+[pause 25s]
 
-WRONG — literal answer playback (never do this):
-  "There is Scott. There is a morning and a beach and breakfast beside someone you love. Your app is helping people. You are financially free."
+Remember. [pause 15s]
 
-WRONG — third-person action narration (never do this, ever):
-  "She is pedaling the bicycle. She is climbing the hill. She is doing this. She is doing that."
-  This is sports commentary. It is absolutely forbidden. The listener is not watching themselves — they ARE themselves. Write from inside the experience: the body moving without asking, the legs knowing, the wind, what it costs nothing. Never "she is ___ing." Always the inner texture of the moment.
+Then: [segment break]
 
-WRONG — too abstract (never do this):
-  "Tune in to the frequency of love. Feel it. Come back."
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-8-SECTION STRUCTURE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-SECTION 1 — Arrival (${sw.arrival} words)
-Minimal. Close eyes. Feel the weight and density of the body filling the space beneath it. Let the surface hold all of that.
-Maximum 4 words per phrase. [pause 8s] after every instruction. Nothing more.
-Opening device this month: ${openingDevice}
-
-SECTION 2 — Heart awakening (${sw.release} words)
-IMMEDIATELY after arrival — no long body scan first.
-"It's time to awaken your heart." Find the energy at the center of the chest. Breathe into it. Hold. Exhale.
-Build into ${coherenceEmotion}: "Grateful to be alive." / "A love for this life." (pick one register and stay with it throughout this section.)
-The optional sensory note this month: "${lightMetaphor}" — use it once here only, as a brief sensory phrase, then drop it entirely.
-[pause 8s] between every instruction. [long pause 12s] at the end of the section.
-
-SECTION 3 — Energy breath (${sw.body} words)
-Guide breath from the base of the spine upward to the crown. Hold. Exhale. "Notice that energy." or "Feel the aliveness at the crown." Repeat twice.
-Short, directive sentences. [pause 6s] between instructions. [long pause 12s] at the end.
-End with: "[segment break]" on its own line — this is the first of the 3 required segment breaks.
-
-SECTION 4 — Deep release (${sw.coherence} words)
-"Relax. [long pause 10s] Feel the body. [long pause 12s] And soften more. [long pause 15s]"
-Very sparse. Only 4-5 short phrases. Let silence dominate.
-The nervous system is crossing into theta here. Do not interfere with words.
-End with: "Let everything go quiet. [long pause 20s]"
-Then: "[segment break]" on its own line — this is the second of the 3 required segment breaks.
-
-SECTION 5 — Space of nowhere (${sw.nowhere} words)
-THE HEART OF THE MEDITATION. Use ONLY Youtopia language. Zero Dispenza phrases.
-
-Guide the listener into formless awareness using this vocabulary (in your own sequence, do not copy exactly):
-  "Let the edges of you go soft." [long pause 15s]
-  "Porous." [long pause 15s]
-  "Until you are not sure where you end." [long pause 15s]
-  "Before the name." [long pause 15s]
-  "Before the story." [long pause 15s]
-  "Before any of it." [long pause 20s]
-  "A silent theater." [long pause 15s]
-  "Nothing performing." [long pause 15s]
-  "Nothing watching." [long pause 20s]
-  "The permanent now." [long pause 20s]
-  "Just this." [long pause 20s]
-
-Do NOT use: "the blackness", "beyond you", "behind you", "all around you", "no body no name", "become more of it", "less of you", "the field", "the realm of all possibility".
-Drop one presence anchor here: "Feel it." on its own line. [long pause 25s] after.
-Use at least 8 of the vocabulary phrases listed above. Do not rush through this section — the listener needs time to fully dissolve before the vision begins.
-End Section 5 with: "[segment break]" on its own line — this is the third of the 4 required segment breaks. The music will play for 90 seconds before the vision begins.
-
-SECTION 6 — Vision (${sw.becoming} words)
-Follow the HOW TO BUILD THE VISION steps above exactly. Use ALL intake answers. Distribute images across the section — not clustered, not listed in question order.
-
-Open with the user's name and a single brief line naming the feeling, then move directly into images:
-  "${userName || "listen"} — [pause 6s] something is forming. [long pause 12s]"
-
-PAUSE MARKERS — use these exactly as written, on their own line. [pause:N] markers are only for the visualization section (Sections 6A and 6B). Do NOT use them in Sections 1–5.
-
-  [pause:6]   between two separate vision images
-  [pause:8]   between major vision concepts
-  [pause:10]  before "Feel it." after a shorter image
-  [pause:14]  before "Feel it." when it closes an image set
-  [pause:16]  before "Feel it." when it closes a longer section
-  [pause:18]  before "Feel it." after the longest, most emotional section
-  [pause:12]  before "Remember." — always, without exception
-
-RULES:
-- Every vision image ends with "Feel it." preceded by a [pause:N] on its own line.
-- "Feel it." and "Remember." are NEVER written immediately after the previous line.
-- "Stay with this." is NOT used anywhere in the visualization.
-- "Feel it." appears after each major vision image.
-- "Remember." appears exactly once — at the very end of Segment 5, before the Anchor bridge.
-- Short phrases within the same image need no pause marker — natural delivery handles it.
-- Between two separate images, place [pause:6] or [pause:8] before moving to the next image.
-
-BODY SENSATION in the financial/security image: when you write the image about financial relief or "enough", always add one or two body sensation lines before "Feel it." — what the body does when financial fear lifts:
-  The jaw has let go.
-  The space between the ribs has opened.
-These lines go between the last thought of the image and the [pause:N] before "Feel it."
-
-Build one image per answer. Each image: 1-3 sentences. Then [pause:N] on its own line. Then "Feel it." on its own line. Leave a blank line between image blocks.
-
-CORRECT visualization example:
-  There is a morning.
-  No alarm in it.
-  No number to check.
-  No calculation before the first breath.
-  [pause:14]
-  The body waking
-  and finding nothing to brace against.
-  [pause:18]
-  Feel it.
-  [pause:6]
-  something that has both of you in it.
-  [pause:16]
-  And the bills?
-  Not a worry this month.
-  The month after,
-  the thinking about the thinking,
-  gone.
-  The jaw has let go.
-  The space between the ribs has opened.
-  Enough.
-  This is what enough feels like.
-  [pause:10]
-  Feel it.
-  [pause:6]
-  Let it settle
-  into the marrow.
-  [pause:12]
-  Remember.
-
-After the 2nd or 3rd image (roughly halfway through all the images), insert "[segment break]" on its own line. This is the 4th of the 5 required segment breaks. The music will pause here so the first images can settle before the remaining ones arrive. Then continue with the remaining images using the same image + feel-it invitation pattern.
-
-Close the vision:
-  "${userName || "listen"} — [long pause 12s]"
-  "This is what the wanting was pointing toward. [long pause 15s]"
-  "All of it. [long pause 15s]"
-  "The body knew. [long pause 15s]"
-  "This is already true. [long pause 12s]"
-  "Your body knows it. [long pause 15s]"
-  "Let it settle. [long pause 15s]"
-  "Into the marrow. [long pause 20s]"
-
-Drop one presence anchor: [pause:12] on its own line, then "Remember." on its own line. [long pause 20s] after.
-Then: "[segment break]" on its own line — this is the fifth and final segment break.
-
-SECTION 7 — Anchor (${sw.anchor} words)
-The listener is still deep. This section is a gentle landing — not a clinical announcement. Let the anchor arrive like a hand placed softly.
-  "Stay here. [long pause 15s]"
-  "Let it settle further. [long pause 20s]"
-  "The body is holding this. [long pause 20s]"
-  "Let it be woven in. [long pause 20s]"
-  "Carry it back. [long pause 15s]"
-  "Into everything. [long pause 20s]"
-Maximum 6 lines total. Do NOT write "not a memory" — visualization creates genuine future memory. The brain encodes it as real.
-
-SECTION 8 — Return (${sw.return} words)
-The return must feel like surfacing from deep water — unhurried. Give the listener time. Do not rush them back.
-  "And now, slowly. [long pause 12s]"
-  "Begin to come back. [long pause 12s]"
-  "Into the body. [long pause 10s]"
-  "Into the room. [long pause 10s]"
-  "Into this day. [long pause 12s]"
-  "Something has shifted. [long pause 15s]"
-  Address the user by name once, gently — a quiet acknowledgment, not a wake-up call.
-  "Take your time. [long pause 10s]"
-  "When you're ready — [pause 6s] open your eyes. [pause 8s]"
+PHASE 9 — ${phaseNames[8]} (target: 2–2:30 minutes of spoken content)
+The return must feel like surfacing from deep water — unhurried.
+  "Stay here." [pause 15s]
+  "Let it settle further." [pause 20s]
+  "And now, slowly." [pause 12s]
+  "Begin to come back." [pause 12s]
+  "Into the body." [pause 10s]
+  "Into the room." [pause 10s]
+  "Into this day." [pause 12s]
+  "Something has shifted." [pause 15s]
+  User's name once — quiet acknowledgment, not a wake-up call.
+  "Take your time." [pause 10s]
+  "When you're ready — [pause 6s] open your eyes." [pause 8s]
   "Welcome to your new reality."
-The final line "Welcome to your new reality." is always the last words of the script. No pause marker after it.
-Never say "the meditation is ending." Never say "well done" or "good work." Never say "a new body." Never say "the practice is complete."
 
-${band.extraDepth}
+"Welcome to your new reality." is always the final line. No pause marker after it.
+Never say "the meditation is ending" / "well done" / "good work" / "a new body" / "the practice is complete."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GRATITUDE INVITATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Every script must include at least 2 gratitude invitations embedded inside the scene.
+Gratitude is never announced from outside the moment — it is felt from inside a specific sensory detail.
+
+WRONG — declared from outside:
+"Feel grateful for everything you have."
+
+RIGHT — felt from inside:
+"You hear him in the kitchen. Your heart is filled with love and gratitude."
+"The woman who moved countries, who said yes at four in the morning — how grateful she is for all of it."
+
+Both invitations: one in Phase 6 (anchored to proof), one in Phase 7 (anchored to invented scene).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCENE WRITING RULES (Phase 7)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SPECIFIC — not "a morning" but "the light comes through a window you chose."
+INVENTED — do not use anything the user told you. Create something new.
+EARNED — the person has opened their body and been reminded of their proof. The scene lands into that.
+ORDINARY — small moments. A jaw that has relaxed on its own. Hands that reach without calculating. A room with someone who belongs there.
+CONTINUOUS — no jump cuts. One morning, moving from moment to moment. The person is inside it.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MONTHLY VARIATION REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Every month, the meditation must feel structurally and tonally different.
+Phase 7's invented scene must use completely different settings, people, and details each month.
+Do not reuse: window / coffee / jaw / someone in the next room (Month 1 images).
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PACING RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-— Total spoken words: ${band.totalWords}. Most of the session time is silence and music.
-— Use the user's first name 4-5 times total. Spread across all sections.
+— ${tenureInfo.words}. Most of the session time is silence and music.
+— Use the user's first name 4 times or fewer total. Spread across all phases.
 — Every phrase stands alone on its own line followed by a pause marker.
 — Never write more than 2 phrases in a row without a pause marker between them.
-— Leave a blank line between each paragraph / image block so the script breathes on the page.
-— The 2+ minute music bridges between segments already give the listener rest. Inside each segment, the pauses give them rest. Do not fill space with words.`;
+— Leave a blank line between each paragraph / image block.
+— The music bridges between segments give the listener rest. Do not fill with extra words.
+— ${tenureInfo.extra}
+
+QUALITY CHECK (run internally before writing):
+- Floating "feel it" after Phase 2 heart close: And release. [pause 20s] → Feel it. [pause 30s]
+- [FEEL IT — 1 of 2] and [FEEL IT — 2 of 2] each appear exactly once
+- "Remember." appears exactly 1 time, preceded by [pause 25s], followed by [pause 15s]
+- No want / wanting / wishing / hoping anywhere — including subtle constructions
+- No negatives: "not X" / "no X" / "never X" constructions removed
+- No "not because X, but because Y" — only the positive stated directly
+- Specific names and places from user's answers used verbatim in Phase 6
+- At least 2 strong declarative punch lines (short, present tense, no hedging)
+- At least 2 gratitude invitations anchored to specific sensory details
+- Phase 1: 3 complete breath cycles
+- Phase 2: 2 complete heart breath cycles
+- Phase 3: 2 complete spine breath rounds
+- Each phase ends with [pause 20s] before transitioning
+- Dissolution section: [pause 18s]–[pause 22s] after each line
+- Both main Feel it markers: [pause 28s] BEFORE and [pause 25s]+ AFTER
+- Remember: [pause 25s] BEFORE and [pause 15s] AFTER
+- Phase 7 scene is invented, not from the user's life
+- Phase 7 scene is specific enough to create a physical feeling
+- User's name appears 4 times or fewer
+- Script has exactly 5 [segment break] markers`;
 }
 
 // --- Segment splitter -----------------------------------------------------
@@ -563,7 +543,7 @@ serve(async (req) => {
 - month_number: ${monthNum}
 ${answerLines}
 
-Write the meditation script now. Follow the 8-section structure exactly. Use the bracket pause markers and PRESENCE ANCHOR lines as specified. Output only the script.`;
+Write the meditation script now. Follow the 9-phase structure exactly. Use the bracket pause markers, [FEEL IT — 1 of 2], [FEEL IT — 2 of 2], and [REMEMBER] markers as specified. Output only the script — no timing table, no checklist.`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -596,18 +576,26 @@ Write the meditation script now. Follow the 8-section structure exactly. Use the
     const fullScript: string = data.content?.[0]?.text;
     if (!fullScript) throw new Error("No script generated");
 
+    // Convert structured presence-anchor markers to plain spoken words.
+    // [FEEL IT — 1 of 2] / [FEEL IT — 2 of 2] → "Feel it."
+    // [REMEMBER] → "Remember."
+    // These are understood by narrate-meditation's echo-phrase detection.
+    const withAnchorMarkers = fullScript.trim()
+      .replace(/\[FEEL IT[^\]]*\]/gi, "Feel it.")
+      .replace(/\[REMEMBER\]/gi, "Remember.");
+
     // Strip any v3 delivery tags the model may have leaked into the script.
     // These tags are added by narrate-meditation — if they appear in the script
     // text itself the TTS system reads them aloud.
     const V3_DELIVERY_TAGS = /\[(softly|slow|warm|intimate|drawn out|whisper|fast|neutral|robust|creative|loud|quiet|serious|happy|sad|angry|fearful|surprised|disgust|calm|excited)\]/gi;
     // Strip em dashes and en dashes — they cause ElevenLabs to pause awkwardly
     // and bleed through into the narrated audio as unintended hesitations.
-    const cleanedScript = fullScript.trim()
+    const cleanedScript = withAnchorMarkers
       .replace(V3_DELIVERY_TAGS, "")
       .replace(/—/g, " ")
       .replace(/–/g, " ");
     const segmentTexts = splitIntoSegments(cleanedScript);
-    const titles = ["Arrival", "Releasing", "Nowhere", "Becoming", "Becoming II", "Return"];
+    const titles = ["Grounding", "Softening", "Dissolution", "The Proof", "The Scene", "Return"];
     const segments = segmentTexts.map((text, i) => ({
       number: i + 1,
       title: titles[i] || `Segment ${i + 1}`,
