@@ -279,7 +279,7 @@ const VoiceCaptureStep = ({
             onClick={() => setState("choose")}
             className="mt-4 font-body text-sm text-muted-foreground underline"
           >
-            Use Serena's voice instead
+            Use the Youtopia voice instead
           </button>
         )}
       </motion.div>
