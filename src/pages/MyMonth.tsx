@@ -85,6 +85,7 @@ const MyMonth = () => {
   const [intakeQuestions, setIntakeQuestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [userFirstName, setUserFirstName] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
   const segmentUrls = meditation?.meditation_segments
@@ -112,6 +113,14 @@ const MyMonth = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { navigate("/auth?mode=login"); return; }
     setUserFirstName((user.user_metadata?.full_name || "").split(" ")[0] || "");
+
+    const { data: roleRow } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+    setIsAdmin(!!roleRow);
 
     const [med, seedData, currentIntake, prof, ans] = await Promise.all([
       getLatestMeditation(user.id),
@@ -386,6 +395,30 @@ const MyMonth = () => {
                   )}
                 </button>
               </div>
+
+              {isAdmin && meditation?.script && (
+                <div className="mt-3">
+                  <button
+                    onClick={() => {
+                      const slug = (theme?.theme || "meditation").replace(/\s+/g, "-").toLowerCase();
+                      const blob = new Blob([meditation.script], { type: "text/plain;charset=utf-8" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `${slug}-transcript.txt`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-full font-body text-[11px] tracking-wide transition-all active:scale-95 border border-dashed"
+                    style={{ borderColor: "rgba(160, 120, 70, 0.35)", color: "hsl(var(--accent))" }}
+                  >
+                    <Download size={12} />
+                    <span>Download transcript (admin)</span>
+                  </button>
+                </div>
+              )}
 
             </div>
           </section>
