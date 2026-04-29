@@ -396,6 +396,30 @@ const MyMonth = () => {
                 </button>
               </div>
 
+              {isAdmin && meditation?.script && (
+                <div className="mt-3">
+                  <button
+                    onClick={() => {
+                      const slug = (theme?.theme || "meditation").replace(/\s+/g, "-").toLowerCase();
+                      const blob = new Blob([meditation.script], { type: "text/plain;charset=utf-8" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `${slug}-transcript.txt`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-full font-body text-[11px] tracking-wide transition-all active:scale-95 border border-dashed"
+                    style={{ borderColor: "rgba(160, 120, 70, 0.35)", color: "hsl(var(--accent))" }}
+                  >
+                    <Download size={12} />
+                    <span>Download transcript (admin)</span>
+                  </button>
+                </div>
+              )}
+
             </div>
           </section>
         )}
