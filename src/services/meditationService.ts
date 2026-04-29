@@ -96,15 +96,22 @@ async function getVoiceSettings() {
   };
 }
 
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data: sess } = await supabase.auth.getSession();
+  const token = sess?.session?.access_token;
+  if (!token) throw new Error("Not signed in. Please sign in again.");
+  return {
+    "Content-Type": "application/json",
+    apikey: SUPABASE_KEY,
+    Authorization: `Bearer ${token}`,
+  };
+}
+
 export async function narrateSegment(segmentText: string, voiceId: string, segmentNumber: number): Promise<Blob> {
   const settings = await getVoiceSettings();
   const response = await fetch(`${SUPABASE_URL}/functions/v1/narrate-meditation`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-    },
+    headers: await getAuthHeaders(),
     body: JSON.stringify({ script: segmentText, voiceId, segmentNumber, ...settings }),
   });
 
@@ -209,9 +216,12 @@ export async function cloneVoice(audioBlob: Blob): Promise<string> {
   const formData = new FormData();
   formData.append("audio", audioBlob, "voice-sample.webm");
 
+  const { data: sess } = await supabase.auth.getSession();
+  const token = sess?.session?.access_token;
+  if (!token) throw new Error("Not signed in. Please sign in again.");
   const response = await fetch(`${SUPABASE_URL}/functions/v1/clone-voice`, {
     method: "POST",
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` },
     body: formData,
   });
 
@@ -290,11 +300,7 @@ export async function narrateSeed(phrase: string, voiceId: string): Promise<Blob
   const settings = await getVoiceSettings();
   const response = await fetch(`${SUPABASE_URL}/functions/v1/narrate-seeds`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-    },
+    headers: await getAuthHeaders(),
     body: JSON.stringify({ phrase, voiceId, ...settings }),
   });
 
