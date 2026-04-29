@@ -149,7 +149,7 @@ const VoiceCaptureStep = ({
 
   const bars = 32;
 
-  // === Existing clone — same as before ===
+  // === Existing clone — locked, no re-record allowed ===
   if (hasExistingClone && state === "done" && !audioBlobRef.current) {
     return (
       <motion.div
@@ -164,14 +164,6 @@ const VoiceCaptureStep = ({
         <p className="font-body text-sm text-muted-foreground mb-6 max-w-xs">
           Your voice clone is ready. Your seeds will be whispered in your own voice.
         </p>
-        {allowVoiceClone && (
-          <button
-            onClick={() => setState("intro")}
-            className="font-body text-sm text-primary underline"
-          >
-            Re-record my voice
-          </button>
-        )}
       </motion.div>
     );
   }
