@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound.tsx";
 import PreviewLoading from "./pages/PreviewLoading.tsx";
 import HomePreview from "./pages/HomePreview.tsx";
 import FlowPreview from "./pages/FlowPreview.tsx";
+import PreviewVoiceCapture from "./pages/PreviewVoiceCapture.tsx";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/preview-loading" element={<PreviewLoading />} />
           <Route path="/home-preview" element={<HomePreview />} />
           <Route path="/flow-preview" element={<FlowPreview />} />
+          <Route path="/preview/voice-capture" element={<PreviewVoiceCapture />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
