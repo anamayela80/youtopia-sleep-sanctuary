@@ -56,7 +56,7 @@ const SettingsPage = () => {
       setSeedPref(next);
       toast({
         title: "Seeds re-narrated",
-        description: next === "preset" ? "Now using Serena's voice." : "Now using your voice.",
+        description: next === "preset" ? "Now using the Youtopia voice." : "Now using your voice.",
       });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Couldn't switch voice", description: e.message || "Please try again." });
