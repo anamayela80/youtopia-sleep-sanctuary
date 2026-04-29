@@ -9,7 +9,7 @@ interface VoiceCaptureStepProps {
   hasExistingClone: boolean;
   /** Whether voice cloning is allowed for this month's theme. */
   allowVoiceClone?: boolean;
-  /** Whether a preset (Serena) voice is configured for this month. */
+  /** Whether a preset (Youtopia) voice is configured for this month. */
   hasPresetVoice?: boolean;
 }
 
@@ -149,7 +149,7 @@ const VoiceCaptureStep = ({
 
   const bars = 32;
 
-  // === Existing clone — same as before ===
+  // === Existing clone — locked, no re-record allowed ===
   if (hasExistingClone && state === "done" && !audioBlobRef.current) {
     return (
       <motion.div
@@ -164,19 +164,11 @@ const VoiceCaptureStep = ({
         <p className="font-body text-sm text-muted-foreground mb-6 max-w-xs">
           Your voice clone is ready. Your seeds will be whispered in your own voice.
         </p>
-        {allowVoiceClone && (
-          <button
-            onClick={() => setState("intro")}
-            className="font-body text-sm text-primary underline"
-          >
-            Re-record my voice
-          </button>
-        )}
       </motion.div>
     );
   }
 
-  // === Choice screen — record or use preset Serena voice ===
+  // === Choice screen — record or use preset Youtopia voice ===
   if (state === "choose") {
     return (
       <motion.div
@@ -225,7 +217,7 @@ const VoiceCaptureStep = ({
                 <Sparkles size={20} className="text-accent mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="font-body font-semibold text-foreground mb-1">
-                    Serena's voice {presetSelected && "✓"}
+                    The Youtopia voice {presetSelected && "✓"}
                   </p>
                   <p className="font-body text-xs text-muted-foreground leading-relaxed">
                     A warm, calming preset voice, chosen for you. Skip the recording.
@@ -287,7 +279,7 @@ const VoiceCaptureStep = ({
             onClick={() => setState("choose")}
             className="mt-4 font-body text-sm text-muted-foreground underline"
           >
-            Use Serena's voice instead
+            Use the Youtopia voice instead
           </button>
         )}
       </motion.div>
