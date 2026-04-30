@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Settings as SettingsIcon, Check, Headphones, Flame, Clock } from "lucide-react";
+import { Settings as SettingsIcon, Check, Headphones, Flame, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getLatestMeditation, getLatestSeeds, getActiveTheme, getUserProfile,
