@@ -432,9 +432,6 @@ const Home = () => {
           <button onClick={() => navigate("/settings")} aria-label="Settings" className="p-1.5">
             <SettingsIcon size={20} style={{ color: "hsl(var(--subtitle))" }} strokeWidth={1.6} />
           </button>
-          <button aria-label="Menu" className="p-1.5">
-            <Menu size={22} style={{ color: "hsl(var(--subtitle))" }} strokeWidth={1.6} />
-          </button>
         </div>
       </div>
 
