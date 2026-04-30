@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Settings as SettingsIcon, Check, Headphones, Flame, Clock } from "lucide-react";
+import { Settings as SettingsIcon, Check, Headphones, Flame, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getLatestMeditation, getLatestSeeds, getActiveTheme, getUserProfile,
@@ -431,9 +431,6 @@ const Home = () => {
         <div className="flex items-center gap-2">
           <button onClick={() => navigate("/settings")} aria-label="Settings" className="p-1.5">
             <SettingsIcon size={20} style={{ color: "hsl(var(--subtitle))" }} strokeWidth={1.6} />
-          </button>
-          <button aria-label="Menu" className="p-1.5">
-            <Menu size={22} style={{ color: "hsl(var(--subtitle))" }} strokeWidth={1.6} />
           </button>
         </div>
       </div>
