@@ -134,9 +134,15 @@ const Onboarding = () => {
   }, [navigate, toast, forceFull]);
 
   // Build the dynamic step list once we know the gating
-  const stepList: Array<"welcome" | "science" | "before" | "theme" | "question" | "voice"> = (() => {
+  const stepList: Array<"welcome" | "science" | "before" | "theme" | "newmonth" | "question" | "voice"> = (() => {
     if (isFirstEver === null) return [];
-    const list: Array<"welcome" | "science" | "before" | "theme" | "question" | "voice"> = [];
+    const list: Array<"welcome" | "science" | "before" | "theme" | "newmonth" | "question" | "voice"> = [];
+    if (isNewMonth) {
+      list.push("newmonth");
+      for (let i = 0; i < questions.length; i++) list.push("question");
+      list.push("voice");
+      return list;
+    }
     if (isFirstEver) list.push("welcome", "science");
     list.push("before");
     list.push("theme");
