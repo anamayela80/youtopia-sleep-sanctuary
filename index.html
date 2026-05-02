@@ -25,6 +25,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          for (let r of registrations) r.update();
+        });
+      }
+    </script>
     <meta property="og:title" content="YOUtopia Within">
   <meta name="twitter:title" content="YOUtopia Within">
   <meta property="og:description" content="YOUTOPIA, Remember your future. Rewire your brain using the sheer power of imagination—because your mind doesn&#39;t know the difference. Create your utopia">
