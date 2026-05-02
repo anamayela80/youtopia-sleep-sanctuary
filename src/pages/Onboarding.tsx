@@ -36,6 +36,7 @@ import QuestionsStep, { ThemeQuestion } from "@/components/onboarding/QuestionsS
 import VoiceCaptureStep from "@/components/onboarding/VoiceCaptureStep";
 import GeneratingStep from "@/components/onboarding/GeneratingStep";
 import FolderUnlockStep from "@/components/onboarding/FolderUnlockStep";
+import NewMonthIntroStep from "@/components/onboarding/NewMonthIntroStep";
 
 /**
  * Monthly Intake Flow.
@@ -49,6 +50,7 @@ import FolderUnlockStep from "@/components/onboarding/FolderUnlockStep";
 const Onboarding = () => {
   const [searchParams] = useSearchParams();
   const forceFull = searchParams.get("full") === "1"; // for testing the full flow
+  const isNewMonth = searchParams.get("mode") === "new-month";
 
   const [step, setStep] = useState(0);
   const [isFirstEver, setIsFirstEver] = useState<boolean | null>(null);
@@ -132,9 +134,15 @@ const Onboarding = () => {
   }, [navigate, toast, forceFull]);
 
   // Build the dynamic step list once we know the gating
-  const stepList: Array<"welcome" | "science" | "before" | "theme" | "question" | "voice"> = (() => {
+  const stepList: Array<"welcome" | "science" | "before" | "theme" | "newmonth" | "question" | "voice"> = (() => {
     if (isFirstEver === null) return [];
-    const list: Array<"welcome" | "science" | "before" | "theme" | "question" | "voice"> = [];
+    const list: Array<"welcome" | "science" | "before" | "theme" | "newmonth" | "question" | "voice"> = [];
+    if (isNewMonth) {
+      list.push("newmonth");
+      for (let i = 0; i < questions.length; i++) list.push("question");
+      list.push("voice");
+      return list;
+    }
     if (isFirstEver) list.push("welcome", "science");
     list.push("before");
     list.push("theme");
@@ -175,7 +183,7 @@ const Onboarding = () => {
   };
 
   const canProceed = () => {
-    if (currentKind === "welcome" || currentKind === "science" || currentKind === "before" || currentKind === "theme") return true;
+    if (currentKind === "welcome" || currentKind === "science" || currentKind === "before" || currentKind === "theme" || currentKind === "newmonth") return true;
     if (currentKind === "question") return (answers[questionIndex] || "").trim().length > 0;
     if (currentKind === "voice") return hasExistingClone || hasRecording || usePresetVoice;
     return false;
@@ -387,9 +395,13 @@ const Onboarding = () => {
       ? "I'm ready"
       : currentKind === "theme"
       ? "I'm ready for my questions"
+      : currentKind === "newmonth"
+      ? "Begin"
       : currentKind === "voice"
       ? "Create my practice ✨"
       : "Continue";
+
+  const monthName = new Date().toLocaleString("default", { month: "long" });
 
   // Theme intro and welcome/science screens hide the progress bar for cleaner reveal
   const showProgress = currentKind === "question" || currentKind === "voice";
@@ -439,6 +451,9 @@ const Onboarding = () => {
               description={theme?.description || ""}
               intention={theme?.intention || ""}
             />
+          )}
+          {currentKind === "newmonth" && (
+            <NewMonthIntroStep key="newmonth" monthName={monthName} />
           )}
           {currentKind === "question" && (
             <QuestionsStep
