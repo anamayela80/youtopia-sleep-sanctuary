@@ -138,9 +138,9 @@ const Onboarding = () => {
     if (isFirstEver === null) return [];
     const list: Array<"welcome" | "science" | "before" | "theme" | "newmonth" | "question" | "voice"> = [];
     if (isNewMonth) {
-      list.push("newmonth");
+      // Returning user starting a new chapter: just the reflection questions.
+      // Voice clone already exists from their first intake; reuse it.
       for (let i = 0; i < questions.length; i++) list.push("question");
-      list.push("voice");
       return list;
     }
     if (isFirstEver) list.push("welcome", "science");
