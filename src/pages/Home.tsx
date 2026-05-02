@@ -234,6 +234,14 @@ const Home = () => {
       getUserProfile(user.id),
     ]);
 
+    // If the user's intake has expired (we are in a new calendar month past the
+    // 30-day window), route them into the new-month intake flow so they get the
+    // next chapter, new theme, and new questions.
+    if (currentIntake && isIntakeExpired(currentIntake)) {
+      navigate("/onboarding?mode=new-month");
+      return;
+    }
+
     setIntake(currentIntake);
 
     let displayTheme: any = null;
