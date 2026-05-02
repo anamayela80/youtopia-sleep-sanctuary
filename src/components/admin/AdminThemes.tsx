@@ -264,14 +264,23 @@ export const AdminThemes = () => {
             ))}
           </div>
 
-          <button
-            onClick={() => save(t)}
-            disabled={savingId === t.id}
-            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-body text-sm font-medium flex items-center gap-2 disabled:opacity-50"
-          >
-            <Save size={14} />
-            {savingId === t.id ? "Saving..." : "Save"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => save(t)}
+              disabled={savingId === t.id}
+              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-body text-sm font-medium flex items-center gap-2 disabled:opacity-50"
+            >
+              <Save size={14} />
+              {savingId === t.id ? "Saving..." : "Save"}
+            </button>
+            <button
+              onClick={() => remove(t)}
+              className="px-4 py-2 rounded-lg bg-destructive text-destructive-foreground font-body text-sm font-medium flex items-center gap-2"
+            >
+              <Trash2 size={14} />
+              Delete
+            </button>
+          </div>
         </div>
       ))}
     </div>
