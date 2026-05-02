@@ -153,7 +153,9 @@ Rule: only write what IS. Never write what isn't.
 
 At least 2 STRONG DECLARATIVE PUNCH LINES required.
 Short. Present tense. No hedging. These land at peak moments.
-Examples: "It was inevitable." / "The new ${name} is here." / "She already knew." / "This was always going to happen." / "She held out for the real thing."
+Examples: "It was inevitable." / "The new ${name} is here." / "${name} already knew." / "This was always going to happen." / "${name} held out for the right thing."
+
+CRITICAL — gender: You do not know the user's gender. Never use "she", "her", "he", "his", "woman", "man" unless the user's own answers explicitly state their gender. Use the user's first name (${name}) or second person ("you", "your") instead.
 
 REQUIRED language qualities:
   - Specific and sensory — if it cannot be seen, touched, or physically felt, rewrite it
@@ -417,7 +419,7 @@ WRONG — declared from outside:
 
 RIGHT — felt from inside:
 "You hear him in the kitchen. Your heart is filled with love and gratitude."
-"The woman who moved countries, who said yes at four in the morning — how grateful she is for all of it."
+"${name} — who moved countries, who said yes at four in the morning — how grateful for all of it."
 
 Both invitations: one in Phase 6 (anchored to proof), one in Phase 7 (anchored to invented scene).
 

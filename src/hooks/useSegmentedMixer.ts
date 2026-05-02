@@ -74,7 +74,7 @@ const TENURE_TIMING = {
 };
 
 // Ducking
-const DUCK_RATIO = 0.45;       // music drops to 45% of current arc level under voice
+const DUCK_RATIO = 0.65;       // music drops to 65% of current arc level under voice
 const DUCK_PRE_RAMP = 1.8;     // time to dip down before voice starts
 const DUCK_POST_RAMP = 2.8;    // time to restore after voice ends
 const VOICE_RATE = 0.98;
@@ -97,7 +97,7 @@ export function useSegmentedMixer({
   musicBridgeDurations,
   musicFadeInDuration,
   musicFadeOutDuration,
-  musicVolume = 0.42,
+  musicVolume = 0.55,
   narrationVolume = 0.72,
   tenureBand,
 }: UseSegmentedMixerOptions) {
