@@ -116,6 +116,17 @@ export const AdminThemes = () => {
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
   };
 
+  const remove = async (t: Theme) => {
+    if (!window.confirm(`Are you sure you want to delete "${t.theme || t.month}"? This cannot be undone.`)) return;
+    const { error } = await supabase.from("monthly_themes").delete().eq("id", t.id);
+    if (error) {
+      toast({ variant: "destructive", title: "Delete failed", description: error.message });
+      return;
+    }
+    toast({ title: `${t.month} deleted` });
+    await load();
+  };
+
   return (
     <div className="space-y-3">
       {themes.map((t) => (
