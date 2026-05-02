@@ -27,19 +27,23 @@ const WelcomeStep = ({ userFirstName, onSignOut }: WelcomeStepProps) => (
 
     <div className="space-y-5 max-w-md font-body text-accent leading-relaxed">
       <p>
-        YOUtopia is not an app. It is a monthly inner practice, built from your own answers,
-        spoken in your own voice, delivered at the exact moments your brain is most open to change.
+        You are about to create your own utopia. Not a destination, a state. A version of you
+        that thinks, feels, and moves through the world differently. That is what this practice
+        builds.
       </p>
       <p>
-        Morning and evening. The morning practice sets the tone for the day. Your evening Seeds
-        plant it while you sleep. Together, they compound in a way neither can do alone.
+        Here is what science tells us: your brain cannot tell the difference between a vividly
+        imagined experience and a real one. The same neural circuits fire. The same chemistry
+        releases. When you return to a vision every day with full sensory detail and genuine
+        emotion, you are not daydreaming about a future. You are building a memory of it.
+        Repetition is what turns a memory into a belief.
       </p>
       <p className="italic text-foreground/80">
-        Nothing here is generic. Every word you are about to hear was written for you, from what
-        you are about to share.
+        Nothing here is generic. Everything you are about to experience is built from your
+        answers, for you alone.
       </p>
       <p className="font-heading text-xl text-coral-dark pt-2">
-        Are you ready?
+        Are you ready to begin?
       </p>
     </div>
     {onSignOut && (
