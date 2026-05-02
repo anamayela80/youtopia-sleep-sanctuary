@@ -50,6 +50,7 @@ import NewMonthIntroStep from "@/components/onboarding/NewMonthIntroStep";
 const Onboarding = () => {
   const [searchParams] = useSearchParams();
   const forceFull = searchParams.get("full") === "1"; // for testing the full flow
+  const isNewMonth = searchParams.get("mode") === "new-month";
 
   const [step, setStep] = useState(0);
   const [isFirstEver, setIsFirstEver] = useState<boolean | null>(null);
