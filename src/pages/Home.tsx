@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   getLatestMeditation, getLatestSeeds, getActiveTheme, getUserProfile,
 } from "@/services/meditationService";
-import { getCurrentIntake, type UserIntake } from "@/services/intakeService";
+import { getCurrentIntake, isIntakeExpired, type UserIntake } from "@/services/intakeService";
 import { supabase as sb } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import spiralLogo from "@/assets/youtopia-sun.png";
@@ -233,6 +233,14 @@ const Home = () => {
       getCurrentIntake(user.id),
       getUserProfile(user.id),
     ]);
+
+    // If the user's intake has expired (we are in a new calendar month past the
+    // 30-day window), route them into the new-month intake flow so they get the
+    // next chapter, new theme, and new questions.
+    if (currentIntake && isIntakeExpired(currentIntake)) {
+      navigate("/onboarding?mode=new-month");
+      return;
+    }
 
     setIntake(currentIntake);
 
