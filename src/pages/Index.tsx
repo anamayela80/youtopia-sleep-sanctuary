@@ -47,15 +47,15 @@ const Index = () => {
 
         <div className="bg-teal-light/50 rounded-2xl px-4 py-2 mb-8">
           <p className="text-sm font-body text-teal-dark">
-            ✨ Welcome to our free beta. Full access while we're getting started
+            ✨ Free beta. Full access while we build this together.
           </p>
         </div>
 
         <h1 className="font-heading text-3xl text-secondary mb-3">
-          Creating Your<br />Everyday Utopia
+          The life you want is waiting to be remembered.
         </h1>
         <p className="font-body text-accent mb-10 leading-relaxed">
-          A personalized monthly inner transformation experience combining morning meditation and nightly seeds.
+          A daily ritual for the life you're building. One intention, one session, one day at a time.
         </p>
 
         <div className="w-full space-y-3">
@@ -63,13 +63,13 @@ const Index = () => {
             onClick={() => navigate("/auth?mode=signup")}
             className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-body font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98]"
           >
-            Get Started
+            Begin My Practice
           </button>
           <button
             onClick={() => navigate("/auth?mode=login")}
             className="w-full py-4 rounded-2xl bg-transparent border-2 border-primary text-primary font-body font-semibold text-base transition-all hover:bg-teal-light/30 active:scale-[0.98]"
           >
-            I already have an account
+            Welcome back
           </button>
         </div>
 
