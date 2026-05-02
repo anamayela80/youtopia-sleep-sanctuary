@@ -73,6 +73,7 @@ export async function getNextThemeForUser(userId: string) {
   const { data: themes } = await supabase
     .from("monthly_themes")
     .select("*")
+    .eq("is_active", true)
     .order("sequence", { ascending: true, nullsFirst: false });
 
   if (!themes || themes.length === 0) return null;
