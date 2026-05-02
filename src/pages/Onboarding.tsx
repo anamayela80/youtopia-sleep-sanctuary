@@ -182,7 +182,7 @@ const Onboarding = () => {
   };
 
   const canProceed = () => {
-    if (currentKind === "welcome" || currentKind === "before" || currentKind === "theme" || currentKind === "newmonth") return true;
+    if (currentKind === "welcome" || currentKind === "science" || currentKind === "before" || currentKind === "theme" || currentKind === "newmonth") return true;
     if (currentKind === "question") return (answers[questionIndex] || "").trim().length > 0;
     if (currentKind === "voice") return hasExistingClone || hasRecording || usePresetVoice;
     return false;
