@@ -255,12 +255,22 @@ export function useSegmentedMixer({
       musicSource.loop = true;
       const gainNode = ctx.createGain();
 
+      // Compressor — evens out the music track's natural quiet passages
+      // so soft ambient sections never drop to near-silence on phone speakers.
+      const compressor = ctx.createDynamicsCompressor();
+      compressor.threshold.value = -24;  // start compressing at -24 dB
+      compressor.knee.value = 10;        // soft knee for transparent sound
+      compressor.ratio.value = 4;        // 4:1 ratio — moderate compression
+      compressor.attack.value = 0.1;     // 100 ms attack, gentle
+      compressor.release.value = 0.6;    // 600 ms release, natural
+
       // Send a small amount of music into the reverb too — same "room"
       const musicSend = ctx.createGain();
       musicSend.gain.value = 0.08;
       musicSend.connect(reverb.input);
 
-      musicSource.connect(gainNode);
+      musicSource.connect(compressor);
+      compressor.connect(gainNode);
       gainNode.connect(ctx.destination);
       gainNode.connect(musicSend);
 
