@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   getLatestMeditation, getLatestSeeds, getActiveTheme, getUserProfile,
 } from "@/services/meditationService";
-import { getCurrentIntake, type UserIntake } from "@/services/intakeService";
+import { getCurrentIntake, isIntakeExpired, type UserIntake } from "@/services/intakeService";
 import { supabase as sb } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import spiralLogo from "@/assets/youtopia-sun.png";
