@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import logo from "@/assets/youtopia-logo.png";
 import SplashScreen from "@/components/SplashScreen";
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentIntake, isIntakeExpired } from "@/services/intakeService";
+import { getCurrentIntake } from "@/services/intakeService";
 
 const Index = () => {
   const [showSplash, setShowSplash] = useState(true);
