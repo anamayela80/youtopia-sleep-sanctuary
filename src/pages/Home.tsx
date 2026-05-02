@@ -499,7 +499,7 @@ const Home = () => {
               className="uppercase mb-2"
               style={{ fontSize: "10px", letterSpacing: "0.22em", color: "#4E8C7A", fontFamily: "Georgia, serif" }}
             >
-              New Chapter · {new Date().toLocaleString("default", { month: "long", year: "numeric" })}
+              Chapter {chapterNumber} is ready
             </p>
             <h2
               className="font-heading mb-2"
@@ -507,12 +507,12 @@ const Home = () => {
             >
               {nextTheme.theme}
             </h2>
-            {nextTheme.description && (
+            {(nextTheme.intention || nextTheme.description) && (
               <p
                 className="italic mb-4"
                 style={{ fontSize: "14px", lineHeight: 1.55, color: "hsl(var(--subtitle))", fontFamily: "Georgia, serif" }}
               >
-                {nextTheme.description}
+                {nextTheme.intention || nextTheme.description}
               </p>
             )}
             <button
@@ -520,7 +520,7 @@ const Home = () => {
               className="w-full py-3 rounded-2xl font-body font-semibold text-[14px] transition-all hover:opacity-90 active:scale-[0.98]"
               style={{ background: "hsl(var(--coral))", color: "white" }}
             >
-              Set my intention for this month
+              Set my intention
             </button>
           </div>
         </div>
