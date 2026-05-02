@@ -22,9 +22,13 @@ const Index = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setChecking(false); return; }
       const intake = await getCurrentIntake(user.id);
-      // No intake yet → run the intake flow.
-      // Valid intake → home. Expired intake → home (shows soft-expiry banner).
-      navigate(intake ? "/home" : "/onboarding");
+      if (!intake) {
+        navigate("/onboarding");
+      } else if (isIntakeExpired(intake)) {
+        navigate("/onboarding?mode=new-month");
+      } else {
+        navigate("/home");
+      }
     })();
   }, [navigate]);
 
