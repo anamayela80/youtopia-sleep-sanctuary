@@ -477,6 +477,47 @@ const Home = () => {
       {/* Divider */}
       <div className="mx-6 mb-6" style={{ height: "1px", background: "rgba(120, 90, 60, 0.12)" }} />
 
+      {/* ── New Chapter card (shown only when current intake is expired) ──── */}
+      {needsNewChapter && nextTheme && (
+        <div className="mb-7 mx-4">
+          <div
+            className="rounded-2xl p-5"
+            style={{
+              background: "hsl(var(--folder))",
+              border: "1px solid rgba(107, 158, 143, 0.35)",
+            }}
+          >
+            <p
+              className="uppercase mb-2"
+              style={{ fontSize: "10px", letterSpacing: "0.22em", color: "#4E8C7A", fontFamily: "Georgia, serif" }}
+            >
+              New Chapter · {new Date().toLocaleString("default", { month: "long", year: "numeric" })}
+            </p>
+            <h2
+              className="font-heading mb-2"
+              style={{ fontSize: "22px", lineHeight: 1.25, color: "hsl(var(--foreground))", fontFamily: "Georgia, serif" }}
+            >
+              {nextTheme.theme}
+            </h2>
+            {nextTheme.description && (
+              <p
+                className="italic mb-4"
+                style={{ fontSize: "14px", lineHeight: 1.55, color: "hsl(var(--subtitle))", fontFamily: "Georgia, serif" }}
+              >
+                {nextTheme.description}
+              </p>
+            )}
+            <button
+              onClick={() => navigate("/onboarding?mode=new-month")}
+              className="w-full py-3 rounded-2xl font-body font-semibold text-[14px] transition-all hover:opacity-90 active:scale-[0.98]"
+              style={{ background: "hsl(var(--coral))", color: "white" }}
+            >
+              Set my intention for this month
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Your Journey stats ────────────────────────────────────────────── */}
       <div className="mb-7">
         <SectionLabel>Your Journey</SectionLabel>
