@@ -19,6 +19,7 @@ import FlowPreview from "./pages/FlowPreview.tsx";
 import PreviewVoiceCapture from "./pages/PreviewVoiceCapture.tsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.tsx";
 import TermsOfService from "./pages/TermsOfService.tsx";
+import Logout from "./pages/Logout.tsx";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
           <Route path="/preview/voice-capture" element={<PreviewVoiceCapture />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/logout" element={<Logout />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

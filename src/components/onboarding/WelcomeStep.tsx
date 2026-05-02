@@ -3,9 +3,10 @@ import logo from "@/assets/youtopia-logo.png";
 
 interface WelcomeStepProps {
   userFirstName: string;
+  onSignOut?: () => void;
 }
 
-const WelcomeStep = ({ userFirstName }: WelcomeStepProps) => (
+const WelcomeStep = ({ userFirstName, onSignOut }: WelcomeStepProps) => (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
@@ -41,6 +42,15 @@ const WelcomeStep = ({ userFirstName }: WelcomeStepProps) => (
         Are you ready?
       </p>
     </div>
+    {onSignOut && (
+      <button
+        type="button"
+        onClick={onSignOut}
+        className="mt-8 font-body text-sm text-muted-foreground underline underline-offset-4 hover:text-secondary"
+      >
+        Sign out
+      </button>
+    )}
   </motion.div>
 );
 

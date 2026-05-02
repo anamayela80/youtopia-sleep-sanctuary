@@ -442,7 +442,7 @@ const Onboarding = () => {
       <div className="flex-1 flex flex-col">
         <AnimatePresence mode="wait">
           {currentKind === "welcome" && (
-            <WelcomeStep key="welcome" userFirstName={userFirstName} />
+            <WelcomeStep key="welcome" userFirstName={userFirstName} onSignOut={handleSignOut} />
           )}
           {currentKind === "before" && (
             <BeforeYouBeginStep
