@@ -24,9 +24,8 @@ const Index = () => {
       const intake = await getCurrentIntake(user.id);
       if (!intake) {
         navigate("/onboarding");
-      } else if (isIntakeExpired(intake)) {
-        navigate("/onboarding?mode=new-month");
       } else {
+        // Expired or current — Home decides whether to show the New Chapter card.
         navigate("/home");
       }
     })();
