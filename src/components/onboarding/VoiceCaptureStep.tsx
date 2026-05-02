@@ -149,7 +149,7 @@ const VoiceCaptureStep = ({
 
   const bars = 32;
 
-  // === Existing clone — locked, no re-record allowed ===
+  // === Existing clone, locked, no re-record allowed ===
   if (hasExistingClone && state === "done" && !audioBlobRef.current) {
     return (
       <motion.div
@@ -168,7 +168,7 @@ const VoiceCaptureStep = ({
     );
   }
 
-  // === Choice screen — record or use preset Youtopia voice ===
+  // === Choice screen: record or use preset Youtopia voice ===
   if (state === "choose") {
     return (
       <motion.div

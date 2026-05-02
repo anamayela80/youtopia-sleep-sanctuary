@@ -29,7 +29,6 @@ import {
   saveIntake,
 } from "@/services/intakeService";
 import WelcomeStep from "@/components/onboarding/WelcomeStep";
-import ScienceStep from "@/components/onboarding/ScienceStep";
 import BeforeYouBeginStep from "@/components/onboarding/BeforeYouBeginStep";
 import ThemeIntroStep from "@/components/onboarding/ThemeIntroStep";
 import QuestionsStep, { ThemeQuestion } from "@/components/onboarding/QuestionsStep";
@@ -134,16 +133,16 @@ const Onboarding = () => {
   }, [navigate, toast, forceFull]);
 
   // Build the dynamic step list once we know the gating
-  const stepList: Array<"welcome" | "science" | "before" | "theme" | "newmonth" | "question" | "voice"> = (() => {
+  const stepList: Array<"welcome" | "before" | "theme" | "newmonth" | "question" | "voice"> = (() => {
     if (isFirstEver === null) return [];
-    const list: Array<"welcome" | "science" | "before" | "theme" | "newmonth" | "question" | "voice"> = [];
+    const list: Array<"welcome" | "before" | "theme" | "newmonth" | "question" | "voice"> = [];
     if (isNewMonth) {
       // Returning user starting a new chapter: just the reflection questions.
       // Voice clone already exists from their first intake; reuse it.
       for (let i = 0; i < questions.length; i++) list.push("question");
       return list;
     }
-    if (isFirstEver) list.push("welcome", "science");
+    if (isFirstEver) list.push("welcome");
     list.push("before");
     list.push("theme");
     for (let i = 0; i < questions.length; i++) list.push("question");
@@ -183,7 +182,7 @@ const Onboarding = () => {
   };
 
   const canProceed = () => {
-    if (currentKind === "welcome" || currentKind === "science" || currentKind === "before" || currentKind === "theme" || currentKind === "newmonth") return true;
+    if (currentKind === "welcome" || currentKind === "before" || currentKind === "theme" || currentKind === "newmonth") return true;
     if (currentKind === "question") return (answers[questionIndex] || "").trim().length > 0;
     if (currentKind === "voice") return hasExistingClone || hasRecording || usePresetVoice;
     return false;
@@ -389,8 +388,6 @@ const Onboarding = () => {
   const continueLabel =
     currentKind === "welcome"
       ? "I'm ready"
-      : currentKind === "science"
-      ? "Begin"
       : currentKind === "before"
       ? "I'm ready"
       : currentKind === "theme"
@@ -436,7 +433,6 @@ const Onboarding = () => {
           {currentKind === "welcome" && (
             <WelcomeStep key="welcome" userFirstName={userFirstName} />
           )}
-          {currentKind === "science" && <ScienceStep key="science" />}
           {currentKind === "before" && (
             <BeforeYouBeginStep
               key="before"

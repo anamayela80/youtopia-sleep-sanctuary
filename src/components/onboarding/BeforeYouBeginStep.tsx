@@ -1,24 +1,16 @@
 import { motion } from "framer-motion";
 
-/**
- * "Before You Begin" — first-time orientation shown before the intake questions.
- * Calm, editorial tone. No em dashes. No exclamation marks.
- */
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="space-y-3">
-    <h2 className="font-heading text-2xl text-secondary leading-tight">{title}</h2>
-    <div className="space-y-3 font-body text-accent leading-relaxed">{children}</div>
-  </section>
-);
-
-const Divider = () => (
-  <div className="my-8 mx-auto h-px w-16 bg-accent/20" aria-hidden />
-);
-
 interface BeforeYouBeginStepProps {
   showSkip?: boolean;
   onSkip?: () => void;
 }
+
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <section className="space-y-3">
+    <h2 className="font-heading text-2xl text-secondary leading-tight">{title}</h2>
+    <p className="font-body text-accent leading-relaxed">{children}</p>
+  </section>
+);
 
 const BeforeYouBeginStep = ({ showSkip = false, onSkip }: BeforeYouBeginStepProps) => (
   <motion.div
@@ -28,146 +20,36 @@ const BeforeYouBeginStep = ({ showSkip = false, onSkip }: BeforeYouBeginStepProp
     transition={{ duration: 0.7 }}
     className="flex-1 flex flex-col px-1 py-2"
   >
-    <header className="text-center mb-8">
-      <h1 className="font-heading text-4xl md:text-5xl text-secondary leading-tight mb-3">
+    <header className="text-center mb-10">
+      <h1 className="font-heading text-4xl text-secondary leading-tight mb-3">
         Before You Begin
       </h1>
-      <p className="font-body text-accent/80 text-base leading-relaxed max-w-md mx-auto">
-        A few things worth knowing before your session.
-      </p>
       {showSkip && onSkip && (
         <button
           type="button"
           onClick={onSkip}
-          className="mt-4 font-body text-sm text-accent/60 underline underline-offset-4 hover:text-accent transition-colors"
+          className="mt-2 font-body text-sm text-accent/60 underline underline-offset-4 hover:text-accent transition-colors"
         >
           Skip, I've read this before
         </button>
       )}
     </header>
 
-    <div className="max-w-md mx-auto w-full text-left">
-      <Section title="When to meditate">
-        <p>
-          Youtopia is built as a daily cycle with two ends: morning and evening.
-          Doing both is what closes the loop. The morning sets the tone, the evening lets it
-          settle into the subconscious overnight. Together they compound. On their own, they still work,
-          but the cycle is where the real shift happens.
-        </p>
-        <p>
-          <span className="italic">Morning</span> is one of the most powerful windows.
-          Your brain is still close to sleep, still porous. The day hasn't filled you yet.
-          This is the time to set the tone, to meet your future self before the noise arrives.
-          Do it as early as you can, ideally before checking your phone.
-        </p>
-        <p>
-          <span className="italic">Evening</span> works differently. As you drift toward sleep,
-          your brain enters a state of high suggestibility. The critical, analytical mind quiets.
-          What you place in that space goes deeper. Youtopia uses this: your evening Seeds plant
-          the intention while the subconscious is most open to receive them.
-        </p>
+    <div className="max-w-md mx-auto w-full text-left space-y-8">
+      <Section title="When">
+        Use YOUtopia in the morning before checking your phone, and at night as you settle in
+        to sleep. These are the two windows when the brain is most receptive. Eyes closed,
+        headphones on.
       </Section>
 
-      <Divider />
-
-      <Section title="How to set up">
-        <p>
-          Find a position, sitting or lying down, that you can hold without needing to adjust.
-          Once you settle in, try not to move. Movement pulls you back to the surface.
-        </p>
-        <p>
-          Eyes closed is best. An eye mask helps. Headphones are strongly recommended:
-          the music and the voice are designed to work together, and the full effect reaches
-          you through sound.
-        </p>
+      <Section title="How to listen">
+        Find a comfortable position and stay still. Movement pulls you back to the surface.
+        Let the voice guide you. You do not need to do anything except be present.
       </Section>
 
-      <Divider />
-
-      <Section title="What the questions are for">
-        <p>
-          Every month, Youtopia opens with a new theme. The theme is the lens for the next
-          thirty days, a different territory of your inner life to work with: belonging, courage,
-          rest, abundance, presence. Each month moves you somewhere new, so the practice never
-          flattens into routine.
-        </p>
-        <p>
-          The five intake questions are shaped around that month's theme. They are not a survey.
-          They are the raw material your meditation is built from. Youtopia takes what you share
-          and weaves it into the vision you will hear, translated into feeling, not read back to
-          you literally.
-        </p>
-        <p>
-          The more honest your answers, the more specific the images. Specificity is what makes
-          this land.
-        </p>
-      </Section>
-
-      <Divider />
-
-      <Section title="Why daily matters">
-        <p>One session opens a door. Repetition walks you through it.</p>
-        <p>
-          The brain changes through consistent, emotionally elevated practice. Each session
-          reinforces the neural pathways laid down in the one before. This is not motivation,
-          it is biology. Come back tomorrow.
-        </p>
-      </Section>
-
-      <Divider />
-
-      <Section title="About the voices">
-        <p>
-          Your <span className="italic">morning</span> meditation is led by a guiding voice we have
-          chosen for this part of the day. It is warm, steady, and unhurried, the kind of voice
-          that helps you arrive without effort. You do not need to do anything here. Just let it
-          lead you in.
-        </p>
-        <p>
-          Your <span className="italic">evening</span> Seeds are different. This is where your own
-          voice belongs. Heard in a relaxed state, it bypasses resistance in a way no other voice can.
-          When you hear yourself speak something on the edge of sleep, the brain registers it
-          differently. It cannot dismiss it as coming from outside.
-        </p>
-        <p>
-          Recording your voice is optional, and only for the evening. You can do it whenever you
-          are ready. There is no rush.
-        </p>
-        <p>
-          And if you fall asleep during your evening Seeds, that is fine. It is part of how this
-          works. The words still reach you. Sleep is where they take root.
-        </p>
-      </Section>
-
-      <Divider />
-
-      <Section title="Your journal and mood calendar">
-        <p>
-          After each session, you are invited to write, even one line. The journal is not about
-          capturing what happened. It is about noticing what is different: what shifted, what
-          surfaced, what you felt in your body.
-        </p>
-        <p>
-          The mood calendar tracks your emotional landscape over time. Patterns appear that you
-          cannot see day to day. Over weeks, you will begin to see the arc.
-        </p>
-        <p>Both take less than two minutes. Both compound.</p>
-      </Section>
-
-      <Divider />
-
-      <Section title="One important reframe">
-        <p>You are not imagining things.</p>
-        <p>
-          When you visualize something with full sensory detail and genuine emotion, your brain
-          cannot distinguish that experience from a real one. The same neural circuits fire.
-          The same chemistry releases. The body responds as if it already happened.
-        </p>
-        <p>
-          You are not daydreaming about a future. You are building a memory of it. The brain
-          learns what the body has felt. This is the mechanism.
-        </p>
-        <p>Come back to it every day and watch what the repetition does.</p>
+      <Section title="Your questions">
+        The questions below are not a form. They are the material your personal practice is
+        built from. Answer honestly. Specificity is what makes this land.
       </Section>
     </div>
   </motion.div>

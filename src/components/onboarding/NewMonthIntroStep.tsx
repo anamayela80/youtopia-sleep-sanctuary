@@ -13,7 +13,12 @@ const NewMonthIntroStep = ({ monthName }: NewMonthIntroStepProps) => (
     transition={{ duration: 0.7 }}
     className="flex flex-col items-center text-center flex-1 justify-center px-2"
   >
-    <img src={logo} alt="YOUTOPIA" className="h-24 md:h-28 mb-10 mix-blend-multiply" />
+    <img
+      src={logo}
+      alt="YOUTOPIA"
+      style={{ objectFit: "contain" }}
+      className="h-24 w-auto mb-10 mix-blend-multiply"
+    />
 
     <h1 className="font-heading text-4xl text-secondary mb-6 leading-tight">
       A new chapter is ready for you.

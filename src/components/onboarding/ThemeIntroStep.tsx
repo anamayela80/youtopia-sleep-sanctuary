@@ -15,7 +15,12 @@ const ThemeIntroStep = ({ themeName, description, intention }: ThemeIntroStepPro
     transition={{ duration: 0.8 }}
     className="flex flex-col items-center text-center flex-1 justify-center px-4"
   >
-    <img src={logo} alt="YOUTOPIA" className="h-20 md:h-24 mb-10 mix-blend-multiply" />
+    <img
+      src={logo}
+      alt="YOUTOPIA"
+      style={{ objectFit: "contain" }}
+      className="h-20 w-auto mb-10 mix-blend-multiply"
+    />
 
     <motion.h1
       className="font-heading text-5xl md:text-6xl text-coral-dark mb-6 leading-[1.05] tracking-tight"
