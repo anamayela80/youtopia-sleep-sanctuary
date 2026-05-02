@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Save } from "lucide-react";
+import { Save, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
@@ -114,6 +114,17 @@ export const AdminThemes = () => {
     update(t.id, { status });
     const { error } = await supabase.from("monthly_themes").update({ status }).eq("id", t.id);
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
+  };
+
+  const remove = async (t: Theme) => {
+    if (!window.confirm(`Are you sure you want to delete "${t.theme || t.month}"? This cannot be undone.`)) return;
+    const { error } = await supabase.from("monthly_themes").delete().eq("id", t.id);
+    if (error) {
+      toast({ variant: "destructive", title: "Delete failed", description: error.message });
+      return;
+    }
+    toast({ title: `${t.month} deleted` });
+    await load();
   };
 
   return (
@@ -253,14 +264,23 @@ export const AdminThemes = () => {
             ))}
           </div>
 
-          <button
-            onClick={() => save(t)}
-            disabled={savingId === t.id}
-            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-body text-sm font-medium flex items-center gap-2 disabled:opacity-50"
-          >
-            <Save size={14} />
-            {savingId === t.id ? "Saving..." : "Save"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => save(t)}
+              disabled={savingId === t.id}
+              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-body text-sm font-medium flex items-center gap-2 disabled:opacity-50"
+            >
+              <Save size={14} />
+              {savingId === t.id ? "Saving..." : "Save"}
+            </button>
+            <button
+              onClick={() => remove(t)}
+              className="px-4 py-2 rounded-lg bg-destructive text-destructive-foreground font-body text-sm font-medium flex items-center gap-2"
+            >
+              <Trash2 size={14} />
+              Delete
+            </button>
+          </div>
         </div>
       ))}
     </div>

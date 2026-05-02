@@ -74,6 +74,7 @@ export async function getNextThemeForUser(userId: string) {
     .from("monthly_themes")
     .select("*")
     .eq("is_active", true)
+    .not("month_key", "is", null)
     .order("sequence", { ascending: true, nullsFirst: false });
 
   if (!themes || themes.length === 0) return null;
