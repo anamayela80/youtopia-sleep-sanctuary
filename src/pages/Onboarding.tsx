@@ -36,6 +36,7 @@ import QuestionsStep, { ThemeQuestion } from "@/components/onboarding/QuestionsS
 import VoiceCaptureStep from "@/components/onboarding/VoiceCaptureStep";
 import GeneratingStep from "@/components/onboarding/GeneratingStep";
 import FolderUnlockStep from "@/components/onboarding/FolderUnlockStep";
+import NewMonthIntroStep from "@/components/onboarding/NewMonthIntroStep";
 
 /**
  * Monthly Intake Flow.
