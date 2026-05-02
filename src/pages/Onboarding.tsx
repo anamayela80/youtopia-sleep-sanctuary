@@ -143,7 +143,6 @@ const Onboarding = () => {
       return list;
     }
     if (isFirstEver) list.push("welcome");
-    list.push("before");
     list.push("theme");
     for (let i = 0; i < questions.length; i++) list.push("question");
     list.push("voice");
