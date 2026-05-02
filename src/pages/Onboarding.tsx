@@ -134,16 +134,16 @@ const Onboarding = () => {
   }, [navigate, toast, forceFull]);
 
   // Build the dynamic step list once we know the gating
-  const stepList: Array<"welcome" | "before" | "theme" | "newmonth" | "question" | "voice"> = (() => {
+  const stepList: Array<"welcome" | "science" | "before" | "theme" | "newmonth" | "question" | "voice"> = (() => {
     if (isFirstEver === null) return [];
-    const list: Array<"welcome" | "before" | "theme" | "newmonth" | "question" | "voice"> = [];
+    const list: Array<"welcome" | "science" | "before" | "theme" | "newmonth" | "question" | "voice"> = [];
     if (isNewMonth) {
       // Returning user starting a new chapter: just the reflection questions.
       // Voice clone already exists from their first intake; reuse it.
       for (let i = 0; i < questions.length; i++) list.push("question");
       return list;
     }
-    if (isFirstEver) list.push("welcome");
+    if (isFirstEver) list.push("welcome", "science");
     list.push("theme");
     for (let i = 0; i < questions.length; i++) list.push("question");
     list.push("voice");
