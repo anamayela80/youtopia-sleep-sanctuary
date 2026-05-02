@@ -237,14 +237,21 @@ const Home = () => {
       getUserProfile(user.id),
     ]);
 
-    // If the user's intake has expired (new calendar month past the 30-day
-    // window), show the "New Chapter" card at the top of Home with the NEXT
-    // theme. The user clicks it to start the new-month intake flow.
-    const expired = currentIntake ? isIntakeExpired(currentIntake) : false;
-    if (expired) {
+    // A new chapter is ready ONLY when the user's full 30-day window has passed
+    // AND a different next theme exists for them. Otherwise, show Home as normal.
+    const newChapterReady = currentIntake !== null && isIntakeExpired(currentIntake);
+    if (newChapterReady) {
       const next = await getNextThemeForUser(user.id);
-      setNextTheme(next);
-      setNeedsNewChapter(true);
+      const hasNewTheme = !!next && next.id !== currentIntake?.theme_id;
+      if (hasNewTheme) {
+        setNextTheme(next);
+        setNeedsNewChapter(true);
+        const { count: completedCount } = await sb
+          .from("user_monthly_intakes")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id);
+        setChapterNumber((completedCount ?? 0) + 1);
+      }
     }
 
     setIntake(currentIntake);
