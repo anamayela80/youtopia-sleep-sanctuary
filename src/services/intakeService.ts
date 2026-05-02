@@ -72,34 +72,25 @@ export async function hasEverCompletedIntake(userId: string): Promise<boolean> {
 /**
  * The next theme this user should intake into.
  *
- * Logic:
- * 1. Prefer themes the user has NEVER intaken yet, ordered by published_at ASC
- *    (so a returning user steps through themes in release order).
- * 2. Only consider published or active themes.
- * 3. Fall back to is_active theme if everything else has been done.
+ * Logic: pick the theme at index = number of completed intakes, ordered by
+ * `sequence` ASC. So a user with 0 intakes gets sequence #1, one with 1
+ * intake gets sequence #2, etc. Falls back to the last theme if exhausted.
  */
 export async function getNextThemeForUser(userId: string) {
-  // Themes already taken
-  const { data: takenRows } = await supabase
+  const { count: completedCount } = await supabase
     .from("user_monthly_intakes")
-    .select("theme_id")
+    .select("id", { count: "exact", head: true })
     .eq("user_id", userId);
-  const takenIds = (takenRows || []).map((r: any) => r.theme_id);
 
-  // All published/active themes ordered by release
   const { data: themes } = await supabase
     .from("monthly_themes")
     .select("*")
-    .or("status.eq.published,is_active.eq.true")
-    .order("published_at", { ascending: true, nullsFirst: false });
+    .order("sequence", { ascending: true, nullsFirst: false });
 
   if (!themes || themes.length === 0) return null;
 
-  const next = themes.find((t: any) => !takenIds.includes(t.id));
-  if (next) return next;
-
-  // Everything done — fall back to currently active theme
-  return themes.find((t: any) => t.is_active) || themes[themes.length - 1];
+  const idx = Math.min(completedCount ?? 0, themes.length - 1);
+  return themes[idx];
 }
 
 /** Save a completed intake row and snapshot the answers. Returns the new intake id. */
