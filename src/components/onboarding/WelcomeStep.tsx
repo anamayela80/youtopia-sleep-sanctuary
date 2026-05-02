@@ -38,6 +38,11 @@ const WelcomeStep = ({ userFirstName, onSignOut }: WelcomeStepProps) => (
         emotion, you are not daydreaming about a future. You are building a memory of it.
         Repetition is what turns a memory into a belief.
       </p>
+      <p>
+        At night, your Seeds are designed to be the last thing you hear before sleep. It is
+        not only okay to drift off while listening, it is encouraged. As you fall asleep, the
+        words slip past the conscious mind and settle exactly where they need to.
+      </p>
       <p className="italic text-foreground/80">
         Nothing here is generic. Everything you are about to experience is built from your
         answers, for you alone.
