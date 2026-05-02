@@ -194,6 +194,7 @@ const Home = () => {
   const [theme, setTheme] = useState<any>(null);
   const [nextTheme, setNextTheme] = useState<any>(null);
   const [needsNewChapter, setNeedsNewChapter] = useState(false);
+  const [chapterNumber, setChapterNumber] = useState(1);
   const [loading, setLoading] = useState(true);
   const [openChapter, setOpenChapter] = useState<string | null>(null);
   const [userFirstName, setUserFirstName] = useState<string>("");
