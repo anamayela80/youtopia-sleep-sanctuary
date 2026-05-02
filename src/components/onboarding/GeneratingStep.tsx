@@ -14,6 +14,10 @@ const ROTATING_TEMPLATES = [
   "What you shared is becoming something.",
   "The seeds are being prepared.",
   "Patience is part of the practice.",
+  "This happens once a month, so it takes its time.",
+  "Your chapter is being woven, thread by thread.",
+  "Slow craft, made just for you.",
+  "Good things are worth the stillness.",
   "Almost, {name}.",
 ];
 
