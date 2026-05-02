@@ -395,9 +395,13 @@ const Onboarding = () => {
       ? "I'm ready"
       : currentKind === "theme"
       ? "I'm ready for my questions"
+      : currentKind === "newmonth"
+      ? "Begin"
       : currentKind === "voice"
       ? "Create my practice ✨"
       : "Continue";
+
+  const monthName = new Date().toLocaleString("default", { month: "long" });
 
   // Theme intro and welcome/science screens hide the progress bar for cleaner reveal
   const showProgress = currentKind === "question" || currentKind === "voice";
