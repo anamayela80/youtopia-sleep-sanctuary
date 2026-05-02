@@ -45,7 +45,7 @@ const FolderUnlockStep = ({ userFirstName, themeName, artworkUrl }: FolderUnlock
         </motion.div>
 
         <p className="font-body text-accent leading-relaxed max-w-sm">
-          Inside you'll find your morning meditation and tonight's Seeds, both built from
+          Inside you'll find your morning practice and tonight's Seeds, both built from
           what you shared. Open it when you're ready.
         </p>
       </motion.div>
