@@ -447,6 +447,9 @@ const Onboarding = () => {
           {currentKind === "welcome" && (
             <WelcomeStep key="welcome" userFirstName={userFirstName} onSignOut={handleSignOut} />
           )}
+          {currentKind === "science" && (
+            <ScienceStep key="science" />
+          )}
           {currentKind === "before" && (
             <BeforeYouBeginStep
               key="before"
