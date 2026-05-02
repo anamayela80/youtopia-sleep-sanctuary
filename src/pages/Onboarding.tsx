@@ -196,6 +196,11 @@ const Onboarding = () => {
     else handleGenerate();
   };
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth?mode=login", { replace: true });
+  };
+
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
@@ -424,6 +429,13 @@ const Onboarding = () => {
             <span className="text-xs font-body text-muted-foreground">{step + 1}/{totalSteps}</span>
           </>
         )}
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="ml-auto text-xs font-body text-muted-foreground underline-offset-4 hover:text-secondary hover:underline"
+        >
+          Sign out
+        </button>
       </div>
 
       {/* Body */}
