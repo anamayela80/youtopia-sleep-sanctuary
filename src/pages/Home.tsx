@@ -420,25 +420,8 @@ const Home = () => {
     );
   }
 
-  // Empty state — no content yet at all
-  if (currentChapter && !currentChapter.hasMeditation && !currentChapter.hasSeeds && pastChapters.length === 0) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center">
-        <div className="text-5xl mb-4">🧘</div>
-        <h2 className="font-heading text-xl mb-2" style={{ color: "hsl(var(--foreground))" }}>Your library is waiting</h2>
-        <p className="font-body text-sm mb-6" style={{ color: "hsl(var(--subtitle))" }}>
-          Create your first personalized chapter
-        </p>
-        <button
-          onClick={() => navigate("/onboarding")}
-          className="px-8 py-4 rounded-2xl text-primary-foreground font-body font-semibold transition-all hover:opacity-90 active:scale-[0.98]"
-          style={{ background: "hsl(var(--coral))" }}
-        >
-          Get Started
-        </button>
-      </div>
-    );
-  }
+  // Note: a user without an intake is routed to /onboarding by Index.tsx,
+  // so we never need to render an empty-state here.
 
   const greeting = getGreeting();
   const displayName = userFirstName || "friend";
