@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   getLatestMeditation, getLatestSeeds, getActiveTheme, getUserProfile,
 } from "@/services/meditationService";
-import { getCurrentIntake, isIntakeExpired, type UserIntake } from "@/services/intakeService";
+import { getCurrentIntake, isIntakeExpired, getNextThemeForUser, type UserIntake } from "@/services/intakeService";
 import { supabase as sb } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import spiralLogo from "@/assets/youtopia-sun.png";
@@ -192,6 +192,8 @@ const Home = () => {
   const [intake, setIntake] = useState<UserIntake | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [theme, setTheme] = useState<any>(null);
+  const [nextTheme, setNextTheme] = useState<any>(null);
+  const [needsNewChapter, setNeedsNewChapter] = useState(false);
   const [loading, setLoading] = useState(true);
   const [openChapter, setOpenChapter] = useState<string | null>(null);
   const [userFirstName, setUserFirstName] = useState<string>("");
@@ -234,12 +236,14 @@ const Home = () => {
       getUserProfile(user.id),
     ]);
 
-    // If the user's intake has expired (we are in a new calendar month past the
-    // 30-day window), route them into the new-month intake flow so they get the
-    // next chapter, new theme, and new questions.
-    if (currentIntake && isIntakeExpired(currentIntake)) {
-      navigate("/onboarding?mode=new-month");
-      return;
+    // If the user's intake has expired (new calendar month past the 30-day
+    // window), show the "New Chapter" card at the top of Home with the NEXT
+    // theme. The user clicks it to start the new-month intake flow.
+    const expired = currentIntake ? isIntakeExpired(currentIntake) : false;
+    if (expired) {
+      const next = await getNextThemeForUser(user.id);
+      setNextTheme(next);
+      setNeedsNewChapter(true);
     }
 
     setIntake(currentIntake);
