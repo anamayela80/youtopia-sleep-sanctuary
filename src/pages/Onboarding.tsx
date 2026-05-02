@@ -393,6 +393,8 @@ const Onboarding = () => {
   const continueLabel =
     currentKind === "welcome"
       ? "I'm ready"
+      : currentKind === "science"
+      ? "Begin"
       : currentKind === "before"
       ? "I'm ready"
       : currentKind === "theme"
