@@ -311,6 +311,7 @@ export type Database = {
           questions: Json | null
           science: string | null
           seed_voice_id: string | null
+          sequence: number | null
           status: string
           theme: string
           voice_id: string | null
@@ -343,6 +344,7 @@ export type Database = {
           questions?: Json | null
           science?: string | null
           seed_voice_id?: string | null
+          sequence?: number | null
           status?: string
           theme: string
           voice_id?: string | null
@@ -375,6 +377,7 @@ export type Database = {
           questions?: Json | null
           science?: string | null
           seed_voice_id?: string | null
+          sequence?: number | null
           status?: string
           theme?: string
           voice_id?: string | null
