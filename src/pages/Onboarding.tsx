@@ -452,6 +452,9 @@ const Onboarding = () => {
               intention={theme?.intention || ""}
             />
           )}
+          {currentKind === "newmonth" && (
+            <NewMonthIntroStep key="newmonth" monthName={monthName} />
+          )}
           {currentKind === "question" && (
             <QuestionsStep
               key={`q-${questionIndex}`}
