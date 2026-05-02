@@ -38,26 +38,14 @@ export async function getCurrentIntake(userId: string): Promise<UserIntake | nul
 }
 
 /**
- * True if the intake belongs to a previous chapter and a new one should start.
- *
- * A chapter ends when EITHER:
- *  - the calendar month has changed since the intake was started, OR
- *  - the 30-day window has passed (today > intake_end_date).
- *
- * The first rule means a fresh chapter unlocks on the 1st of every month, even
- * if the user only started their previous intake a few days ago.
+ * True if the intake's full 30-day window has passed and a new chapter is ready.
+ * Calendar months are NOT considered — only the personal cycle matters.
  */
 export function isIntakeExpired(intake: UserIntake | null): boolean {
   if (!intake) return false;
   const today = new Date();
   const end = new Date(intake.intake_end_date + "T23:59:59");
-  if (today > end) return true;
-
-  const start = new Date(intake.intake_start_date + "T00:00:00");
-  const sameMonth =
-    start.getFullYear() === today.getFullYear() &&
-    start.getMonth() === today.getMonth();
-  return !sameMonth;
+  return today > end;
 }
 
 /** Has this user ever completed an intake? Used to gate Welcome + Science screens. */
