@@ -120,6 +120,7 @@ export function useSegmentedMixer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -157,37 +158,15 @@ export function useSegmentedMixer({
     return { events, totalDuration };
   }, [resolvedFadeIn, resolvedFadeOut, resolvedBridges, tenureBand]);
 
+  // Cleanup only — audio loads lazily when the user taps play, not on mount.
+  // Auto-loading on mount decoded 300–400 MB of PCM into memory immediately,
+  // which crashes Safari on iOS even before the user touches anything.
   useEffect(() => {
-    if (segmentUrls.length === 0) return;
-
-    const load = async () => {
-      setIsLoading(true);
-      try {
-        const ctx = new AudioContext();
-        audioCtxRef.current = ctx;
-
-        const buffers = await Promise.all(segmentUrls.map((url) => loadBuffer(ctx, url)));
-        segmentBuffersRef.current = buffers;
-
-        if (musicUrl) {
-          musicBufferRef.current = await loadBuffer(ctx, musicUrl);
-        }
-
-        const { totalDuration } = buildTimeline();
-        setDuration(totalDuration);
-      } catch (e) {
-        console.error("Audio loading error:", e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    load();
     return () => {
       stopAll();
       audioCtxRef.current?.close();
     };
-  }, [segmentUrls.join(","), musicUrl]);
+  }, []);
 
   const tick = useCallback(() => {
     const ctx = audioCtxRef.current;
@@ -226,13 +205,13 @@ export function useSegmentedMixer({
     return ARC.section3;
   };
 
-  const playFromOffset = useCallback((fromOffset: number) => {
+  const playFromOffset = useCallback(async (fromOffset: number) => {
     const ctx = audioCtxRef.current;
     const buffers = segmentBuffersRef.current;
     const musicBuf = musicBufferRef.current;
     if (!ctx || buffers.length === 0) return;
 
-    if (ctx.state === "suspended") ctx.resume();
+    if (ctx.state === "suspended") await ctx.resume();
 
     const { events, totalDuration } = buildTimeline();
     totalDurationRef.current = totalDuration;
@@ -391,9 +370,37 @@ export function useSegmentedMixer({
     rafRef.current = requestAnimationFrame(tick);
   }, [musicVolume, narrationVolume, resolvedFadeIn, resolvedFadeOut, buildTimeline, tick]);
 
-  const playSequence = useCallback(() => {
-    playFromOffset(0);
-  }, [playFromOffset]);
+  const playSequence = useCallback(async () => {
+    if (segmentUrls.length === 0) return;
+    // Already loaded — go straight to playback
+    if (segmentBuffersRef.current.length > 0) {
+      playFromOffset(0);
+      return;
+    }
+    setIsLoading(true);
+    setLoadError(false);
+    try {
+      const ctx = new AudioContext();
+      audioCtxRef.current = ctx;
+      const buffers = await Promise.all(segmentUrls.map((url) => loadBuffer(ctx, url)));
+      segmentBuffersRef.current = buffers;
+      if (musicUrl) {
+        try {
+          musicBufferRef.current = await loadBuffer(ctx, musicUrl);
+        } catch (e) {
+          console.warn("Music failed to load, continuing without it:", e);
+        }
+      }
+      const { totalDuration } = buildTimeline();
+      setDuration(totalDuration);
+      setIsLoading(false);
+      playFromOffset(0);
+    } catch (e) {
+      console.error("Audio loading error:", e);
+      setLoadError(true);
+      setIsLoading(false);
+    }
+  }, [segmentUrls, musicUrl, buildTimeline, playFromOffset]);
 
   const pause = useCallback(() => {
     const ctx = audioCtxRef.current;
@@ -417,6 +424,10 @@ export function useSegmentedMixer({
 
   const stopAll = useCallback(() => {
     stopAllSources();
+    audioCtxRef.current?.close();
+    audioCtxRef.current = null;
+    segmentBuffersRef.current = [];
+    musicBufferRef.current = null;
     setIsPlaying(false);
     setIsPaused(false);
     setProgress(0);
@@ -435,8 +446,10 @@ export function useSegmentedMixer({
     const newPos = Math.max(0, Math.min(currentPos + seconds, totalDurationRef.current));
 
     stopAllSources();
-    const newCtx = new AudioContext();
-    audioCtxRef.current = newCtx;
+    // Reuse the existing AudioContext — creating a new one here would orphan the
+    // already-decoded AudioBuffer objects, causing NotSupportedError on Safari/iOS
+    // when those buffers are assigned to source nodes in the new context.
+    if (ctx.state === "suspended") ctx.resume();
     offsetRef.current = newPos;
 
     if (wasPlaying || isPaused) playFromOffset(newPos);
@@ -456,8 +469,8 @@ export function useSegmentedMixer({
     const newPos = Math.max(0, Math.min(timeInSeconds, totalDurationRef.current));
 
     stopAllSources();
-    const newCtx = new AudioContext();
-    audioCtxRef.current = newCtx;
+    // Same reason as skip() — reuse the existing context to avoid buffer/context mismatch.
+    if (ctx.state === "suspended") ctx.resume();
     offsetRef.current = newPos;
 
     if (wasPlaying || isPaused) playFromOffset(newPos);
@@ -474,7 +487,7 @@ export function useSegmentedMixer({
   }, [isPlaying, isPaused, pause, resume, playSequence]);
 
   return {
-    isPlaying, isPaused, isLoading, progress, currentTime, duration,
+    isPlaying, isPaused, isLoading, loadError, progress, currentTime, duration,
     currentSegment, hasStarted, togglePlay, stop: stopAll,
     skipForward, skipBackward, seekTo,
   };

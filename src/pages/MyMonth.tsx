@@ -5,6 +5,7 @@ import {
   Play, Pause, Moon, Headphones, SkipForward, SkipBack, Sun, ArrowLeft, Download,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useSegmentedMixer } from "@/hooks/useSegmentedMixer";
 import { useSeedsPlayer } from "@/hooks/useSeedsPlayer";
@@ -75,6 +76,8 @@ const TONE_PAGE = "hsl(var(--background))"; // #F2EAD8
 const TONE_FOLDER = "hsl(var(--folder))";   // #E8DCC8
 const SOFT_BORDER = "1px solid rgba(160, 120, 70, 0.15)";
 
+const isMobile = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
 const MyMonth = () => {
   const [meditation, setMeditation] = useState<any>(null);
   const [seeds, setSeeds] = useState<any>(null);
@@ -87,6 +90,7 @@ const MyMonth = () => {
   const [userFirstName, setUserFirstName] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const segmentUrls = meditation?.meditation_segments
     ?.sort((a: any, b: any) => a.segment_number - b.segment_number)
@@ -165,6 +169,15 @@ const MyMonth = () => {
 
   const handleDownload = async () => {
     if (!meditation || isDownloading) return;
+
+    if (isMobile()) {
+      toast({
+        title: "Download on desktop",
+        description: "Rendering a 20-minute audio file requires more memory than mobile browsers allow. Open this page on a computer to download your meditation.",
+      });
+      return;
+    }
+
     setIsDownloading(true);
     setRenderProgress(0);
 
@@ -198,6 +211,11 @@ const MyMonth = () => {
       URL.revokeObjectURL(url);
     } catch (e) {
       console.error("Download failed:", e);
+      toast({
+        variant: "destructive",
+        title: "Download failed",
+        description: "Something went wrong while rendering your audio. Please try again.",
+      });
     } finally {
       setIsDownloading(false);
       setRenderProgress(0);
@@ -309,6 +327,12 @@ const MyMonth = () => {
                     <span className="text-xs font-body text-muted-foreground">{formatTime(meditationMixer.duration)}</span>
                   </div>
                 </div>
+              )}
+
+              {meditationMixer.loadError && (
+                <p className="font-body text-xs text-center text-destructive mb-4">
+                  Audio failed to load. Please check your connection and reload the page.
+                </p>
               )}
 
               <div className="flex items-center justify-center gap-8">

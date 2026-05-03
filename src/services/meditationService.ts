@@ -239,11 +239,15 @@ export async function saveVoiceClone(userId: string, voiceId: string) {
   // Upsert — one voice clone per user
   const { data: existing } = await supabase
     .from("user_voice_clones")
-    .select("id")
+    .select("id, elevenlabs_voice_id")
     .eq("user_id", userId)
     .maybeSingle();
 
   if (existing) {
+    // Delete the old ElevenLabs voice so clones don't accumulate against the account limit
+    if (existing.elevenlabs_voice_id && existing.elevenlabs_voice_id !== voiceId) {
+      await deleteVoice(existing.elevenlabs_voice_id);
+    }
     const { error } = await supabase
       .from("user_voice_clones")
       .update({ elevenlabs_voice_id: voiceId })

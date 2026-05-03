@@ -354,10 +354,13 @@ const Onboarding = () => {
       setShowUnlock(true);
     } catch (err: any) {
       console.error("Generation error:", err);
+      const isNetworkError = err?.message?.toLowerCase().includes("failed to send") || err?.message?.toLowerCase().includes("failed to fetch");
       toast({
         variant: "destructive",
         title: err?.message?.toLowerCase().includes("credits") ? "More credits needed" : "Something went wrong",
-        description: err.message,
+        description: isNetworkError
+          ? "Connection lost during setup. Please check your signal and try again."
+          : err.message,
       });
       setIsGenerating(false);
     }

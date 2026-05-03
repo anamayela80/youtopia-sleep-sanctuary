@@ -164,13 +164,13 @@ export function useSeedsPlayer({
     cancelAnimationFrame(rafRef.current);
   }, []);
 
-  const playFromOffset = useCallback((fromOffset: number) => {
+  const playFromOffset = useCallback(async (fromOffset: number) => {
     const ctx = audioCtxRef.current;
     const buffers = seedBuffersRef.current;
     const musicBuf = musicBufferRef.current;
     if (!ctx || buffers.length === 0) return;
 
-    if (ctx.state === "suspended") ctx.resume();
+    if (ctx.state === "suspended") await ctx.resume();
 
     const { events } = buildTimeline();
     totalDurationRef.current = totalDuration;
@@ -360,9 +360,14 @@ export function useSeedsPlayer({
   }, [tick]);
 
   const stop = useCallback(() => {
-    // 1s fade out on the music gain so stop isn't jarring.
+    // Capture refs NOW — the 1s fade timeout must close the context that was
+    // playing at the moment stop() was called, not whatever context exists a
+    // second later (which could be a new one if the user taps Play again quickly).
     const gain = musicGainRef.current;
     const ctx = audioCtxRef.current;
+    const sourcesToStop = activeSourcesRef.current.slice();
+    const musicSrc = musicSourceRef.current;
+
     if (gain && ctx) {
       try {
         const now = ctx.currentTime;
@@ -371,18 +376,28 @@ export function useSeedsPlayer({
         gain.gain.linearRampToValueAtTime(0, now + 1);
       } catch {}
     }
+
+    // Mark as stopped immediately so UI updates and new play can start
+    setIsPlaying(false);
+    setIsPaused(false);
+    setHasStarted(false);
+    setProgress(0);
+    setCurrentTime(0);
+    offsetRef.current = 0;
+    activeSourcesRef.current = [];
+    musicSourceRef.current = null;
+    musicGainRef.current = null;
+    cancelAnimationFrame(rafRef.current);
+
+    // Close the captured (old) context after the fade, not the current ref
     setTimeout(() => {
-      stopAllSources();
-      audioCtxRef.current?.close();
-      audioCtxRef.current = null;
-      setIsPlaying(false);
-      setIsPaused(false);
-      setProgress(0);
-      setCurrentTime(0);
-      setHasStarted(false);
-      offsetRef.current = 0;
+      sourcesToStop.forEach((s) => { try { s.stop(); } catch {} });
+      try { musicSrc?.stop(); } catch {}
+      try { ctx?.close(); } catch {}
+      // Only null the ref if it still points to the context we just closed
+      if (audioCtxRef.current === ctx) audioCtxRef.current = null;
     }, 1000);
-  }, [stopAllSources]);
+  }, []);
 
   const seekTo = useCallback((t: number) => {
     const ctx = audioCtxRef.current;
@@ -390,8 +405,9 @@ export function useSeedsPlayer({
     const wasPlaying = isPlaying;
     const newPos = Math.max(0, Math.min(t, totalDurationRef.current));
     stopAllSources();
-    const newCtx = new AudioContext();
-    audioCtxRef.current = newCtx;
+    // Reuse existing context — same reason as useSeedsPlayer.stop(): creating a
+    // new AudioContext here would orphan the already-decoded seed buffers.
+    if (ctx.state === "suspended") ctx.resume();
     offsetRef.current = newPos;
     if (wasPlaying || isPaused) playFromOffset(newPos);
     else { setCurrentTime(newPos); setProgress((newPos / totalDurationRef.current) * 100); }
