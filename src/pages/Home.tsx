@@ -11,6 +11,7 @@ import { supabase as sb } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import ScienceStep from "@/components/onboarding/ScienceStep";
 import BeforeYouBeginStep from "@/components/onboarding/BeforeYouBeginStep";
+import WelcomeStep from "@/components/onboarding/WelcomeStep";
 
 import spiralLogo from "@/assets/youtopia-sun.png";
 
