@@ -55,6 +55,8 @@ const SettingsPage = () => {
       getCurrentIntake(user.id),
     ]);
 
+    if (!intake) { navigate("/onboarding"); return; }
+
     setHasVoiceClone(!!voiceId);
     setMeditations(meds);
 

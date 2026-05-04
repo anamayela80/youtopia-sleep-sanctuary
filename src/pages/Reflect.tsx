@@ -225,6 +225,7 @@ const Reflect = () => {
       setUserId(user.id);
 
       const intake = await getCurrentIntake(user.id);
+      if (!intake) { navigate("/onboarding"); return; }
       const intakeIdLocal = intake?.id || null;
       setIntakeId(intakeIdLocal);
       setIntakeStart(intake?.intake_start_date || null);

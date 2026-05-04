@@ -136,6 +136,8 @@ const MyMonth = () => {
 
 
 
+    if (!currentIntake) { navigate("/onboarding"); return; }
+
     setIntake(currentIntake);
     let displayTheme: any = null;
     let qs: string[] = [];
