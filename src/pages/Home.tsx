@@ -191,6 +191,50 @@ const StatTile = ({ icon, value, label }: { icon: React.ReactNode; value: string
   </div>
 );
 
+// ====== Science drawer ======
+const ScienceDrawer = ({ science, themeName }: { science: string; themeName: string }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-3" style={{ borderTop: "1px solid rgba(160, 120, 70, 0.12)", paddingTop: "12px" }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between text-left"
+      >
+        <span
+          className="font-body italic"
+          style={{ fontSize: "12px", color: "hsl(var(--subtitle))", letterSpacing: "0.04em" }}
+        >
+          The science behind {themeName}
+        </span>
+        <span
+          className="inline-block transition-transform duration-300 flex-shrink-0 ml-2"
+          style={{ color: "hsl(var(--subtitle))", fontSize: "11px", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+        >
+          ▾
+        </span>
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.28 }}
+            className="overflow-hidden"
+          >
+            <p
+              className="font-body leading-relaxed pt-4 pb-1"
+              style={{ fontSize: "14px", color: "hsl(var(--accent))", lineHeight: 1.7, fontFamily: "Georgia, serif" }}
+            >
+              {science}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 // ====== Page ======
 const Home = () => {
   const [intake, setIntake] = useState<UserIntake | null>(null);
@@ -621,6 +665,11 @@ const Home = () => {
                 onClick={() => navigate("/reflect")}
               />
             </div>
+
+            {/* Science behind the theme */}
+            {theme?.science && (
+              <ScienceDrawer science={theme.science} themeName={currentChapter.themeName} />
+            )}
           </div>
         </div>
       )}
