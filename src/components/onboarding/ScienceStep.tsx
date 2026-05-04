@@ -25,32 +25,31 @@ const ScienceStep = () => (
 
     <div className="max-w-md mx-auto w-full text-left space-y-8">
       <Section>
-        Your brain enters a highly receptive state twice a day: just after waking and just
+        Your brain cannot tell the difference between a vividly imagined experience and a real
+        one. The same neural circuits fire. The same chemistry releases. When you return to a
+        vision every day with full sensory detail and genuine emotion, you are building a memory
+        of it. Repetition is what turns a memory into a belief.
+      </Section>
+
+      <Section>
+        Your brain also enters a highly receptive state twice a day: just after waking and just
         before sleep. In both moments, the analytical mind steps back and the subconscious
-        becomes accessible. YOUtopia is built around these two windows. Your morning practice
-        uses breath and guided imagery to set the tone before the day fills you. Your evening
-        Seeds reach the subconscious as you drift off, and if you fall asleep during them, that
-        is part of how this works.
+        becomes accessible. This is why the practice happens at these two windows, and why
+        returning to the same intention every day compounds over time.
       </Section>
 
       <Section title="Your voice">
         Research in neuroplasticity shows that repeated suggestion, delivered in a familiar
-        voice during threshold states, accelerates the formation of new neural pathways. Your
-        own voice is the most powerful delivery system for this. The brain cannot dismiss what
-        it hears itself say. Recording your voice is strongly recommended for your nightly
-        Seeds. The YOUtopia voice works well too, and you can switch at any time.
+        voice during these threshold states, accelerates the formation of new neural pathways.
+        Your own voice is the most powerful delivery system for this. The brain cannot dismiss
+        what it hears itself say.
       </Section>
 
       <Section title="Moods and journal">
-        After each morning session you are invited to log your mood and write one line. These
-        take under two minutes. Over weeks, patterns emerge that you cannot see day to day. The
-        mood calendar shows you the arc of the shift as it happens.
+        After each morning session you are invited to log your mood and write one line. Over
+        weeks, patterns emerge that you cannot see day to day. The mood calendar shows you the
+        arc of the shift as it happens.
       </Section>
-
-      <p className="font-body italic text-foreground/70 leading-relaxed pt-2">
-        The questions you are about to answer are the material your practice is built from.
-        Answer honestly.
-      </p>
     </div>
   </motion.div>
 );
