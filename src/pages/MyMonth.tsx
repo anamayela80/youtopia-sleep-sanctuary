@@ -279,7 +279,7 @@ const MyMonth = () => {
         {/* Centered artwork */}
         {hasMeditation && (
           <div className="mb-8 flex flex-col items-center">
-            <div className="w-[220px] h-[220px] aspect-square rounded-2xl overflow-hidden relative shadow-[0_8px_24px_-12px_hsl(var(--accent)/0.25)]">
+            <div className="w-full max-w-[calc((100%-1.5rem)/2)] aspect-square rounded-2xl overflow-hidden relative shadow-[0_8px_24px_-12px_hsl(var(--accent)/0.25)]">
               {artworkUrl ? (
                 <img src={artworkUrl} alt={meditationName} className="w-full h-full object-cover" />
               ) : (
@@ -292,7 +292,7 @@ const MyMonth = () => {
                 </div>
               )}
             </div>
-            <h2 className="font-heading text-2xl text-accent text-center mt-4 w-[220px]">{meditationName}</h2>
+            <h2 className="font-heading text-2xl text-accent text-center mt-4">{meditationName}</h2>
           </div>
         )}
 
