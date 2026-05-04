@@ -461,6 +461,9 @@ const Onboarding = () => {
               intention={theme?.intention || ""}
             />
           )}
+          {currentKind === "before" && (
+            <BeforeYouBeginStep key="before" />
+          )}
           {currentKind === "newmonth" && (
             <NewMonthIntroStep key="newmonth" monthName={monthName} />
           )}
