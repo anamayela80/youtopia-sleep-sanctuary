@@ -54,6 +54,7 @@ const ORDER = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov"
 export const AdminThemes = () => {
   const [themes, setThemes] = useState<Theme[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [fixingLanguage, setFixingLanguage] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => { load(); }, []);
@@ -116,6 +117,20 @@ export const AdminThemes = () => {
     if (error) toast({ variant: "destructive", title: "Error", description: error.message });
   };
 
+  const fixLanguage = async () => {
+    setFixingLanguage(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("fix-theme-language");
+      if (error) throw error;
+      toast({ title: data.message, description: data.results?.map((r: any) => `${r.theme}: ${r.fieldsFixed.join(", ")}`).join("\n") || undefined });
+      await load();
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Fix failed", description: e.message });
+    } finally {
+      setFixingLanguage(false);
+    }
+  };
+
   const remove = async (t: Theme) => {
     if (!window.confirm(`Are you sure you want to delete "${t.theme || t.month}"? This cannot be undone.`)) return;
     const { error } = await supabase.from("monthly_themes").delete().eq("id", t.id);
@@ -129,6 +144,15 @@ export const AdminThemes = () => {
 
   return (
     <div className="space-y-3">
+      <div className="flex justify-end">
+        <button
+          onClick={fixLanguage}
+          disabled={fixingLanguage}
+          className="px-4 py-2 rounded-xl bg-primary/10 border border-primary/30 font-body text-sm text-primary hover:bg-primary/20 transition-all disabled:opacity-50"
+        >
+          {fixingLanguage ? "Scanning all themes…" : "Fix language in all themes"}
+        </button>
+      </div>
       {themes.map((t) => (
         <div key={t.id} className="bg-cream-light rounded-2xl p-4 border border-border space-y-3">
           <div className="flex items-center justify-between">
