@@ -223,7 +223,7 @@ const Home = () => {
   const [checkinAnswer, setCheckinAnswer] = useState("");
   const [checkinSubmitting, setCheckinSubmitting] = useState(false);
   const [checkinDismissedThisSession, setCheckinDismissedThisSession] = useState(false);
-  const [infoOpen, setInfoOpen] = useState<null | "how" | "before">(null);
+  const [infoOpen, setInfoOpen] = useState<null | "how" | "before" | "welcome">(null);
 
   const navigate = useNavigate();
 
