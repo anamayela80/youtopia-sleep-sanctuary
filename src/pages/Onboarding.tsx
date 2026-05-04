@@ -30,7 +30,7 @@ import {
 } from "@/services/intakeService";
 import WelcomeStep from "@/components/onboarding/WelcomeStep";
 import ScienceStep from "@/components/onboarding/ScienceStep";
-
+import BeforeYouBeginStep from "@/components/onboarding/BeforeYouBeginStep";
 import ThemeIntroStep from "@/components/onboarding/ThemeIntroStep";
 import QuestionsStep, { ThemeQuestion } from "@/components/onboarding/QuestionsStep";
 import VoiceCaptureStep from "@/components/onboarding/VoiceCaptureStep";
@@ -144,7 +144,7 @@ const Onboarding = () => {
       return list;
     }
     if (isFirstEver) list.push("welcome", "science");
-    list.push("theme");
+    list.push("theme", "before");
     for (let i = 0; i < questions.length; i++) list.push("question");
     list.push("voice");
     return list;
@@ -460,6 +460,9 @@ const Onboarding = () => {
               description={theme?.description || ""}
               intention={theme?.intention || ""}
             />
+          )}
+          {currentKind === "before" && (
+            <BeforeYouBeginStep key="before" />
           )}
           {currentKind === "newmonth" && (
             <NewMonthIntroStep key="newmonth" monthName={monthName} />
