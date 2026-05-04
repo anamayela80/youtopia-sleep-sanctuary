@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings as SettingsIcon, Check, Headphones, Flame, Clock, Sparkles, Hand } from "lucide-react";
+import { Settings as SettingsIcon, Headphones, Flame, Clock, Sparkles, Hand, FlaskConical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getLatestMeditation, getLatestSeeds, getActiveTheme, getUserProfile,
@@ -137,24 +137,12 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
   </p>
 );
 
-const CompletionCircle = ({ done }: { done: boolean }) => (
-  <span
-    className="inline-flex items-center justify-center w-5 h-5 rounded-full flex-shrink-0"
-    style={{
-      border: done ? "1.5px solid hsl(var(--sage))" : "1.5px solid #C8B090",
-      background: done ? "hsl(var(--sage))" : "transparent",
-    }}
-    aria-label={done ? "Completed" : "Not yet"}
-  >
-    {done && <Check size={12} strokeWidth={3} className="text-white" />}
-  </span>
-);
 
 const PracticeItem = ({
-  icon, iconBg, title, subtitle, done, onClick,
+  icon, iconBg, title, subtitle, onClick,
 }: {
   icon: React.ReactNode; iconBg: string;
-  title: string; subtitle: string; done: boolean; onClick: () => void;
+  title: string; subtitle: string; onClick: () => void;
 }) => (
   <button
     onClick={onClick}
@@ -171,7 +159,6 @@ const PracticeItem = ({
       <span className="block font-heading text-[15px] leading-tight truncate" style={{ color: "hsl(var(--foreground))" }}>{title}</span>
       <span className="block text-[11px] italic mt-0.5 truncate" style={{ color: "hsl(var(--subtitle))" }}>{subtitle}</span>
     </span>
-    <CompletionCircle done={done} />
   </button>
 );
 
@@ -192,26 +179,57 @@ const StatTile = ({ icon, value, label }: { icon: React.ReactNode; value: string
 );
 
 // ====== Science drawer ======
+const SCIENCE_KEYWORDS = [
+  "neuroscience","neuroscientific","neuroplasticity","neurological","neural","neuron",
+  "psychology","psychological","psychologist",
+  "research","studies","study","evidence","data","findings","clinical",
+  "brain","cortex","prefrontal","amygdala","hippocampus","nervous system",
+  "REM","sleep","subconscious","unconscious","conscious",
+  "dopamine","serotonin","cortisol","oxytocin","hormone","hormones",
+  "cognitive","cognition","perception","memory","emotion","emotions",
+  "habit","habits","behaviour","behavior","pattern","patterns",
+  "stress","anxiety","wellbeing","well-being","resilience",
+  "meditation","mindfulness","visualization","breathwork",
+];
+
+function highlightScience(text: string) {
+  const pattern = new RegExp(`\\b(${SCIENCE_KEYWORDS.join("|")})\\b`, "gi");
+  const parts = text.split(pattern);
+  return parts.map((part, i) =>
+    pattern.test(part)
+      ? <strong key={i} style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>{part}</strong>
+      : part
+  );
+}
+
 const ScienceDrawer = ({ science, themeName }: { science: string; themeName: string }) => {
   const [open, setOpen] = useState(false);
   return (
-    <div className="mt-3" style={{ borderTop: "1px solid rgba(160, 120, 70, 0.12)", paddingTop: "12px" }}>
+    <div className="mt-4" style={{ borderTop: "1px solid rgba(160, 120, 70, 0.12)", paddingTop: "14px" }}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between text-left"
+        className="w-full flex items-center gap-2 text-left group"
       >
         <span
-          className="font-body italic"
-          style={{ fontSize: "12px", color: "hsl(var(--subtitle))", letterSpacing: "0.04em" }}
+          className="flex items-center justify-center w-7 h-7 rounded-full flex-shrink-0 transition-colors"
+          style={{ background: open ? "rgba(107, 158, 143, 0.18)" : "rgba(160, 120, 70, 0.08)" }}
+        >
+          <FlaskConical size={13} style={{ color: open ? "#4E8C7A" : "hsl(var(--subtitle))" }} />
+        </span>
+        <span
+          className="flex-1 font-body italic"
+          style={{ fontSize: "12px", color: open ? "#4E8C7A" : "hsl(var(--subtitle))", letterSpacing: "0.03em", transition: "color 0.2s" }}
         >
           The science behind {themeName}
         </span>
-        <span
-          className="inline-block transition-transform duration-300 flex-shrink-0 ml-2"
-          style={{ color: "hsl(var(--subtitle))", fontSize: "11px", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+        <motion.span
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.25 }}
+          className="flex-shrink-0"
+          style={{ color: open ? "#4E8C7A" : "hsl(var(--subtitle))", fontSize: "11px", display: "inline-block" }}
         >
           ▾
-        </span>
+        </motion.span>
       </button>
       <AnimatePresence initial={false}>
         {open && (
@@ -222,12 +240,17 @@ const ScienceDrawer = ({ science, themeName }: { science: string; themeName: str
             transition={{ duration: 0.28 }}
             className="overflow-hidden"
           >
-            <p
-              className="font-body leading-relaxed pt-4 pb-1"
-              style={{ fontSize: "14px", color: "hsl(var(--accent))", lineHeight: 1.7, fontFamily: "Georgia, serif" }}
+            <div
+              className="mt-4 rounded-2xl px-4 py-4"
+              style={{ background: "rgba(107, 158, 143, 0.07)", border: "1px solid rgba(107, 158, 143, 0.18)" }}
             >
-              {science}
-            </p>
+              <p
+                className="font-body leading-relaxed"
+                style={{ fontSize: "14px", color: "hsl(var(--accent))", lineHeight: 1.75, fontFamily: "Georgia, serif" }}
+              >
+                {highlightScience(science)}
+              </p>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -653,7 +676,6 @@ const Home = () => {
                 iconBg="#F5E4C0"
                 title="Morning & Evening Practice"
                 subtitle="Your meditation and seeds for this month"
-                done={false}
                 onClick={() => navigate("/month")}
               />
               <PracticeItem
@@ -661,7 +683,6 @@ const Home = () => {
                 iconBg="#C8DED8"
                 title="Reflect"
                 subtitle="your daily moment of honesty"
-                done={false}
                 onClick={() => navigate("/reflect")}
               />
             </div>
@@ -803,7 +824,6 @@ const Home = () => {
                             iconBg="#F5E4C0"
                             title="Morning Meditation"
                             subtitle="Revisit this practice"
-                            done
                             onClick={() => navigate(`/month?key=${c.key}`)}
                           />
                           <PracticeItem
@@ -811,7 +831,6 @@ const Home = () => {
                             iconBg="#DDD0EE"
                             title="Evening Seeds"
                             subtitle="Revisit this practice"
-                            done
                             onClick={() => navigate(`/month?key=${c.key}&play=seeds`)}
                           />
                           <PracticeItem
@@ -819,7 +838,6 @@ const Home = () => {
                             iconBg="#C8DED8"
                             title="Reflect"
                             subtitle="Reread your journal entries"
-                            done
                             onClick={() => navigate("/reflect")}
                           />
                         </div>
