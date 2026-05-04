@@ -179,21 +179,10 @@ const StatTile = ({ icon, value, label }: { icon: React.ReactNode; value: string
 );
 
 // ====== Science drawer ======
-const SCIENCE_KEYWORDS = [
-  "neuroscience","neuroscientific","neuroplasticity","neurological","neural","neuron",
-  "psychology","psychological","psychologist",
-  "research","studies","study","evidence","data","findings","clinical",
-  "brain","cortex","prefrontal","amygdala","hippocampus","nervous system",
-  "REM","sleep","subconscious","unconscious","conscious",
-  "dopamine","serotonin","cortisol","oxytocin","hormone","hormones",
-  "cognitive","cognition","perception","memory","emotion","emotions",
-  "habit","habits","behaviour","behavior","pattern","patterns",
-  "stress","anxiety","wellbeing","well-being","resilience",
-  "meditation","mindfulness","visualization","breathwork",
-];
+const SCIENCE_LABELS = ["neuroscience:", "psychology:", "Quantum Perspective:", "Shamanic Tradition:"];
 
 function highlightScience(text: string) {
-  const pattern = new RegExp(`\\b(${SCIENCE_KEYWORDS.join("|")})\\b`, "gi");
+  const pattern = new RegExp(`(${SCIENCE_LABELS.map((l) => l.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "gi");
   const parts = text.split(pattern);
   return parts.map((part, i) =>
     pattern.test(part)
