@@ -144,7 +144,7 @@ const Onboarding = () => {
       return list;
     }
     if (isFirstEver) list.push("welcome", "science");
-    list.push("theme");
+    list.push("theme", "before");
     for (let i = 0; i < questions.length; i++) list.push("question");
     list.push("voice");
     return list;
