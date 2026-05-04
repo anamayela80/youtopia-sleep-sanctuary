@@ -27,7 +27,7 @@ const WelcomeStep = ({ userFirstName, onSignOut }: WelcomeStepProps) => (
 
     <div className="space-y-5 max-w-md font-body text-accent leading-relaxed">
       <p>
-        You are about to create your own utopia. Not a destination, a state. A version of you
+        You are about to create your own utopia. A state. A version of you
         that thinks, feels, and moves through the world differently. That is what this practice
         builds.
       </p>
@@ -35,13 +35,13 @@ const WelcomeStep = ({ userFirstName, onSignOut }: WelcomeStepProps) => (
         Here is what science tells us: your brain cannot tell the difference between a vividly
         imagined experience and a real one. The same neural circuits fire. The same chemistry
         releases. When you return to a vision every day with full sensory detail and genuine
-        emotion, you are not daydreaming about a future. You are building a memory of it.
+        emotion, you are building a memory of it.
         Repetition is what turns a memory into a belief.
       </p>
       <p>
-        At night, your Seeds are designed to be the last thing you hear before sleep. It is
-        not only okay to drift off while listening, it is encouraged. As you fall asleep, the
-        words slip past the conscious mind and settle exactly where they need to.
+        At night, your Seeds are designed to be the last thing you hear before sleep. Drifting
+        off while listening is encouraged. As you fall asleep, the words slip past the conscious
+        mind and settle exactly where they need to.
       </p>
       <p className="italic text-foreground/80">
         Nothing here is generic. Everything you are about to experience is built from your

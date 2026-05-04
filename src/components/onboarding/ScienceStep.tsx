@@ -38,8 +38,7 @@ const ScienceStep = () => (
         voice during threshold states, accelerates the formation of new neural pathways. Your
         own voice is the most powerful delivery system for this. The brain cannot dismiss what
         it hears itself say. Recording your voice is strongly recommended for your nightly
-        Seeds. If you are not ready, the YOUtopia voice works well and you can switch at any
-        time.
+        Seeds. The YOUtopia voice works well too, and you can switch at any time.
       </Section>
 
       <Section title="Moods and journal">
@@ -49,8 +48,8 @@ const ScienceStep = () => (
       </Section>
 
       <p className="font-body italic text-foreground/70 leading-relaxed pt-2">
-        The questions you are about to answer are not a form. They are the material your
-        practice is built from. Answer honestly.
+        The questions you are about to answer are the material your practice is built from.
+        Answer honestly.
       </p>
     </div>
   </motion.div>

@@ -44,12 +44,12 @@ const BeforeYouBeginStep = ({ showSkip = false, onSkip }: BeforeYouBeginStepProp
 
       <Section title="How to listen">
         Find a comfortable position and stay still. Movement pulls you back to the surface.
-        Let the voice guide you. You do not need to do anything except be present.
+        Let the voice guide you. All you need is to be present.
       </Section>
 
       <Section title="Your questions">
-        The questions below are not a form. They are the material your personal practice is
-        built from. Answer honestly. Specificity is what makes this land.
+        The questions below are the material your personal practice is built from.
+        Answer honestly. Specificity is what makes this land.
       </Section>
     </div>
   </motion.div>

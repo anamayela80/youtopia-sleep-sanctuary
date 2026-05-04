@@ -61,7 +61,7 @@ const QuestionsStep = ({
         </p>
       ) : (
         <p className="font-body text-sm text-muted-foreground italic mb-6">
-          There's no wrong answer. Speak from your heart.
+          Every answer is the right one. Speak from your heart.
         </p>
       )}
 

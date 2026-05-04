@@ -22,6 +22,11 @@ RULES FOR SEEDS
 - No exclamation marks.
 - NEVER use em dashes (—) or en dashes (–) anywhere. Use commas or periods instead.
 - NEVER use these words: manifest, universe, blessed, worthy, enough, journey, sacred, divine, or any wellness cliché.
+- NO NEGATIVES — EVER. The brain does not process "not." Write only what IS, never what isn't.
+  Wrong: "I am no longer afraid" → Right: "I move forward with quiet courage."
+  Wrong: "I don't hold back" → Right: "I act with full commitment."
+  Wrong: "I am not stuck" → Right: "I am in motion."
+- Every seed names a state that exists right now — arrived, active, present. Nothing desired, nothing releasing, nothing becoming. Already here.
 
 MAPPING ANSWERS TO SEEDS
 - Seeds 1-2: drawn from answer_1 (how they want to feel / what they want to experience)
@@ -120,13 +125,38 @@ Generate their 5 Seeds now in the exact required format.`;
       .replace(/\[\/?whisper\]/gi, "")
       .replace(/\[\/?slow\]/gi, "");
 
-    const phrases = inner
+    let phrases = inner
       .split(/<break[^>]*\/>|\n/i)
       .map((p) => p.replace(/<[^>]+>/g, "").trim())
       .filter((p) => p.length > 3);
 
     if (phrases.length < 5) {
       throw new Error("Could not parse 5 seed phrases from AI response");
+    }
+
+    // Language guardian pass — rewrite any phrases that still contain negatives.
+    const guardianCheck = phrases.slice(0, 5).join("\n");
+    const hasNegative = /\b(not|no |never|don't|doesn't|didn't|can't|cannot|won't|isn't|aren't|wasn't|weren't|without|no longer|nothing|nowhere|nobody)\b/i.test(guardianCheck);
+    if (hasNegative) {
+      const guardianResponse = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": ANTHROPIC_API_KEY!,
+          "anthropic-version": "2023-06-01",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 512,
+          system: `You are a language guardian. Rewrite each affirmation so it contains zero negatives (no "not", "no", "never", "don't", "can't", "without", "no longer", etc.). The brain processes only what IS — state only what exists, never what doesn't. Keep first person, present tense, 12 words max per line. Output ONLY the 5 rewritten lines, one per line, nothing else.`,
+          messages: [{ role: "user", content: guardianCheck }],
+        }),
+      });
+      if (guardianResponse.ok) {
+        const guardianData = await guardianResponse.json();
+        const fixed = (guardianData.content?.[0]?.text || "").trim().split("\n").map((l: string) => l.trim()).filter((l: string) => l.length > 3);
+        if (fixed.length >= 5) phrases = fixed;
+      }
     }
 
     return new Response(JSON.stringify({

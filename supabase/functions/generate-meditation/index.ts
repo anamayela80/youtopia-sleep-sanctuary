@@ -699,10 +699,54 @@ Write the meditation script now. Follow the 9-phase structure exactly. Use the b
     const V3_DELIVERY_TAGS = /\[(softly|slow|warm|intimate|drawn out|whisper|fast|neutral|robust|creative|loud|quiet|serious|happy|sad|angry|fearful|surprised|disgust|calm|excited)\]/gi;
     // Strip em dashes and en dashes — they cause ElevenLabs to pause awkwardly
     // and bleed through into the narrated audio as unintended hesitations.
-    const cleanedScript = withAnchorMarkers
+    let cleanedScript = withAnchorMarkers
       .replace(V3_DELIVERY_TAGS, "")
       .replace(/—/g, " ")
       .replace(/–/g, " ");
+
+    // Language guardian pass — scan for negative constructions and rewrite them.
+    // Runs as a fast Haiku call so it adds minimal latency (<1s).
+    // Targets the specific violations most likely to slip through:
+    //   "not because X, but because Y" → just the Y clause
+    //   "not X" adjective pairs → positive equivalents
+    //   "no X" constructions → what IS present instead
+    const negativePattern = /\b(not because|not loud|not urgent|not running|not trying|not forcing|not about|not here to|nothing missing|nowhere to be|no need to|not thinking|not feeling|not looking)\b/i;
+    if (negativePattern.test(cleanedScript)) {
+      try {
+        const guardianResponse = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "x-api-key": ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "claude-haiku-4-5-20251001",
+            max_tokens: 8192,
+            system: `You are a language guardian for a meditation script. Your only job: find every negative construction and rewrite it as a positive statement. Rules:
+- "not because X, but because Y" → just write Y
+- "not loud, not urgent" → "quiet, settled"
+- "nothing missing" → "complete"
+- "no need to" → remove the phrase entirely or rephrase positively
+- "not running out of time" → "moving at the right pace"
+Keep ALL pause markers ([pause Xs], [pause:N], [segment break], [FEEL IT], etc.) exactly as they are.
+Keep all other text identical — only change negative constructions.
+Output the full script with corrections applied. Nothing else.`,
+            messages: [{ role: "user", content: cleanedScript }],
+          }),
+        });
+        if (guardianResponse.ok) {
+          const guardianData = await guardianResponse.json();
+          const guardianScript = guardianData.content?.[0]?.text?.trim();
+          if (guardianScript && guardianScript.length > cleanedScript.length * 0.7) {
+            cleanedScript = guardianScript;
+          }
+        }
+      } catch (guardianErr) {
+        console.warn("Language guardian pass failed (non-blocking):", guardianErr);
+      }
+    }
+
     const segmentTexts = splitIntoSegments(cleanedScript);
     const titles = ["Grounding", "Softening", "Dissolution", "The Proof", "The Scene", "Return"];
     const segments = segmentTexts.map((text, i) => ({
