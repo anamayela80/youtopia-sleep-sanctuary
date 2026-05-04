@@ -409,7 +409,7 @@ const SettingsPage = () => {
           </div>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="font-body text-sm text-accent">Morning meditation</span>
+              <span className="font-body text-sm text-accent">Morning practice</span>
               <input type="time" value={morningTime} onChange={(e) => setMorningTime(e.target.value)} className="font-body text-sm bg-background rounded-lg px-3 py-1.5 border border-border" />
             </div>
             <div className="flex items-center justify-between">
