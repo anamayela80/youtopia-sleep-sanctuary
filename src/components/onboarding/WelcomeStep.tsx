@@ -27,21 +27,17 @@ const WelcomeStep = ({ userFirstName, onSignOut }: WelcomeStepProps) => (
 
     <div className="space-y-5 max-w-md font-body text-accent leading-relaxed">
       <p>
-        You are about to create your own utopia. A state. A version of you
-        that thinks, feels, and moves through the world differently. That is what this practice
-        builds.
+        Each month you work with one intention. One theme to return to, morning and night,
+        until it becomes part of how you move through the world.
       </p>
       <p>
-        Here is what science tells us: your brain cannot tell the difference between a vividly
-        imagined experience and a real one. The same neural circuits fire. The same chemistry
-        releases. When you return to a vision every day with full sensory detail and genuine
-        emotion, you are building a memory of it.
-        Repetition is what turns a memory into a belief.
+        The practice happens twice a day. A morning session to set the tone before the day
+        begins. An evening Seed to reach you as you fall asleep.
       </p>
       <p>
-        At night, your Seeds are designed to be the last thing you hear before sleep. Drifting
-        off while listening is encouraged. As you fall asleep, the words slip past the conscious
-        mind and settle exactly where they need to.
+        For your evening Seed, you will have the option to record it in your own voice. This
+        is recommended. Your brain responds differently to a voice it already trusts. But the
+        YOUtopia voice is always there if you prefer it.
       </p>
       <p className="italic text-foreground/80">
         Nothing here is generic. Everything you are about to experience is built from your
