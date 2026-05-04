@@ -270,13 +270,10 @@ const MyMonth = () => {
     <div className="min-h-screen bg-background pb-28">
       <div className="max-w-2xl mx-auto px-6 pt-8">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
-          <button onClick={() => navigate("/home")} className="text-accent" aria-label="Back to library">
-            <ArrowLeft size={22} />
-          </button>
-          <div className="flex-1">
-            <h1 className="font-heading text-3xl text-coral-dark leading-tight">{themeName}</h1>
-          </div>
+        <div className="mb-8 text-center">
+          <h1 className="font-heading text-5xl md:text-6xl text-coral-dark leading-[1.05] tracking-tight">
+            {themeName}
+          </h1>
         </div>
 
         {/* Centered artwork */}
