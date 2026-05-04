@@ -513,9 +513,11 @@ const Reflect = () => {
               style={{ gridTemplateColumns: "repeat(7, 18px)", gap: "8px", justifyContent: "start" }}
             >
               {constellation.map((d, i) => {
+                const [y, m, day] = d.date.split("-").map(Number);
+                const dateStr = new Date(y, m - 1, day).toLocaleDateString(undefined, { month: "long", day: "numeric" });
                 const label = d.mood
-                  ? `${d.date} · ${["heavy","unsettled","okay","good","alive"][d.mood - 1]}`
-                  : `${d.date} · no check-in`;
+                  ? `${dateStr} · ${["heavy","unsettled","okay","good","alive"][d.mood - 1]}`
+                  : `${dateStr} · no check-in`;
                 return <MiniSun key={i} mood={d.mood ?? 0} size={18} title={label} />;
               })}
             </div>

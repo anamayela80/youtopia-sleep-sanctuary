@@ -602,7 +602,9 @@ const Home = () => {
                   </span>
                   <div className="flex flex-wrap gap-[4px] flex-1 items-center">
                     {row.days.map((score, i) => {
-                      const dateStr = `${row.monthKey}-${String(i + 1).padStart(2, "0")}`;
+                      const [y, m] = row.monthKey.split("-").map(Number);
+                      const dateObj = new Date(y, m - 1, i + 1);
+                      const dateStr = dateObj.toLocaleDateString(undefined, { month: "long", day: "numeric" });
                       const label = score
                         ? `${dateStr} · ${["heavy","unsettled","okay","good","alive"][score - 1]}`
                         : `${dateStr} · no check-in`;
@@ -611,6 +613,23 @@ const Home = () => {
                   </div>
                 </div>
               ))}
+              {/* Legend */}
+              <div
+                className="flex items-center justify-around mt-4 pt-3"
+                style={{ borderTop: "1px solid rgba(160, 120, 70, 0.12)" }}
+              >
+                {[1, 2, 3, 4, 5].map((score) => (
+                  <div key={score} className="flex flex-col items-center gap-1">
+                    <MiniSun mood={score} size={14} />
+                    <span
+                      className="italic"
+                      style={{ fontSize: "9px", color: "#6b614d", fontFamily: "Georgia, serif" }}
+                    >
+                      {["heavy","unsettled","okay","good","alive"][score - 1]}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : (
             <p
