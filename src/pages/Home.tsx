@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings as SettingsIcon, Check, Headphones, Flame, Clock } from "lucide-react";
+import { Settings as SettingsIcon, Check, Headphones, Flame, Clock, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getLatestMeditation, getLatestSeeds, getActiveTheme, getUserProfile,
@@ -784,23 +784,15 @@ const Home = () => {
       )}
 
       {/* Footer links */}
-      <div className="mt-10 px-6 flex items-center justify-center gap-6">
+      <div className="mt-10 px-6 flex items-center justify-center">
         <button
           type="button"
           onClick={() => setInfoOpen("how")}
-          className="font-body text-xs italic underline-offset-4 hover:underline"
+          className="font-body text-xs italic underline-offset-4 hover:underline inline-flex items-center gap-1.5"
           style={{ color: "hsl(var(--subtitle))" }}
         >
+          <Sparkles size={13} strokeWidth={1.6} />
           How this works
-        </button>
-        <span aria-hidden className="w-1 h-1 rounded-full" style={{ background: "hsl(var(--subtitle))", opacity: 0.5 }} />
-        <button
-          type="button"
-          onClick={() => setInfoOpen("before")}
-          className="font-body text-xs italic underline-offset-4 hover:underline"
-          style={{ color: "hsl(var(--subtitle))" }}
-        >
-          Before you begin
         </button>
       </div>
 
