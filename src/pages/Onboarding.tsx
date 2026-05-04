@@ -30,7 +30,7 @@ import {
 } from "@/services/intakeService";
 import WelcomeStep from "@/components/onboarding/WelcomeStep";
 import ScienceStep from "@/components/onboarding/ScienceStep";
-import BeforeYouBeginStep from "@/components/onboarding/BeforeYouBeginStep";
+
 import ThemeIntroStep from "@/components/onboarding/ThemeIntroStep";
 import QuestionsStep, { ThemeQuestion } from "@/components/onboarding/QuestionsStep";
 import VoiceCaptureStep from "@/components/onboarding/VoiceCaptureStep";
@@ -452,13 +452,6 @@ const Onboarding = () => {
           )}
           {currentKind === "science" && (
             <ScienceStep key="science" />
-          )}
-          {currentKind === "before" && (
-            <BeforeYouBeginStep
-              key="before"
-              showSkip={!isFirstEver}
-              onSkip={handleNext}
-            />
           )}
           {currentKind === "theme" && (
             <ThemeIntroStep
