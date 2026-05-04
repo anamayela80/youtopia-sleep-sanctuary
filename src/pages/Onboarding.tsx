@@ -30,7 +30,7 @@ import {
 } from "@/services/intakeService";
 import WelcomeStep from "@/components/onboarding/WelcomeStep";
 import ScienceStep from "@/components/onboarding/ScienceStep";
-import BeforeYouBeginStep from "@/components/onboarding/BeforeYouBeginStep";
+
 import ThemeIntroStep from "@/components/onboarding/ThemeIntroStep";
 import QuestionsStep, { ThemeQuestion } from "@/components/onboarding/QuestionsStep";
 import VoiceCaptureStep from "@/components/onboarding/VoiceCaptureStep";
