@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Settings as SettingsIcon, Headphones, Flame, Clock, Sparkles, Hand, FlaskConical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { MiniSun } from "@/components/reflect/MiniSun";
 import {
   getLatestMeditation, getLatestSeeds, getActiveTheme, getUserProfile,
 } from "@/services/meditationService";
