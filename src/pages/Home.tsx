@@ -666,7 +666,7 @@ const Home = () => {
                 icon={<SunGlyph />}
                 iconBg="#F5E4C0"
                 title="Morning & Evening Practice"
-                subtitle="Your meditation and seeds for this month"
+                subtitle="Your morning practice and seeds for this month"
                 onClick={() => navigate("/month")}
               />
               <PracticeItem
@@ -813,7 +813,7 @@ const Home = () => {
                           <PracticeItem
                             icon={<SunGlyph />}
                             iconBg="#F5E4C0"
-                            title="Morning Meditation"
+                            title="Morning Practice"
                             subtitle="Revisit this practice"
                             onClick={() => navigate(`/month?key=${c.key}`)}
                           />
