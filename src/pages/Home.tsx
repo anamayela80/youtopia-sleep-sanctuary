@@ -590,45 +590,23 @@ const Home = () => {
           style={{ background: "hsl(var(--folder))", border: "1px solid rgba(160, 120, 70, 0.12)" }}
         >
           {hasAnyMood ? (
-            <>
-              <div className="space-y-2">
-                {moodHistory.map((row) => (
-                  <div key={row.monthKey} className="flex items-center gap-2">
-                    <span
-                      className="text-[10px] uppercase italic w-8 flex-shrink-0"
-                      style={{ letterSpacing: "0.12em", color: "hsl(var(--subtitle))", fontFamily: "Georgia, serif" }}
-                    >
-                      {row.label}
-                    </span>
-                    <div className="flex flex-wrap gap-[3px] flex-1">
-                      {row.days.map((score, i) => (
-                        <div
-                          key={i}
-                          className="rounded-full"
-                          style={{
-                            width: "8px",
-                            height: "8px",
-                            background: score !== null ? MOOD_COLORS[score - 1] : "transparent",
-                            border: score === null ? "1px solid rgba(160, 120, 70, 0.18)" : "none",
-                          }}
-                        />
-                      ))}
-                    </div>
+            <div className="space-y-2.5">
+              {moodHistory.map((row) => (
+                <div key={row.monthKey} className="flex items-center gap-3">
+                  <span
+                    className="text-[14px] italic w-9 flex-shrink-0"
+                    style={{ color: "#6b614d", fontFamily: "Georgia, serif" }}
+                  >
+                    {row.label}
+                  </span>
+                  <div className="flex flex-wrap gap-[4px] flex-1 items-center">
+                    {row.days.map((score, i) => (
+                      <MiniSun key={i} mood={score ?? 0} size={12} />
+                    ))}
                   </div>
-                ))}
-              </div>
-              {/* Legend */}
-              <div
-                className="flex items-center justify-center gap-1.5 mt-4 pt-3"
-                style={{ borderTop: "1px solid rgba(160, 120, 70, 0.12)" }}
-              >
-                <span className="text-[9px] italic mr-1" style={{ color: "hsl(var(--subtitle))" }}>low</span>
-                {MOOD_COLORS.map((c, i) => (
-                  <div key={i} className="w-2.5 h-2.5 rounded-full" style={{ background: c }} />
-                ))}
-                <span className="text-[9px] italic ml-1" style={{ color: "hsl(var(--subtitle))" }}>high</span>
-              </div>
-            </>
+                </div>
+              ))}
+            </div>
           ) : (
             <p
               className="text-center italic py-4"
