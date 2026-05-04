@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS voice_switch_used_at TIMESTAMP WITH TIME ZONE;
