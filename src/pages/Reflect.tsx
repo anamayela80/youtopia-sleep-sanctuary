@@ -512,14 +512,12 @@ const Reflect = () => {
               className="grid"
               style={{ gridTemplateColumns: "repeat(7, 18px)", gap: "8px", justifyContent: "start" }}
             >
-              {constellation.map((d, i) => (
-                <div
-                  key={i}
-                  title={d.mood ? `${d.date} · ${["heavy","unsettled","okay","good","alive"][d.mood - 1]}` : `${d.date} · no check-in`}
-                >
-                  <MiniSun mood={d.mood ?? 0} size={18} />
-                </div>
-              ))}
+              {constellation.map((d, i) => {
+                const label = d.mood
+                  ? `${d.date} · ${["heavy","unsettled","okay","good","alive"][d.mood - 1]}`
+                  : `${d.date} · no check-in`;
+                return <MiniSun key={i} mood={d.mood ?? 0} size={18} title={label} />;
+              })}
             </div>
           </section>
         </>
