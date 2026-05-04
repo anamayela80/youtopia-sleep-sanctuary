@@ -453,13 +453,6 @@ const Onboarding = () => {
           {currentKind === "science" && (
             <ScienceStep key="science" />
           )}
-          {currentKind === "before" && (
-            <BeforeYouBeginStep
-              key="before"
-              showSkip={!isFirstEver}
-              onSkip={handleNext}
-            />
-          )}
           {currentKind === "theme" && (
             <ThemeIntroStep
               key="theme"
