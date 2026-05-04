@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCurrentIntake } from "@/services/intakeService";
 import { BottomNav } from "@/components/BottomNav";
 import { MoodOrb, MOODS } from "@/components/reflect/MoodOrb";
+import { MiniSun } from "@/components/reflect/MiniSun";
 import spiralLogo from "@/assets/youtopia-sun.png";
 
 const MOOD_COLORS = MOODS.map((m) => m.color);
@@ -506,28 +507,18 @@ const Reflect = () => {
         <>
           <Divider />
           <section className="px-6">
-            <SectionLabel>your month so far</SectionLabel>
+          <SectionLabel>your month so far</SectionLabel>
             <div
-              className="flex flex-wrap"
-              style={{ gap: "6px", maxWidth: `${7 * 14 + 6 * 6}px` }}
+              className="grid"
+              style={{ gridTemplateColumns: "repeat(7, 18px)", gap: "8px", justifyContent: "start" }}
             >
               {constellation.map((d, i) => (
                 <div
                   key={i}
-                  className="rounded-full"
-                  style={{
-                    width: "14px",
-                    height: "14px",
-                    background:
-                      d.mood !== null ? MOOD_COLORS[d.mood - 1] : "transparent",
-                    border:
-                      d.mood !== null
-                        ? "none"
-                        : d.isFuture
-                        ? "1px solid rgba(160, 120, 70, 0.08)"
-                        : "1px solid rgba(160, 120, 70, 0.15)",
-                  }}
-                />
+                  title={d.mood ? `${d.date} · ${["heavy","unsettled","okay","good","alive"][d.mood - 1]}` : `${d.date} · no check-in`}
+                >
+                  <MiniSun mood={d.mood ?? 0} size={18} />
+                </div>
               ))}
             </div>
           </section>
