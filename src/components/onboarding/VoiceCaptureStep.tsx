@@ -189,7 +189,7 @@ const VoiceCaptureStep = ({
           Your seeds are whispered to you each night while you sleep. Choose the voice that feels right.
         </p>
 
-        <div className="w-full space-y-3 mb-6">
+        <div className="w-full space-y-3 mb-4">
           {allowVoiceClone && (
             <button
               onClick={() => setState("intro")}
@@ -227,6 +227,10 @@ const VoiceCaptureStep = ({
             </button>
           )}
         </div>
+
+        <p className="font-body text-xs text-muted-foreground text-center max-w-xs">
+          You can switch voices once per chapter from your settings.
+        </p>
       </motion.div>
     );
   }
@@ -252,7 +256,7 @@ const VoiceCaptureStep = ({
         </p>
 
         <p className="font-body text-sm text-muted-foreground mb-8 max-w-xs">
-          You only do this once. From here, your voice is yours inside Youtopia.
+          You only do this once per chapter. You can switch voices once per chapter from your settings.
         </p>
 
         {/* Privacy notice */}
