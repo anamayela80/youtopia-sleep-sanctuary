@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCurrentIntake } from "@/services/intakeService";
 import { BottomNav } from "@/components/BottomNav";
 import { MoodOrb, MOODS } from "@/components/reflect/MoodOrb";
+import { MiniSun } from "@/components/reflect/MiniSun";
 import spiralLogo from "@/assets/youtopia-sun.png";
 
 const MOOD_COLORS = MOODS.map((m) => m.color);
