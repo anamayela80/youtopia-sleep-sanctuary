@@ -785,7 +785,16 @@ const Home = () => {
       )}
 
       {/* Footer links */}
-      <div className="mt-10 px-6 flex items-center justify-center">
+      <div className="mt-10 px-6 flex items-center justify-center gap-6">
+        <button
+          type="button"
+          onClick={() => setInfoOpen("welcome")}
+          className="font-body text-xs italic underline-offset-4 hover:underline inline-flex items-center gap-1.5"
+          style={{ color: "hsl(var(--subtitle))" }}
+        >
+          <Hand size={13} strokeWidth={1.6} />
+          Welcome
+        </button>
         <button
           type="button"
           onClick={() => setInfoOpen("how")}
@@ -800,12 +809,14 @@ const Home = () => {
       <Dialog open={infoOpen !== null} onOpenChange={(o) => !o && setInfoOpen(null)}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto bg-background">
           <DialogTitle className="sr-only">
-            {infoOpen === "how" ? "How this works" : "Before you begin"}
+            {infoOpen === "how" ? "How this works" : infoOpen === "welcome" ? "Welcome" : "Before you begin"}
           </DialogTitle>
           {infoOpen === "how" && <ScienceStep />}
           {infoOpen === "before" && <BeforeYouBeginStep />}
+          {infoOpen === "welcome" && <WelcomeStep userFirstName={userFirstName} />}
         </DialogContent>
       </Dialog>
+
 
     </div>
   );
