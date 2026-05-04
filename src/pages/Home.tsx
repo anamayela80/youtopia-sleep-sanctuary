@@ -8,7 +8,7 @@ import {
 } from "@/services/meditationService";
 import { getCurrentIntake, isIntakeExpired, getNextThemeForUser, type UserIntake } from "@/services/intakeService";
 import { supabase as sb } from "@/integrations/supabase/client";
-import { BottomNav } from "@/components/BottomNav";
+
 import spiralLogo from "@/assets/youtopia-sun.png";
 
 const getGreeting = () => {
