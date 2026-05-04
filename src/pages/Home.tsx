@@ -601,9 +601,13 @@ const Home = () => {
                     {row.label}
                   </span>
                   <div className="flex flex-wrap gap-[4px] flex-1 items-center">
-                    {row.days.map((score, i) => (
-                      <MiniSun key={i} mood={score ?? 0} size={12} />
-                    ))}
+                    {row.days.map((score, i) => {
+                      const dateStr = `${row.monthKey}-${String(i + 1).padStart(2, "0")}`;
+                      const label = score
+                        ? `${dateStr} · ${["heavy","unsettled","okay","good","alive"][score - 1]}`
+                        : `${dateStr} · no check-in`;
+                      return <MiniSun key={i} mood={score ?? 0} size={12} title={label} />;
+                    })}
                   </div>
                 </div>
               ))}
