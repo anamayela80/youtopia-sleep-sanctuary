@@ -292,7 +292,7 @@ const MyMonth = () => {
                 </div>
               )}
             </div>
-            <h2 className="font-heading text-2xl text-accent text-center mt-4 w-[220px]">{meditationName}</h2>
+            <h2 className="font-heading text-2xl text-accent text-center mt-4">{meditationName}</h2>
           </div>
         )}
 
