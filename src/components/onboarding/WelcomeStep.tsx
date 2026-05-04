@@ -47,15 +47,6 @@ const WelcomeStep = ({ userFirstName, onSignOut }: WelcomeStepProps) => (
         Are you ready to begin?
       </p>
     </div>
-    {onSignOut && (
-      <button
-        type="button"
-        onClick={onSignOut}
-        className="mt-8 font-body text-sm text-muted-foreground underline underline-offset-4 hover:text-secondary"
-      >
-        Sign out
-      </button>
-    )}
   </motion.div>
 );
 
