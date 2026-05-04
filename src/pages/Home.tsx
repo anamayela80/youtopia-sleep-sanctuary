@@ -8,6 +8,9 @@ import {
 } from "@/services/meditationService";
 import { getCurrentIntake, isIntakeExpired, getNextThemeForUser, type UserIntake } from "@/services/intakeService";
 import { supabase as sb } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import ScienceStep from "@/components/onboarding/ScienceStep";
+import BeforeYouBeginStep from "@/components/onboarding/BeforeYouBeginStep";
 
 import spiralLogo from "@/assets/youtopia-sun.png";
 
@@ -219,6 +222,7 @@ const Home = () => {
   const [checkinAnswer, setCheckinAnswer] = useState("");
   const [checkinSubmitting, setCheckinSubmitting] = useState(false);
   const [checkinDismissedThisSession, setCheckinDismissedThisSession] = useState(false);
+  const [infoOpen, setInfoOpen] = useState<null | "how" | "before">(null);
 
   const navigate = useNavigate();
 
@@ -778,6 +782,37 @@ const Home = () => {
           </div>
         </div>
       )}
+
+      {/* Footer links */}
+      <div className="mt-10 px-6 flex items-center justify-center gap-6">
+        <button
+          type="button"
+          onClick={() => setInfoOpen("how")}
+          className="font-body text-xs italic underline-offset-4 hover:underline"
+          style={{ color: "hsl(var(--subtitle))" }}
+        >
+          How this works
+        </button>
+        <span aria-hidden className="w-1 h-1 rounded-full" style={{ background: "hsl(var(--subtitle))", opacity: 0.5 }} />
+        <button
+          type="button"
+          onClick={() => setInfoOpen("before")}
+          className="font-body text-xs italic underline-offset-4 hover:underline"
+          style={{ color: "hsl(var(--subtitle))" }}
+        >
+          Before you begin
+        </button>
+      </div>
+
+      <Dialog open={infoOpen !== null} onOpenChange={(o) => !o && setInfoOpen(null)}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto bg-background">
+          <DialogTitle className="sr-only">
+            {infoOpen === "how" ? "How this works" : "Before you begin"}
+          </DialogTitle>
+          {infoOpen === "how" && <ScienceStep />}
+          {infoOpen === "before" && <BeforeYouBeginStep />}
+        </DialogContent>
+      </Dialog>
 
     </div>
   );
