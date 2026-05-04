@@ -8,6 +8,9 @@ import {
 } from "@/services/meditationService";
 import { getCurrentIntake, isIntakeExpired, getNextThemeForUser, type UserIntake } from "@/services/intakeService";
 import { supabase as sb } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import ScienceStep from "@/components/onboarding/ScienceStep";
+import BeforeYouBeginStep from "@/components/onboarding/BeforeYouBeginStep";
 
 import spiralLogo from "@/assets/youtopia-sun.png";
 
