@@ -423,24 +423,22 @@ const Reflect = () => {
               ))}
             </div>
 
-            <div className="px-2 mb-4">
-              <input
-                type="text"
-                value={moodNote}
-                onChange={(e) => setMoodNote(e.target.value.slice(0, 140))}
-                placeholder="anything you want to add?"
-                maxLength={140}
-                className="w-full bg-transparent outline-none italic py-2"
+            <div className="flex justify-end px-2 mb-4">
+              <button
+                onClick={submitMood}
+                disabled={selectedMood === null || moodSubmitting}
+                className="lowercase transition-opacity"
                 style={{
                   fontSize: "13px",
-                  color: "#3D2E1E",
+                  color: "#6B9E8F",
                   fontFamily: "Georgia, serif",
-                  borderBottom: "1px solid #C8B090",
+                  opacity: selectedMood === null || moodSubmitting ? 0.4 : 1,
+                  padding: "6px 12px",
                 }}
-              />
+              >
+                done
+              </button>
             </div>
-
-            <div className="flex justify-end px-2 mb-4">
               <button
                 onClick={submitMood}
                 disabled={selectedMood === null || moodSubmitting}
