@@ -426,23 +426,6 @@ const SettingsPage = () => {
           </div>
         </div>
 
-        {/* ── Meditation Library ───────────────────────────────────────────── */}
-        {meditations.length > 0 && (
-          <div className="bg-cream-light rounded-2xl p-5 border border-border">
-            <h3 className="font-body font-semibold text-foreground mb-4">Meditation Library</h3>
-            <div className="space-y-2">
-              {meditations.map((med) => (
-                <div key={med.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                  <div>
-                    <p className="font-body text-sm text-foreground">{med.title}</p>
-                    <p className="font-body text-xs text-muted-foreground">{med.month}</p>
-                  </div>
-                  <ChevronRight size={16} className="text-muted-foreground" />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* ── Sign Out ─────────────────────────────────────────────────────── */}
         <button
