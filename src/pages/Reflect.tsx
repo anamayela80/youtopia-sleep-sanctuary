@@ -441,7 +441,6 @@ const Reflect = () => {
             </div>
           </>
         )}
-        )}
       </section>
 
       {/* ===== Section 2: Journal ===== */}
