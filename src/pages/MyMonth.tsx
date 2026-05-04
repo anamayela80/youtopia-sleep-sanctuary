@@ -267,7 +267,7 @@ const MyMonth = () => {
   })();
 
   return (
-    <div className="min-h-screen bg-background pb-16">
+    <div className="min-h-screen bg-background pb-28">
       <div className="max-w-2xl mx-auto px-6 pt-8">
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
@@ -632,6 +632,41 @@ const MyMonth = () => {
           )}
         </div>
       </div>
+
+      {/* Bottom nav: Home + Reflect */}
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-30"
+        style={{
+          background: "hsl(var(--background))",
+          borderTop: "1px solid rgba(160, 120, 70, 0.15)",
+          paddingTop: "13px",
+          paddingBottom: "22px",
+        }}
+      >
+        <div className="flex justify-around max-w-sm mx-auto px-6">
+          <button
+            onClick={() => navigate("/home")}
+            className="flex flex-col items-center gap-1 transition-colors"
+            style={{ color: "#C0A880" }}
+          >
+            <Sun size={20} strokeWidth={1.6} />
+            <span className="text-[10px] font-body font-medium" style={{ letterSpacing: "0.06em" }}>Home</span>
+          </button>
+          <button
+            onClick={() => navigate("/reflect")}
+            className="flex flex-col items-center gap-1 transition-colors"
+            style={{ color: "#C0A880" }}
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 4h11a1 1 0 0 1 1 1v15H7a1 1 0 0 1-1-1V4z" />
+              <line x1="9" y1="8.5" x2="15" y2="8.5" />
+              <line x1="9" y1="12" x2="15" y2="12" />
+              <line x1="9" y1="15.5" x2="13" y2="15.5" />
+            </svg>
+            <span className="text-[10px] font-body font-medium" style={{ letterSpacing: "0.06em" }}>Reflect</span>
+          </button>
+        </div>
+      </nav>
     </div>
   );
 };
