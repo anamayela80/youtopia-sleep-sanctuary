@@ -439,22 +439,8 @@ const Reflect = () => {
                 done
               </button>
             </div>
-              <button
-                onClick={submitMood}
-                disabled={selectedMood === null || moodSubmitting}
-                className="lowercase transition-opacity"
-                style={{
-                  fontSize: "13px",
-                  color: "#6B9E8F",
-                  fontFamily: "Georgia, serif",
-                  opacity: selectedMood === null || moodSubmitting ? 0.4 : 1,
-                  padding: "6px 12px",
-                }}
-              >
-                done
-              </button>
-            </div>
           </>
+        )}
         )}
       </section>
 
