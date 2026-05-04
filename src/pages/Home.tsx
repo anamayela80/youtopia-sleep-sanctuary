@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings as SettingsIcon, Check, Headphones, Flame, Clock, Sparkles } from "lucide-react";
+import { Settings as SettingsIcon, Check, Headphones, Flame, Clock, Sparkles, Hand } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getLatestMeditation, getLatestSeeds, getActiveTheme, getUserProfile,
@@ -11,6 +11,7 @@ import { supabase as sb } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import ScienceStep from "@/components/onboarding/ScienceStep";
 import BeforeYouBeginStep from "@/components/onboarding/BeforeYouBeginStep";
+import WelcomeStep from "@/components/onboarding/WelcomeStep";
 
 import spiralLogo from "@/assets/youtopia-sun.png";
 
@@ -222,7 +223,7 @@ const Home = () => {
   const [checkinAnswer, setCheckinAnswer] = useState("");
   const [checkinSubmitting, setCheckinSubmitting] = useState(false);
   const [checkinDismissedThisSession, setCheckinDismissedThisSession] = useState(false);
-  const [infoOpen, setInfoOpen] = useState<null | "how" | "before">(null);
+  const [infoOpen, setInfoOpen] = useState<null | "how" | "before" | "welcome">(null);
 
   const navigate = useNavigate();
 
@@ -784,7 +785,16 @@ const Home = () => {
       )}
 
       {/* Footer links */}
-      <div className="mt-10 px-6 flex items-center justify-center">
+      <div className="mt-10 px-6 flex items-center justify-center gap-6">
+        <button
+          type="button"
+          onClick={() => setInfoOpen("welcome")}
+          className="font-body text-xs italic underline-offset-4 hover:underline inline-flex items-center gap-1.5"
+          style={{ color: "hsl(var(--subtitle))" }}
+        >
+          <Hand size={13} strokeWidth={1.6} />
+          Welcome
+        </button>
         <button
           type="button"
           onClick={() => setInfoOpen("how")}
@@ -799,12 +809,14 @@ const Home = () => {
       <Dialog open={infoOpen !== null} onOpenChange={(o) => !o && setInfoOpen(null)}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto bg-background">
           <DialogTitle className="sr-only">
-            {infoOpen === "how" ? "How this works" : "Before you begin"}
+            {infoOpen === "how" ? "How this works" : infoOpen === "welcome" ? "Welcome" : "Before you begin"}
           </DialogTitle>
           {infoOpen === "how" && <ScienceStep />}
           {infoOpen === "before" && <BeforeYouBeginStep />}
+          {infoOpen === "welcome" && <WelcomeStep userFirstName={userFirstName} />}
         </DialogContent>
       </Dialog>
+
 
     </div>
   );
