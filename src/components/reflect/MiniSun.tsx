@@ -29,9 +29,11 @@ export function MiniSun({ mood = 0, size = 14, title }: MiniSunProps) {
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      role={title ? "img" : undefined}
+      role="img"
       aria-label={title}
+      style={{ cursor: title ? "help" : "default" }}
     >
+      {title && <title>{title}</title>}
       {!checked && (
         <circle cx="12" cy="12" r="6" fill="none" stroke={HAIRLINE} strokeWidth="1" />
       )}
