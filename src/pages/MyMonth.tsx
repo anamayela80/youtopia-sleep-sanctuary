@@ -236,7 +236,7 @@ const MyMonth = () => {
   const hasMeditation = meditation && segmentUrls.length > 0;
   const hasSeeds = seedAudioUrls.length > 0;
   const themeName = theme?.theme || "Your Practice";
-  const meditationName = meditation?.meditation_name || meditation?.title || "Morning Meditation";
+  const meditationName = meditation?.meditation_name || meditation?.title || "Morning Practice";
   const artworkUrl = meditation?.meditation_artwork_url;
   const messageForYou = meditation?.message_for_you;
 
@@ -301,7 +301,7 @@ const MyMonth = () => {
         {/* Morning Meditation */}
         {hasMeditation && (
           <section>
-            <SectionLabel>Morning Meditation</SectionLabel>
+            <SectionLabel>Morning Practice</SectionLabel>
             <div
               className="rounded-3xl p-6"
               style={{ background: TONE_FOLDER, border: SOFT_BORDER }}
