@@ -34,9 +34,15 @@ const BeforeYouBeginStep = ({ showSkip = false, onSkip }: BeforeYouBeginStepProp
         Settle somewhere you will not be interrupted. There is no rush.
       </Section>
 
-      <Section title="Answer honestly">
+      <Section title="Answer honestly, and with detail">
         The questions ahead are the raw material of your meditation and your Seeds.
-        Honesty here is what makes everything that follows feel true.
+        Honesty here is what makes everything that follows feel true. Speak in
+        specifics, not generalities. The more detail you give, the more your
+        practice can hold.
+        {" "}
+        <span className="block mt-3 text-foreground/70">
+          No one reads your answers. They are yours alone. Only you will ever see them.
+        </span>
       </Section>
 
       <Section title="Speak from where you are">
