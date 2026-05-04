@@ -602,18 +602,10 @@ const Home = () => {
               <PracticeItem
                 icon={<SunGlyph />}
                 iconBg="#F5E4C0"
-                title="Morning Meditation"
-                subtitle="Listen with headphones, eyes closed"
+                title="Morning & Evening Practice"
+                subtitle="Your meditation and seeds for this month"
                 done={false}
-                onClick={() => navigate("/month?play=morning")}
-              />
-              <PracticeItem
-                icon={<MoonGlyph />}
-                iconBg="#DDD0EE"
-                title="Evening Seeds"
-                subtitle="Plant the seeds before sleep"
-                done={false}
-                onClick={() => navigate("/month?play=seeds")}
+                onClick={() => navigate("/month")}
               />
               <PracticeItem
                 icon={<JournalGlyph />}
@@ -787,7 +779,6 @@ const Home = () => {
         </div>
       )}
 
-      <BottomNav />
     </div>
   );
 };
