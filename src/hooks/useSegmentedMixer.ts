@@ -116,6 +116,7 @@ export function useSegmentedMixer({
   const startTimeRef = useRef(0);
   const offsetRef = useRef(0);
   const totalDurationRef = useRef(0);
+  const isPlayingRef = useRef(false);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -166,6 +167,38 @@ export function useSegmentedMixer({
       stopAll();
       audioCtxRef.current?.close();
     };
+  }, []);
+
+  /** Register MediaSession so the OS knows we're playing audio. Without this,
+   *  iOS/Android suspend the AudioContext when the screen locks. */
+  const registerMediaSession = useCallback((
+    onPlay: () => void,
+    onPause: () => void,
+  ) => {
+    if (!("mediaSession" in navigator)) return;
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: "Morning Meditation",
+      artist: "YOUtopia",
+      album: "Daily Practice",
+    });
+    navigator.mediaSession.setActionHandler("play", onPlay);
+    navigator.mediaSession.setActionHandler("pause", onPause);
+    navigator.mediaSession.playbackState = "playing";
+  }, []);
+
+  /** Resume AudioContext when the user returns from lock screen / background. */
+  useEffect(() => {
+    const handleVisibility = () => {
+      const ctx = audioCtxRef.current;
+      if (document.visibilityState === "visible" && ctx?.state === "suspended" && isPlayingRef.current) {
+        ctx.resume().then(() => {
+          startTimeRef.current = ctx.currentTime;
+          if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+        });
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
   const tick = useCallback(() => {
@@ -364,11 +397,27 @@ export function useSegmentedMixer({
       activeSourcesRef.current.push(source);
     });
 
+    isPlayingRef.current = true;
     setIsPlaying(true);
     setIsPaused(false);
     setHasStarted(true);
+    registerMediaSession(
+      () => {
+        const c = audioCtxRef.current;
+        if (c?.state === "suspended") {
+          startTimeRef.current = c.currentTime;
+          c.resume();
+          isPlayingRef.current = true;
+          setIsPlaying(true);
+          setIsPaused(false);
+          rafRef.current = requestAnimationFrame(tick);
+          if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+        }
+      },
+      () => { pause(); },
+    );
     rafRef.current = requestAnimationFrame(tick);
-  }, [musicVolume, narrationVolume, resolvedFadeIn, resolvedFadeOut, buildTimeline, tick]);
+  }, [musicVolume, narrationVolume, resolvedFadeIn, resolvedFadeOut, buildTimeline, tick, registerMediaSession]);
 
   const playSequence = useCallback(async () => {
     if (segmentUrls.length === 0) return;
@@ -408,8 +457,10 @@ export function useSegmentedMixer({
     offsetRef.current = offsetRef.current + (ctx.currentTime - startTimeRef.current);
     ctx.suspend();
     cancelAnimationFrame(rafRef.current);
+    isPlayingRef.current = false;
     setIsPlaying(false);
     setIsPaused(true);
+    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
   }, []);
 
   const resume = useCallback(() => {
@@ -417,9 +468,11 @@ export function useSegmentedMixer({
     if (!ctx || ctx.state !== "suspended") return;
     startTimeRef.current = ctx.currentTime;
     ctx.resume();
+    isPlayingRef.current = true;
     setIsPlaying(true);
     setIsPaused(false);
     rafRef.current = requestAnimationFrame(tick);
+    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
   }, [tick]);
 
   const stopAll = useCallback(() => {
@@ -428,12 +481,14 @@ export function useSegmentedMixer({
     audioCtxRef.current = null;
     segmentBuffersRef.current = [];
     musicBufferRef.current = null;
+    isPlayingRef.current = false;
     setIsPlaying(false);
     setIsPaused(false);
     setProgress(0);
     setCurrentTime(0);
     setHasStarted(false);
     offsetRef.current = 0;
+    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "none";
   }, [stopAllSources]);
 
   const skip = useCallback((seconds: number) => {

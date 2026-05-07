@@ -67,6 +67,7 @@ export function useSeedsPlayer({
   const totalDurationRef = useRef(totalDuration);
   const seedBuffersRef = useRef<AudioBuffer[]>([]);
   const musicBufferRef = useRef<AudioBuffer | null>(null);
+  const isPlayingRef = useRef(false);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -81,6 +82,39 @@ export function useSeedsPlayer({
     const arrayBuf = await resp.arrayBuffer();
     return await ctx.decodeAudioData(arrayBuf);
   };
+
+  /** Register a MediaSession so the OS lock screen knows we're playing audio
+   *  and doesn't kill the AudioContext when the screen turns off. */
+  const registerMediaSession = useCallback((
+    onPlay: () => void,
+    onPause: () => void,
+  ) => {
+    if (!("mediaSession" in navigator)) return;
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: "Evening Seeds",
+      artist: "YOUtopia",
+      album: "Nightly Practice",
+    });
+    navigator.mediaSession.setActionHandler("play", onPlay);
+    navigator.mediaSession.setActionHandler("pause", onPause);
+    navigator.mediaSession.playbackState = "playing";
+  }, []);
+
+  /** Visibility-change handler: resume AudioContext when user returns to the tab
+   *  after the screen locked or the app went to the background. */
+  useEffect(() => {
+    const handleVisibility = () => {
+      const ctx = audioCtxRef.current;
+      if (document.visibilityState === "visible" && ctx?.state === "suspended" && isPlayingRef.current) {
+        ctx.resume().then(() => {
+          startTimeRef.current = ctx.currentTime;
+          if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+        });
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
 
   /** Shuffle [0..n-1] in place, ensuring index 0 != avoidFirst. */
   const shuffleAvoiding = (n: number, avoidFirst: number | null): number[] => {
@@ -301,26 +335,36 @@ export function useSeedsPlayer({
       activeSourcesRef.current.push(source);
     });
 
+    isPlayingRef.current = true;
     setIsPlaying(true);
     setIsPaused(false);
     setHasStarted(true);
+    registerMediaSession(
+      () => { if (audioCtxRef.current?.state === "suspended") { startTimeRef.current = audioCtxRef.current.currentTime; audioCtxRef.current.resume(); isPlayingRef.current = true; setIsPlaying(true); setIsPaused(false); rafRef.current = requestAnimationFrame(tick); if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing"; } },
+      () => { pause(); },
+    );
     rafRef.current = requestAnimationFrame(tick);
-  }, [buildTimeline, totalDuration, tick]);
+  }, [buildTimeline, totalDuration, tick, registerMediaSession]);
 
   const play = useCallback(async () => {
-    if (seedAudioUrls.filter(Boolean).length === 0) return;
+    const validUrls = seedAudioUrls.filter(Boolean);
+    if (validUrls.length === 0) return;
     setIsLoading(true);
     try {
       const ctx = new AudioContext();
       audioCtxRef.current = ctx;
 
-      // Load seeds; skip any individual failures silently.
-      const settled = await Promise.allSettled(
-        seedAudioUrls.filter(Boolean).map((url) => loadBuffer(ctx, url))
-      );
-      seedBuffersRef.current = settled
-        .filter((r): r is PromiseFulfilledResult<AudioBuffer> => r.status === "fulfilled")
-        .map((r) => r.value);
+      // Load seeds ONE AT A TIME — parallel fetches exceed mobile memory budgets
+      // and trigger silent failures on iOS Safari (no error, just hangs).
+      const loaded: AudioBuffer[] = [];
+      for (const url of validUrls) {
+        try {
+          loaded.push(await loadBuffer(ctx, url));
+        } catch (e) {
+          console.warn("Seed failed to load, skipping:", url, e);
+        }
+      }
+      seedBuffersRef.current = loaded;
 
       if (musicUrl) {
         try {
@@ -345,8 +389,10 @@ export function useSeedsPlayer({
     offsetRef.current = offsetRef.current + (ctx.currentTime - startTimeRef.current);
     ctx.suspend();
     cancelAnimationFrame(rafRef.current);
+    isPlayingRef.current = false;
     setIsPlaying(false);
     setIsPaused(true);
+    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
   }, []);
 
   const resume = useCallback(() => {
@@ -354,9 +400,11 @@ export function useSeedsPlayer({
     if (!ctx || ctx.state !== "suspended") return;
     startTimeRef.current = ctx.currentTime;
     ctx.resume();
+    isPlayingRef.current = true;
     setIsPlaying(true);
     setIsPaused(false);
     rafRef.current = requestAnimationFrame(tick);
+    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
   }, [tick]);
 
   const stop = useCallback(() => {
@@ -378,9 +426,11 @@ export function useSeedsPlayer({
     }
 
     // Mark as stopped immediately so UI updates and new play can start
+    isPlayingRef.current = false;
     setIsPlaying(false);
     setIsPaused(false);
     setHasStarted(false);
+    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "none";
     setProgress(0);
     setCurrentTime(0);
     offsetRef.current = 0;
