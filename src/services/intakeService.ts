@@ -96,45 +96,22 @@ export async function saveIntake(params: {
 
   const fmt = (d: Date) => d.toISOString().slice(0, 10);
 
-  // Upsert by (user_id, theme_id) — re-running the same theme refreshes the cycle.
-  const { data: existing } = await supabase
+  // Single upsert by (user_id, theme_id) — avoids the select→insert race
+  // condition where two concurrent tabs could both try to insert the same row.
+  const { data, error } = await supabase
     .from("user_monthly_intakes")
-    .select("id")
-    .eq("user_id", params.userId)
-    .eq("theme_id", params.themeId)
-    .maybeSingle();
-
-  if (existing) {
-    const { data, error } = await supabase
-      .from("user_monthly_intakes")
-      .update({
+    .upsert(
+      {
+        user_id: params.userId,
+        theme_id: params.themeId,
         answers: params.answers,
         meditation_id: params.meditationId,
         intake_start_date: fmt(today),
         intake_end_date: fmt(end),
         completed_at: new Date().toISOString(),
-      })
-      .eq("id", existing.id)
-      .select("id")
-      .single();
-    if (error) throw error;
-    await supabase
-      .from("profiles")
-      .update({ current_intake_id: data.id })
-      .eq("user_id", params.userId);
-    return data.id;
-  }
-
-  const { data, error } = await supabase
-    .from("user_monthly_intakes")
-    .insert({
-      user_id: params.userId,
-      theme_id: params.themeId,
-      answers: params.answers,
-      meditation_id: params.meditationId,
-      intake_start_date: fmt(today),
-      intake_end_date: fmt(end),
-    })
+      },
+      { onConflict: "user_id,theme_id" },
+    )
     .select("id")
     .single();
   if (error) throw error;

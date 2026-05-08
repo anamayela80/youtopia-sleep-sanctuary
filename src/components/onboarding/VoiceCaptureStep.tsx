@@ -42,6 +42,7 @@ const VoiceCaptureStep = ({
   const animFrameRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioBlobRef = useRef<Blob | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   const MIN_SECONDS = 60;
   const MAX_SECONDS = 90;
@@ -50,6 +51,7 @@ const VoiceCaptureStep = ({
     if (timerRef.current) clearInterval(timerRef.current);
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
+    if (audioCtxRef.current) { audioCtxRef.current.close(); audioCtxRef.current = null; }
   }, []);
 
   useEffect(() => cleanup, [cleanup]);
@@ -73,13 +75,20 @@ const VoiceCaptureStep = ({
       streamRef.current = stream;
 
       const audioCtx = new AudioContext();
+      audioCtxRef.current = audioCtx;
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
       source.connect(analyser);
       analyserRef.current = analyser;
 
-      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      // iOS Safari only supports audio/mp4; fall back gracefully.
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm"
+                     : MediaRecorder.isTypeSupported("audio/mp4")  ? "audio/mp4"
+                     : undefined;
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
       chunksRef.current = [];
 
       recorder.ondataavailable = (e) => {
@@ -87,11 +96,14 @@ const VoiceCaptureStep = ({
       };
 
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const blob = new Blob(chunksRef.current, { type: mimeType ?? "audio/webm" });
         audioBlobRef.current = blob;
         setState("done");
         if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
         stream.getTracks().forEach((t) => t.stop());
+        // Release the AudioContext used for level metering.
+        audioCtxRef.current?.close();
+        audioCtxRef.current = null;
       };
 
       mediaRecorderRef.current = recorder;

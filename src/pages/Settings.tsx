@@ -138,10 +138,16 @@ const SettingsPage = () => {
       streamRef.current = stream;
       chunksRef.current = [];
 
-      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      // iOS Safari only supports audio/mp4; fall back gracefully.
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm"
+                     : MediaRecorder.isTypeSupported("audio/mp4")  ? "audio/mp4"
+                     : undefined;
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const blob = new Blob(chunksRef.current, { type: mimeType ?? "audio/webm" });
         setAudioBlob(blob);
         setRecordingState("done");
         stream.getTracks().forEach((t) => t.stop());
@@ -310,7 +316,7 @@ const SettingsPage = () => {
                       () => {}, true,
                     )}
                     <button
-                      onClick={() => setRecordingState("recording")}
+                      onClick={startRecording}
                       disabled={recordingState !== "idle" || isProcessingVoice}
                       className="rounded-xl p-4 text-left border border-dashed border-primary/50 bg-primary/5 hover:bg-primary/10 transition-all disabled:opacity-50"
                     >

@@ -27,6 +27,13 @@ const MusicSlot = ({
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  useEffect(() => {
+    return () => {
+      audioRef.current?.pause();
+      audioRef.current = null;
+    };
+  }, []);
+
   const upload = async (file: File) => {
     setBusy(true);
     try {

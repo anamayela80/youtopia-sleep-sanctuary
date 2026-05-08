@@ -1,5 +1,16 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { createReverb, createVoiceBus } from "@/lib/audioEffects";
+import {
+  TENURE_TIMING as SESSION_TIMING,
+  DUCK_RATIO,
+  DUCK_PRE_RAMP,
+  DUCK_POST_RAMP,
+  VOICE_RATE,
+  VOICE_WET,
+  VOICE_LPF,
+  MUSIC_RAMP_SECS,
+  ARC,
+} from "@/lib/sessionTiming";
 
 /**
  * Segmented meditation mixer: 5 narration segments spaced over music bridges.
@@ -67,29 +78,28 @@ interface UseSegmentedMixerOptions {
 // Bridge 2 (after Softening, before Dissolution) is the biggest breathing
 // space — the long musical moment before the formlessness section.
 // FadeOut = 90s so the Return doesn't feel cut off.
-const TENURE_TIMING = {
-  orienting:   { fadeIn: 75, bridges: [0, 150, 215, 90, 90, 120], fadeOut: 105 },
-  settling:    { fadeIn: 75, bridges: [0, 150, 210, 90, 75, 120], fadeOut: 75 },
-  established: { fadeIn: 90, bridges: [0, 210, 300, 120, 90, 150], fadeOut: 90 },
-};
+// TENURE_TIMING is imported from lib/sessionTiming.ts as SESSION_TIMING.
 
-// Ducking
-const DUCK_RATIO = 0.65;       // music drops to 65% of current arc level under voice
-const DUCK_PRE_RAMP = 1.8;     // time to dip down before voice starts
-const DUCK_POST_RAMP = 2.8;    // time to restore after voice ends
-const VOICE_RATE = 0.98;
+/** Which section's arc-level applies at a given session time. Module-scope so it isn't recreated each render. */
+function arcLevelAt(sessionTime: number, events: { startOffset: number; duration: number }[]): number {
+  if (events.length === 0) return ARC.fadeInPeak;
+  if (sessionTime < (events[0]?.startOffset ?? Infinity)) return ARC.fadeInPeak;
+  if (sessionTime < (events[1]?.startOffset ?? Infinity)) return ARC.fadeInPeak;
+  if (sessionTime < (events[2]?.startOffset ?? Infinity)) return ARC.section2;
+  const returnSeg = events[events.length - 1];
+  if (returnSeg && sessionTime >= returnSeg.startOffset) return ARC.section4;
+  return ARC.section3;
+}
 
-// Voice bus
-const VOICE_WET = 0.30;        // reverb send — voice blooms into music space
-const VOICE_LPF = 4500;
+// Ducking, voice, and arc constants are imported from lib/sessionTiming.ts
+// to stay in sync with the offline renderer. Do not redeclare them here.
 
-// Music arc (as multipliers of musicVolume)
-const ARC = {
-  fadeInPeak: 0.75,   // after fade-in (section 1)
-  section2:   0.85,   // gratitude rising
-  section3:   1.00,   // vision / heart — peak
-  section4:   0.70,   // return / anchor
-};
+async function loadBuffer(ctx: AudioContext, url: string): Promise<AudioBuffer> {
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`Failed to fetch audio (${resp.status}): ${url}`);
+  const arrayBuf = await resp.arrayBuffer();
+  return ctx.decodeAudioData(arrayBuf);
+}
 
 export function useSegmentedMixer({
   segmentUrls,
@@ -102,7 +112,7 @@ export function useSegmentedMixer({
   tenureBand,
 }: UseSegmentedMixerOptions) {
   // Resolve tenure-aware defaults when explicit timings aren't passed.
-  const tenureDefaults = TENURE_TIMING[tenureBand ?? "orienting"];
+  const tenureDefaults = SESSION_TIMING[tenureBand ?? "orienting"];
   const resolvedBridges = musicBridgeDurations ?? tenureDefaults.bridges;
   const resolvedFadeIn = musicFadeInDuration ?? tenureDefaults.fadeIn;
   const resolvedFadeOut = musicFadeOutDuration ?? tenureDefaults.fadeOut;
@@ -127,12 +137,6 @@ export function useSegmentedMixer({
   const [duration, setDuration] = useState(0);
   const [currentSegment, setCurrentSegment] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
-
-  const loadBuffer = async (ctx: AudioContext, url: string): Promise<AudioBuffer> => {
-    const resp = await fetch(url);
-    const arrayBuf = await resp.arrayBuffer();
-    return await ctx.decodeAudioData(arrayBuf);
-  };
 
   /**
    * Build the full timeline with each segment's start/end in session seconds,
@@ -192,8 +196,15 @@ export function useSegmentedMixer({
       const ctx = audioCtxRef.current;
       if (document.visibilityState === "visible" && ctx?.state === "suspended" && isPlayingRef.current) {
         ctx.resume().then(() => {
-          startTimeRef.current = ctx.currentTime;
           if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+        }).catch((err) => {
+          console.warn("AudioContext resume failed after visibility change:", err);
+          // iOS rejected the resume (non-gesture context). Reflect the true state
+          // so the user sees the pause button and knows to tap Play again.
+          isPlayingRef.current = false;
+          setIsPlaying(false);
+          setIsPaused(true);
+          if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
         });
       }
     };
@@ -225,18 +236,7 @@ export function useSegmentedMixer({
     cancelAnimationFrame(rafRef.current);
   }, []);
 
-  /** Which section's peak level applies at this session time */
-  const arcLevelAt = (sessionTime: number, events: { startOffset: number; duration: number }[]) => {
-    if (events.length === 0) return ARC.fadeInPeak;
-    if (sessionTime < (events[0]?.startOffset ?? Infinity)) return ARC.fadeInPeak;
-    if (sessionTime < (events[1]?.startOffset ?? Infinity)) return ARC.fadeInPeak;
-    if (sessionTime < (events[2]?.startOffset ?? Infinity)) return ARC.section2;
-    // Music stays at peak (section3) through every segment except the final
-    // Return segment — regardless of whether the session has 5 or 6 segments.
-    const returnSeg = events[events.length - 1];
-    if (returnSeg && sessionTime >= returnSeg.startOffset) return ARC.section4;
-    return ARC.section3;
-  };
+  // arcLevelAt is defined at module scope above the hook.
 
   const playFromOffset = useCallback(async (fromOffset: number) => {
     const ctx = audioCtxRef.current;
@@ -293,7 +293,7 @@ export function useSegmentedMixer({
       // entry time (resolvedFadeIn ≈ 60 s).  This prevents the previous glitch
       // where the gain was still near-zero when the ducking setValueAtTime call
       // kicked in 1.8 s before the voice, producing a perceptible pop.
-      const MUSIC_RAMP_SECS = 8; // seconds to reach peak from silence
+      // MUSIC_RAMP_SECS is imported from lib/sessionTiming.ts
       let startGain: number;
       if (clampedOffset === 0) {
         startGain = 0;
@@ -368,7 +368,9 @@ export function useSegmentedMixer({
       musicSource.stop(now + (totalDuration - clampedOffset) + 0.1);
       musicSourceRef.current = musicSource;
       musicGainRef.current = gainNode;
-      activeSourcesRef.current.push(musicSource);
+      // Do NOT push musicSource into activeSourcesRef — stopAllSources already
+      // calls musicSourceRef.current?.stop() separately, and stopping twice
+      // throws InvalidStateError on Safari.
     }
 
     // ---------- Voice bus — one bus for all segments, shared reverb ----------
@@ -405,19 +407,51 @@ export function useSegmentedMixer({
       () => {
         const c = audioCtxRef.current;
         if (c?.state === "suspended") {
-          startTimeRef.current = c.currentTime;
-          c.resume();
-          isPlayingRef.current = true;
-          setIsPlaying(true);
-          setIsPaused(false);
-          rafRef.current = requestAnimationFrame(tick);
-          if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+          c.resume().then(() => {
+            isPlayingRef.current = true;
+            setIsPlaying(true);
+            setIsPaused(false);
+            rafRef.current = requestAnimationFrame(tick);
+            if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+          }).catch((err) => {
+            console.warn("AudioContext resume failed from MediaSession play:", err);
+          });
         }
       },
       () => { pause(); },
     );
+    if ("mediaSession" in navigator) {
+      // seekforward/seekbackward are a Chrome extension — not available on all
+      // Android WebViews; wrap in try/catch so unsupported browsers don't throw.
+      try {
+        navigator.mediaSession.setActionHandler("seekforward", () => {
+          const c = audioCtxRef.current;
+          if (!c) return;
+          const elapsed = isPlayingRef.current
+            ? offsetRef.current + (c.currentTime - startTimeRef.current)
+            : offsetRef.current;
+          const newPos = Math.min(elapsed + 30, totalDurationRef.current);
+          stopAllSources();
+          if (c.state === "suspended") c.resume();
+          offsetRef.current = newPos;
+          playFromOffset(newPos);
+        });
+        navigator.mediaSession.setActionHandler("seekbackward", () => {
+          const c = audioCtxRef.current;
+          if (!c) return;
+          const elapsed = isPlayingRef.current
+            ? offsetRef.current + (c.currentTime - startTimeRef.current)
+            : offsetRef.current;
+          const newPos = Math.max(elapsed - 30, 0);
+          stopAllSources();
+          if (c.state === "suspended") c.resume();
+          offsetRef.current = newPos;
+          playFromOffset(newPos);
+        });
+      } catch {}
+    }
     rafRef.current = requestAnimationFrame(tick);
-  }, [musicVolume, narrationVolume, resolvedFadeIn, resolvedFadeOut, buildTimeline, tick, registerMediaSession]);
+  }, [musicVolume, narrationVolume, resolvedFadeIn, resolvedFadeOut, buildTimeline, tick, registerMediaSession, pause, stopAllSources]);
 
   const playSequence = useCallback(async () => {
     if (segmentUrls.length === 0) return;
@@ -426,13 +460,24 @@ export function useSegmentedMixer({
       playFromOffset(0);
       return;
     }
+    // Already loading — prevent double-initialisation (second tap while loading)
+    if (audioCtxRef.current) return;
     setIsLoading(true);
     setLoadError(false);
     try {
       const ctx = new AudioContext();
       audioCtxRef.current = ctx;
-      const buffers = await Promise.all(segmentUrls.map((url) => loadBuffer(ctx, url)));
-      segmentBuffersRef.current = buffers;
+      // Load segments ONE AT A TIME — parallel fetches exceed mobile memory budgets
+      // and trigger silent failures on iOS Safari (no error, just hangs).
+      const loaded: AudioBuffer[] = [];
+      for (const url of segmentUrls) {
+        try {
+          loaded.push(await loadBuffer(ctx, url));
+        } catch (e) {
+          console.warn("Segment failed to load, skipping:", url, e);
+        }
+      }
+      segmentBuffersRef.current = loaded;
       if (musicUrl) {
         try {
           musicBufferRef.current = await loadBuffer(ctx, musicUrl);
@@ -494,7 +539,7 @@ export function useSegmentedMixer({
   const skip = useCallback((seconds: number) => {
     const ctx = audioCtxRef.current;
     if (!ctx) return;
-    const wasPlaying = isPlaying;
+    const wasPlaying = isPlayingRef.current;
     const currentPos = wasPlaying
       ? offsetRef.current + (ctx.currentTime - startTimeRef.current)
       : offsetRef.current;
@@ -512,7 +557,7 @@ export function useSegmentedMixer({
       setCurrentTime(newPos);
       setProgress((newPos / totalDurationRef.current) * 100);
     }
-  }, [isPlaying, isPaused, stopAllSources, playFromOffset]);
+  }, [isPaused, stopAllSources, playFromOffset]);
 
   const skipForward = useCallback(() => skip(30), [skip]);
   const skipBackward = useCallback(() => skip(-30), [skip]);
@@ -520,7 +565,7 @@ export function useSegmentedMixer({
   const seekTo = useCallback((timeInSeconds: number) => {
     const ctx = audioCtxRef.current;
     if (!ctx) return;
-    const wasPlaying = isPlaying;
+    const wasPlaying = isPlayingRef.current;
     const newPos = Math.max(0, Math.min(timeInSeconds, totalDurationRef.current));
 
     stopAllSources();
@@ -533,7 +578,7 @@ export function useSegmentedMixer({
       setCurrentTime(newPos);
       setProgress((newPos / totalDurationRef.current) * 100);
     }
-  }, [isPlaying, isPaused, stopAllSources, playFromOffset]);
+  }, [isPaused, stopAllSources, playFromOffset]);
 
   const togglePlay = useCallback(() => {
     if (isPlaying) pause();

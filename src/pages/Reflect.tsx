@@ -217,8 +217,10 @@ const Reflect = () => {
   const [chapterCheckins, setChapterCheckins] = useState<CheckinRow[]>([]);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
+      if (cancelled) return;
       if (!user) {
         navigate("/auth?mode=login");
         return;
@@ -272,8 +274,9 @@ const Reflect = () => {
         .limit(50);
       setPastEntries((entries || []) as JournalRow[]);
 
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     })();
+    return () => { cancelled = true; };
   }, [navigate]);
 
   const submitMood = async () => {
@@ -445,50 +448,48 @@ const Reflect = () => {
       </section>
 
       {/* ===== Section 2: Journal ===== */}
-      {!isEmpty || true ? (
-        <>
-          <Divider />
-          <section className="px-6">
-            <SectionLabel>your journal</SectionLabel>
+      <>
+        <Divider />
+        <section className="px-6">
+          <SectionLabel>your journal</SectionLabel>
 
-            <textarea
-              value={journalText}
-              onChange={(e) => setJournalText(e.target.value)}
-              placeholder="what's present for you today?"
-              className="w-full bg-transparent outline-none resize-none italic"
+          <textarea
+            value={journalText}
+            onChange={(e) => setJournalText(e.target.value)}
+            placeholder="what's present for you today?"
+            className="w-full bg-transparent outline-none resize-none italic"
+            style={{
+              minHeight: "120px",
+              fontSize: "15px",
+              color: "#3D2E1E",
+              fontFamily: "Georgia, serif",
+              lineHeight: 1.7,
+              border: "none",
+              padding: "8px 4px",
+            }}
+            rows={5}
+          />
+
+          <div className="flex justify-end mt-3">
+            <button
+              onClick={saveJournal}
+              disabled={!journalText.trim() || journalSaving}
+              className="lowercase transition-opacity"
               style={{
-                minHeight: "120px",
-                fontSize: "15px",
-                color: "#3D2E1E",
+                fontSize: "13px",
+                color: "#6B9E8F",
                 fontFamily: "Georgia, serif",
-                lineHeight: 1.7,
-                border: "none",
-                padding: "8px 4px",
+                background: "rgba(107, 158, 143, 0.1)",
+                padding: "8px 16px",
+                borderRadius: "999px",
+                opacity: !journalText.trim() || journalSaving ? 0.4 : 1,
               }}
-              rows={5}
-            />
-
-            <div className="flex justify-end mt-3">
-              <button
-                onClick={saveJournal}
-                disabled={!journalText.trim() || journalSaving}
-                className="lowercase transition-opacity"
-                style={{
-                  fontSize: "13px",
-                  color: "#6B9E8F",
-                  fontFamily: "Georgia, serif",
-                  background: "rgba(107, 158, 143, 0.1)",
-                  padding: "8px 16px",
-                  borderRadius: "999px",
-                  opacity: !journalText.trim() || journalSaving ? 0.4 : 1,
-                }}
-              >
-                {journalSaving ? "saving..." : "save to my journal"}
-              </button>
-            </div>
-          </section>
-        </>
-      ) : null}
+            >
+              {journalSaving ? "saving..." : "save to my journal"}
+            </button>
+          </div>
+        </section>
+      </>
 
       {/* ===== Empty state line ===== */}
       {isEmpty && (

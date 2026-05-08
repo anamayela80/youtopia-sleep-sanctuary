@@ -145,7 +145,7 @@ export async function saveMeditation(params: {
   meditationName?: string | null;
   messageForYou?: string | null;
   meditationArtworkUrl?: string | null;
-}) {
+}): Promise<string> {
   const { data, error } = await supabase.from("meditations").insert({
     user_id: params.userId,
     title: params.title,
@@ -193,7 +193,7 @@ export function getTenureBand(membershipStartDate: string | null | undefined): "
   return "established";
 }
 
-export async function saveMeditationSegment(meditationId: string, segmentNumber: number, audioUrl: string) {
+export async function saveMeditationSegment(meditationId: string, segmentNumber: number, audioUrl: string): Promise<void> {
   const { error } = await supabase.from("meditation_segments").insert({
     meditation_id: meditationId,
     segment_number: segmentNumber,
@@ -202,7 +202,7 @@ export async function saveMeditationSegment(meditationId: string, segmentNumber:
   if (error) throw error;
 }
 
-export async function saveUserAnswers(userId: string, answers: string[]) {
+export async function saveUserAnswers(userId: string, answers: string[]): Promise<void> {
   const { error } = await supabase.from("user_answers").insert({
     user_id: userId,
     question_1: answers[0],
@@ -235,7 +235,7 @@ export async function cloneVoice(audioBlob: Blob): Promise<string> {
   return data.voiceId;
 }
 
-export async function saveVoiceClone(userId: string, voiceId: string) {
+export async function saveVoiceClone(userId: string, voiceId: string): Promise<void> {
   // Upsert — one voice clone per user
   const { data: existing } = await supabase
     .from("user_voice_clones")
@@ -332,7 +332,7 @@ export async function saveSeeds(params: {
   themeId?: string;
   phrases: string[];
   audioUrls: string[];
-}) {
+}): Promise<void> {
   const { error } = await supabase.from("seeds").insert({
     user_id: params.userId,
     month: params.month,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Settings as SettingsIcon, Headphones, Flame, Clock, Sparkles, Hand, FlaskConical } from "lucide-react";
@@ -8,7 +8,6 @@ import {
   getLatestMeditation, getLatestSeeds, getActiveTheme, getUserProfile,
 } from "@/services/meditationService";
 import { getCurrentIntake, isIntakeExpired, getNextThemeForUser, type UserIntake } from "@/services/intakeService";
-import { supabase as sb } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import ScienceStep from "@/components/onboarding/ScienceStep";
 import BeforeYouBeginStep from "@/components/onboarding/BeforeYouBeginStep";
@@ -76,12 +75,18 @@ function buildMoodHistory(
   return result;
 }
 
-/** Count consecutive days with a checkin going backwards from today. */
+/** Count consecutive days with a checkin going backwards from today (or yesterday if no check-in yet today). */
 function calcStreak(checkins: CheckinRow[]): number {
   if (checkins.length === 0) return 0;
   const dateSet = new Set(checkins.map((c) => c.checkin_date));
   let streak = 0;
   const cursor = new Date();
+  // If the user hasn't checked in today yet, start counting from yesterday so
+  // a 29-day streak isn't wiped out before they open the app on day 30.
+  const todayKey = cursor.toISOString().slice(0, 10);
+  if (!dateSet.has(todayKey)) {
+    cursor.setDate(cursor.getDate() - 1);
+  }
   while (true) {
     const key = cursor.toISOString().slice(0, 10);
     if (!dateSet.has(key)) break;
@@ -284,10 +289,16 @@ const Home = () => {
 
   const navigate = useNavigate();
 
-  useEffect(() => { loadData(); }, []);
+  const cancelledRef = useRef(false);
+  useEffect(() => {
+    cancelledRef.current = false;
+    loadData();
+    return () => { cancelledRef.current = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
+    if (cancelledRef.current) return;
     if (!user) { navigate("/auth?mode=login"); return; }
 
     setUserFirstName((user.user_metadata?.full_name || "").split(" ")[0] || "");
@@ -322,7 +333,7 @@ const Home = () => {
 
     let displayTheme: any = null;
     if (currentIntake?.theme_id) {
-      const { data: snap } = await sb.from("monthly_themes").select("*").eq("id", currentIntake.theme_id).maybeSingle();
+      const { data: snap } = await supabase.from("monthly_themes").select("*").eq("id", currentIntake.theme_id).maybeSingle();
       displayTheme = snap;
     }
     if (!displayTheme) displayTheme = await getActiveTheme();
@@ -416,7 +427,7 @@ const Home = () => {
 
         const alreadyDone = state?.answered_at || state?.dismissed_permanently;
         if (!alreadyDone) {
-          const { data: appSet } = await sb.from("app_settings").select("checkin_question_1, checkin_question_2").maybeSingle();
+          const { data: appSet } = await supabase.from("app_settings").select("checkin_question_1, checkin_question_2").maybeSingle();
           const themeQ1 = displayTheme?.checkin_question;
           const themeQ2 = displayTheme?.checkin_question_2;
           const text = triggerNumber === 1
@@ -435,13 +446,13 @@ const Home = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     if (checkinDismissedThisSession) {
-      await sb.from("intake_checkin_state").upsert(
+      await supabase.from("intake_checkin_state").upsert(
         { user_id: user.id, intake_id: checkinPrompt.intakeId, question_number: checkinPrompt.questionNumber, dismissed_permanently: true },
         { onConflict: "user_id,intake_id,question_number" },
       );
       setCheckinPrompt(null);
     } else {
-      await sb.from("intake_checkin_state").upsert(
+      await supabase.from("intake_checkin_state").upsert(
         { user_id: user.id, intake_id: checkinPrompt.intakeId, question_number: checkinPrompt.questionNumber },
         { onConflict: "user_id,intake_id,question_number" },
       );

@@ -19,7 +19,7 @@
  * @param decay    - how quickly the tail decays (2.0 = normal, higher = faster)
  */
 export function createReverbImpulse(
-  ctx: AudioContext,
+  ctx: BaseAudioContext,
   duration = 4.0,
   decay = 2.2,
 ): AudioBuffer {
@@ -45,7 +45,7 @@ export function createReverbImpulse(
  * `input`; take the reverberant output from `output`. Typically mixed back
  * with the dry signal at a 20-40% wet ratio.
  */
-export function createReverb(ctx: AudioContext, duration = 4.0, decay = 2.2) {
+export function createReverb(ctx: BaseAudioContext, duration = 4.0, decay = 2.2) {
   const convolver = ctx.createConvolver();
   convolver.buffer = createReverbImpulse(ctx, duration, decay);
 
@@ -71,7 +71,7 @@ export function createReverb(ctx: AudioContext, duration = 4.0, decay = 2.2) {
  * this is what makes the voice feel "inside" the music rather than on top.
  */
 export function createVoiceBus(
-  ctx: AudioContext,
+  ctx: BaseAudioContext,
   reverbInput: AudioNode,
   destination: AudioNode,
   opts: { dryLevel?: number; wetLevel?: number; lowpass?: number } = {},

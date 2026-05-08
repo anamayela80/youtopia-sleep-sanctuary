@@ -52,6 +52,13 @@ type SeedEvent = {
   cycle: number; // 0..3
 };
 
+async function loadBuffer(ctx: AudioContext, url: string): Promise<AudioBuffer> {
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`Failed to fetch audio (${resp.status}): ${url}`);
+  const arrayBuf = await resp.arrayBuffer();
+  return ctx.decodeAudioData(arrayBuf);
+}
+
 export function useSeedsPlayer({
   seedAudioUrls,
   musicUrl,
@@ -77,12 +84,6 @@ export function useSeedsPlayer({
   const [duration, setDuration] = useState(totalDuration);
   const [hasStarted, setHasStarted] = useState(false);
 
-  const loadBuffer = async (ctx: AudioContext, url: string): Promise<AudioBuffer> => {
-    const resp = await fetch(url);
-    const arrayBuf = await resp.arrayBuffer();
-    return await ctx.decodeAudioData(arrayBuf);
-  };
-
   /** Register a MediaSession so the OS lock screen knows we're playing audio
    *  and doesn't kill the AudioContext when the screen turns off. */
   const registerMediaSession = useCallback((
@@ -107,8 +108,15 @@ export function useSeedsPlayer({
       const ctx = audioCtxRef.current;
       if (document.visibilityState === "visible" && ctx?.state === "suspended" && isPlayingRef.current) {
         ctx.resume().then(() => {
-          startTimeRef.current = ctx.currentTime;
           if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+        }).catch((err) => {
+          console.warn("AudioContext resume failed after visibility change:", err);
+          // iOS rejected the resume (non-gesture context). Reflect the true state
+          // so the user sees the pause button and knows to tap Play again.
+          isPlayingRef.current = false;
+          setIsPlaying(false);
+          setIsPaused(true);
+          if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
         });
       }
     };
@@ -141,7 +149,7 @@ export function useSeedsPlayer({
       return { events, gapWindows: [] as { start: number; end: number; cycle: number }[] };
     }
     const n = buffers.length;
-    let t = FADE_IN_SECONDS + (PRELUDE_SECONDS - FADE_IN_SECONDS); // = PRELUDE_SECONDS
+    let t = PRELUDE_SECONDS;
     const sessionEnd = totalDuration - FINAL_FADE_SECONDS;
     const gapWindows: { start: number; end: number; cycle: number }[] = [];
 
@@ -340,15 +348,62 @@ export function useSeedsPlayer({
     setIsPaused(false);
     setHasStarted(true);
     registerMediaSession(
-      () => { if (audioCtxRef.current?.state === "suspended") { startTimeRef.current = audioCtxRef.current.currentTime; audioCtxRef.current.resume(); isPlayingRef.current = true; setIsPlaying(true); setIsPaused(false); rafRef.current = requestAnimationFrame(tick); if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing"; } },
+      () => {
+        const c = audioCtxRef.current;
+        if (c?.state === "suspended") {
+          c.resume().then(() => {
+            isPlayingRef.current = true;
+            setIsPlaying(true);
+            setIsPaused(false);
+            rafRef.current = requestAnimationFrame(tick);
+            if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+          }).catch((err) => {
+            console.warn("AudioContext resume failed from MediaSession play:", err);
+          });
+        }
+      },
       () => { pause(); },
     );
+    if ("mediaSession" in navigator) {
+      // seekforward/seekbackward are a Chrome extension — not available on all
+      // Android WebViews; wrap in try/catch so unsupported browsers don't throw.
+      try {
+        navigator.mediaSession.setActionHandler("seekforward", () => {
+          const c = audioCtxRef.current;
+          if (!c) return;
+          const elapsed = isPlayingRef.current
+            ? offsetRef.current + (c.currentTime - startTimeRef.current)
+            : offsetRef.current;
+          const newPos = Math.min(elapsed + 30, totalDurationRef.current);
+          stopAllSources();
+          if (c.state === "suspended") c.resume();
+          offsetRef.current = newPos;
+          playFromOffset(newPos);
+        });
+        navigator.mediaSession.setActionHandler("seekbackward", () => {
+          const c = audioCtxRef.current;
+          if (!c) return;
+          const elapsed = isPlayingRef.current
+            ? offsetRef.current + (c.currentTime - startTimeRef.current)
+            : offsetRef.current;
+          const newPos = Math.max(elapsed - 30, 0);
+          stopAllSources();
+          if (c.state === "suspended") c.resume();
+          offsetRef.current = newPos;
+          playFromOffset(newPos);
+        });
+      } catch {}
+    }
     rafRef.current = requestAnimationFrame(tick);
   }, [buildTimeline, totalDuration, tick, registerMediaSession]);
 
   const play = useCallback(async () => {
     const validUrls = seedAudioUrls.filter(Boolean);
     if (validUrls.length === 0) return;
+    // Already loaded — jump straight to playback
+    if (seedBuffersRef.current.length > 0) { playFromOffset(0); return; }
+    // Already loading — prevent double-initialisation (second tap while loading)
+    if (audioCtxRef.current) return;
     setIsLoading(true);
     try {
       const ctx = new AudioContext();
@@ -452,7 +507,7 @@ export function useSeedsPlayer({
   const seekTo = useCallback((t: number) => {
     const ctx = audioCtxRef.current;
     if (!ctx) return;
-    const wasPlaying = isPlaying;
+    const wasPlaying = isPlayingRef.current;
     const newPos = Math.max(0, Math.min(t, totalDurationRef.current));
     stopAllSources();
     // Reuse existing context — same reason as useSeedsPlayer.stop(): creating a
@@ -461,10 +516,27 @@ export function useSeedsPlayer({
     offsetRef.current = newPos;
     if (wasPlaying || isPaused) playFromOffset(newPos);
     else { setCurrentTime(newPos); setProgress((newPos / totalDurationRef.current) * 100); }
-  }, [isPlaying, isPaused, stopAllSources, playFromOffset]);
+  }, [isPaused, stopAllSources, playFromOffset]);
 
-  const skipForward = useCallback(() => seekTo(currentTime + 30), [seekTo, currentTime]);
-  const skipBackward = useCallback(() => seekTo(currentTime - 30), [seekTo, currentTime]);
+  // Read elapsed from refs (not React state) so these functions are stable
+  // and don't change identity every rAF tick at 60fps.
+  const skipForward = useCallback(() => {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+    const elapsed = isPlayingRef.current
+      ? offsetRef.current + (ctx.currentTime - startTimeRef.current)
+      : offsetRef.current;
+    seekTo(Math.min(elapsed + 30, totalDurationRef.current));
+  }, [seekTo]);
+
+  const skipBackward = useCallback(() => {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+    const elapsed = isPlayingRef.current
+      ? offsetRef.current + (ctx.currentTime - startTimeRef.current)
+      : offsetRef.current;
+    seekTo(Math.max(elapsed - 30, 0));
+  }, [seekTo]);
 
   const togglePlay = useCallback(() => {
     if (isPlaying) pause();

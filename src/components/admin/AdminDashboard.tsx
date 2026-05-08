@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Users, Activity, Sparkles, Sprout } from "lucide-react";
+import { Users, Activity, Sparkles, Sprout, type LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-const StatCard = ({ icon: Icon, label, value }: { icon: any; label: string; value: number | string }) => (
+const StatCard = ({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: number | string }) => (
   <div className="bg-cream-light rounded-2xl p-4 border border-border">
     <Icon size={18} className="text-primary mb-2" />
     <p className="font-heading text-2xl text-secondary">{value}</p>

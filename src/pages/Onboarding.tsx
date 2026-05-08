@@ -131,7 +131,7 @@ const Onboarding = () => {
       setAnswers(new Array(qs.length).fill(""));
       setStep(0);
     })();
-  }, [navigate, toast, forceFull]);
+  }, [navigate, toast, searchParams]);
 
   // Build the dynamic step list once we know the gating
   const stepList: Array<"welcome" | "science" | "before" | "theme" | "newmonth" | "question" | "voice"> = (() => {
@@ -380,7 +380,7 @@ const Onboarding = () => {
   }
 
   if (isGenerating) {
-    return <GeneratingStep themeName={theme?.theme} userName={userFirstName} previewMode />;
+    return <GeneratingStep themeName={theme?.theme} userName={userFirstName} status={generationStatus} />;
   }
 
   if (showUnlock) {

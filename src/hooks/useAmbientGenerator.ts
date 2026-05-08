@@ -112,12 +112,17 @@ export function useAmbientGenerator() {
       } catch {}
     });
 
-    setTimeout(() => {
-      oscillators.forEach((o) => { try { o.stop(); } catch {} });
-      if (lfo) try { lfo.stop(); } catch {}
-    }, 600);
-
+    // Capture refs into locals BEFORE clearing nodesRef — the setTimeout callback
+    // closes over these locals, not the ref, so it still sees the right nodes
+    // after nodesRef is reset below.
+    const capturedOscs = oscillators.slice();
+    const capturedLfo = lfo;
     nodesRef.current = { oscillators: [], gains: [], lfo: null };
+
+    setTimeout(() => {
+      capturedOscs.forEach((o) => { try { o.stop(); } catch {} });
+      if (capturedLfo) try { capturedLfo.stop(); } catch {}
+    }, 600);
   }, []);
 
   return { start, stop };

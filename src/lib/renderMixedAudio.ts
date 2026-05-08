@@ -10,27 +10,16 @@
  */
 
 import { createReverb, createVoiceBus } from "@/lib/audioEffects";
-
-type Tenure = "orienting" | "settling" | "established";
-
-const VOICE_RATE  = 0.98;
-const DUCK_RATIO  = 0.45;
-const DUCK_PRE    = 1.8;
-const DUCK_POST   = 2.8;
-const MUSIC_RAMP  = 8;
-
-const ARC = {
-  fadeInPeak: 0.75,
-  section2:   0.85,
-  section3:   1.00,
-  section4:   0.70,
-};
-
-const TENURE_TIMING: Record<Tenure, { fadeIn: number; bridges: number[]; fadeOut: number }> = {
-  orienting:   { fadeIn: 60,  bridges: [0, 150, 210, 90,  60,  90],  fadeOut: 75  },
-  settling:    { fadeIn: 75,  bridges: [0, 210, 270, 120, 90,  120], fadeOut: 90  },
-  established: { fadeIn: 90,  bridges: [0, 270, 390, 150, 120, 150], fadeOut: 120 },
-};
+import {
+  TenureBand,
+  TENURE_TIMING,
+  DUCK_RATIO,
+  DUCK_PRE_RAMP as DUCK_PRE,
+  DUCK_POST_RAMP as DUCK_POST,
+  VOICE_RATE,
+  MUSIC_RAMP_SECS as MUSIC_RAMP,
+  ARC,
+} from "@/lib/sessionTiming";
 
 function arcLevelAt(
   t: number,
@@ -42,8 +31,9 @@ function arcLevelAt(
   return ARC.section4;
 }
 
-async function fetchBuffer(ctx: AudioContext, url: string): Promise<AudioBuffer> {
+async function fetchBuffer(ctx: BaseAudioContext, url: string): Promise<AudioBuffer> {
   const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`Failed to fetch audio (${resp.status}): ${url}`);
   const arr  = await resp.arrayBuffer();
   return ctx.decodeAudioData(arr);
 }
@@ -78,7 +68,7 @@ function audioBufferToWav(buf: AudioBuffer): Blob {
 export async function renderMixedAudio(
   segmentUrls: string[],
   musicUrl: string | null,
-  tenureBand: Tenure = "orienting",
+  tenureBand: TenureBand = "orienting",
   musicVolume = 0.42,
   narrationVolume = 0.72,
   onProgress?: (pct: number) => void,
@@ -87,7 +77,12 @@ export async function renderMixedAudio(
   const tmpCtx = new AudioContext();
   onProgress?.(5);
 
-  const segBufs = await Promise.all(segmentUrls.map((u) => fetchBuffer(tmpCtx, u)));
+  // Load segments ONE AT A TIME — parallel decoding exceeds mobile memory budgets
+  // and triggers silent failures on iOS Safari.
+  const segBufs: AudioBuffer[] = [];
+  for (const url of segmentUrls) {
+    segBufs.push(await fetchBuffer(tmpCtx, url));
+  }
   onProgress?.(30);
 
   let musicBuf: AudioBuffer | null = null;
@@ -113,8 +108,8 @@ export async function renderMixedAudio(
   // ── 3. Create OfflineAudioContext ────────────────────────────────────────
   const SR = 44100;
   const offCtx = new OfflineAudioContext(2, Math.ceil(totalDuration * SR), SR);
-  // OfflineAudioContext extends BaseAudioContext — safe to cast for our helpers
-  const ctx = offCtx as unknown as AudioContext;
+  // OfflineAudioContext extends BaseAudioContext — helpers accept BaseAudioContext directly.
+  const ctx: BaseAudioContext = offCtx;
 
   // ── 4. Reverb ────────────────────────────────────────────────────────────
   const reverb = createReverb(ctx, 4.5, 2.2);

@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Play, Pause, Moon, Headphones, SkipForward, SkipBack, Sun, ArrowLeft, Download,
+  Play, Pause, Moon, Headphones, SkipForward, SkipBack, Download,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
@@ -15,7 +15,7 @@ import {
 } from "@/services/meditationService";
 import { renderMixedAudio } from "@/lib/renderMixedAudio";
 import { getCurrentIntake, type UserIntake } from "@/services/intakeService";
-import { supabase as sb } from "@/integrations/supabase/client";
+import { BottomNav } from "@/components/BottomNav";
 
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
   <p
@@ -30,22 +30,22 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
 const Expandable = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
   const [expanded, setExpanded] = useState(false);
   const [overflowing, setOverflowing] = useState(false);
-  const ref = useState<HTMLDivElement | null>(null);
-  const [el, setEl] = ref;
+  const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!el) return;
+    if (!ref.current) return;
+    const el = ref.current;
     const check = () => setOverflowing(el.scrollHeight > el.clientHeight + 2);
     check();
     const ro = new ResizeObserver(check);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [el, children]);
+  }, [children]);
 
   return (
     <div className={className}>
       <div
-        ref={setEl}
+        ref={ref}
         style={
           expanded
             ? undefined
@@ -93,8 +93,9 @@ const MyMonth = () => {
   const { toast } = useToast();
 
   const segmentUrls = meditation?.meditation_segments
-    ?.sort((a: any, b: any) => a.segment_number - b.segment_number)
-    ?.map((s: any) => s.audio_url) || [];
+    ?.slice()
+    .sort((a: any, b: any) => a.segment_number - b.segment_number)
+    .map((s: any) => s.audio_url) || [];
 
   const seedAudioUrls = seeds
     ? [seeds.audio_url_1, seeds.audio_url_2, seeds.audio_url_3, seeds.audio_url_4, seeds.audio_url_5].filter(Boolean)
@@ -142,7 +143,7 @@ const MyMonth = () => {
     let displayTheme: any = null;
     let qs: string[] = [];
     if (currentIntake?.theme_id) {
-      const { data: snap } = await sb.from("monthly_themes").select("*").eq("id", currentIntake.theme_id).maybeSingle();
+      const { data: snap } = await supabase.from("monthly_themes").select("*").eq("id", currentIntake.theme_id).maybeSingle();
       displayTheme = snap;
       try {
         const raw = snap?.questions;
@@ -630,40 +631,7 @@ const MyMonth = () => {
         </div>
       </div>
 
-      {/* Bottom nav: Home + Reflect */}
-      <nav
-        className="fixed bottom-0 left-0 right-0 z-30"
-        style={{
-          background: "hsl(var(--background))",
-          borderTop: "1px solid rgba(160, 120, 70, 0.15)",
-          paddingTop: "13px",
-          paddingBottom: "22px",
-        }}
-      >
-        <div className="flex justify-around max-w-sm mx-auto px-6">
-          <button
-            onClick={() => navigate("/home")}
-            className="flex flex-col items-center gap-1 transition-colors"
-            style={{ color: "#C0A880" }}
-          >
-            <Sun size={20} strokeWidth={1.6} />
-            <span className="text-[10px] font-body font-medium" style={{ letterSpacing: "0.06em" }}>Home</span>
-          </button>
-          <button
-            onClick={() => navigate("/reflect")}
-            className="flex flex-col items-center gap-1 transition-colors"
-            style={{ color: "#C0A880" }}
-          >
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 4h11a1 1 0 0 1 1 1v15H7a1 1 0 0 1-1-1V4z" />
-              <line x1="9" y1="8.5" x2="15" y2="8.5" />
-              <line x1="9" y1="12" x2="15" y2="12" />
-              <line x1="9" y1="15.5" x2="13" y2="15.5" />
-            </svg>
-            <span className="text-[10px] font-body font-medium" style={{ letterSpacing: "0.06em" }}>Reflect</span>
-          </button>
-        </div>
-      </nav>
+      <BottomNav />
     </div>
   );
 };
