@@ -76,6 +76,9 @@ export function useSeedsPlayer({
   const musicBufferRef = useRef<AudioBuffer | null>(null);
   const isPlayingRef = useRef(false);
   const wasBackgroundedRef = useRef(false);
+  const backgroundWallTimeRef = useRef(0);
+  const backgroundAudioTimeRef = useRef(0);
+  const tickRef = useRef<(() => void) | null>(null);
   const pauseRef = useRef<(() => void) | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -95,6 +98,24 @@ export function useSeedsPlayer({
     setIsPaused(true);
     if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
   }, []);
+
+  const recoverInterruptedContext = useCallback((ctx: AudioContext) => {
+    const state = ctx.state as AudioContextState | "interrupted";
+    if (!isPlayingRef.current || (state !== "suspended" && state !== "interrupted")) return;
+    void ctx.resume().then(() => {
+      if (ctx.state === "running" && isPlayingRef.current) {
+        setIsPlaying(true);
+        setIsPaused(false);
+        if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = requestAnimationFrame(() => tickRef.current?.());
+        return;
+      }
+      if (document.visibilityState === "visible") freezeInterruptedPlayback(ctx);
+    }).catch(() => {
+      if (document.visibilityState === "visible") freezeInterruptedPlayback(ctx);
+    });
+  }, [freezeInterruptedPlayback]);
 
   /** Register a MediaSession so the OS lock screen knows we're playing audio
    *  and doesn't kill the AudioContext when the screen turns off. */
