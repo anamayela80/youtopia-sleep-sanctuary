@@ -75,6 +75,8 @@ export function useSeedsPlayer({
   const seedBuffersRef = useRef<AudioBuffer[]>([]);
   const musicBufferRef = useRef<AudioBuffer | null>(null);
   const isPlayingRef = useRef(false);
+  const wasBackgroundedRef = useRef(false);
+  const pauseRef = useRef<(() => void) | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -83,6 +85,16 @@ export function useSeedsPlayer({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(totalDuration);
   const [hasStarted, setHasStarted] = useState(false);
+
+  const freezeInterruptedPlayback = useCallback((ctx: AudioContext) => {
+    const elapsed = offsetRef.current + Math.max(0, ctx.currentTime - startTimeRef.current);
+    offsetRef.current = Math.min(Math.max(elapsed, 0), totalDurationRef.current);
+    cancelAnimationFrame(rafRef.current);
+    isPlayingRef.current = false;
+    setIsPlaying(false);
+    setIsPaused(true);
+    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
+  }, []);
 
   /** Register a MediaSession so the OS lock screen knows we're playing audio
    *  and doesn't kill the AudioContext when the screen turns off. */
@@ -101,37 +113,33 @@ export function useSeedsPlayer({
     navigator.mediaSession.playbackState = "playing";
   }, []);
 
-  /** When the screen locks or the tab is hidden, iOS may kill the AudioContext's
-   *  scheduled source nodes even though the context object itself survives.
-   *  Auto-resuming on visibility change brings the context back to "running"
-   *  with NO live sources — the UI shows Pause but no sound plays.
-   *
-   *  Instead: on hidden, freeze elapsed time into offsetRef and enter a clean
-   *  paused state. On visible, do nothing — the UI shows the Play button, and
-   *  tapping it re-schedules audio from the saved offset (inside a real user
-   *  gesture, which iOS requires). */
+  /** Keep playback alive when the phone locks. We do not intentionally stop or
+   *  suspend audio on hidden, because that is exactly what breaks iOS lock-
+   *  screen listening. If the OS interrupts the context, we recover state when
+   *  the user returns so the Play button can reschedule audio cleanly. */
   useEffect(() => {
+    const markBackgrounded = () => {
+      if (!isPlayingRef.current) return;
+      wasBackgroundedRef.current = true;
+      if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+    };
     const handleVisibility = () => {
-      if (document.visibilityState !== "hidden") return;
-      const ctx = audioCtxRef.current;
-      if (!ctx || !isPlayingRef.current) return;
-      const elapsed = offsetRef.current + (ctx.currentTime - startTimeRef.current);
-      offsetRef.current = Math.min(Math.max(elapsed, 0), totalDurationRef.current);
-      activeSourcesRef.current.forEach((s) => { try { s.stop(); } catch {} });
-      activeSourcesRef.current = [];
-      try { musicSourceRef.current?.stop(); } catch {}
-      musicSourceRef.current = null;
-      musicGainRef.current = null;
-      cancelAnimationFrame(rafRef.current);
-      try { ctx.suspend(); } catch {}
-      isPlayingRef.current = false;
-      setIsPlaying(false);
-      setIsPaused(true);
-      if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
+      if (document.visibilityState === "hidden") markBackgrounded();
+      if (document.visibilityState === "visible" && wasBackgroundedRef.current) {
+        wasBackgroundedRef.current = false;
+        const ctx = audioCtxRef.current;
+        if (ctx && ctx.state !== "running" && isPlayingRef.current) {
+          freezeInterruptedPlayback(ctx);
+        }
+      }
     };
     document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, []);
+    window.addEventListener("pagehide", markBackgrounded);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("pagehide", markBackgrounded);
+    };
+  }, [freezeInterruptedPlayback]);
 
   /** Shuffle [0..n-1] in place, ensuring index 0 != avoidFirst. */
   const shuffleAvoiding = (n: number, avoidFirst: number | null): number[] => {
