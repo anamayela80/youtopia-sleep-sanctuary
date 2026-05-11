@@ -101,24 +101,33 @@ export function useSeedsPlayer({
     navigator.mediaSession.playbackState = "playing";
   }, []);
 
-  /** Visibility-change handler: resume AudioContext when user returns to the tab
-   *  after the screen locked or the app went to the background. */
+  /** When the screen locks or the tab is hidden, iOS may kill the AudioContext's
+   *  scheduled source nodes even though the context object itself survives.
+   *  Auto-resuming on visibility change brings the context back to "running"
+   *  with NO live sources — the UI shows Pause but no sound plays.
+   *
+   *  Instead: on hidden, freeze elapsed time into offsetRef and enter a clean
+   *  paused state. On visible, do nothing — the UI shows the Play button, and
+   *  tapping it re-schedules audio from the saved offset (inside a real user
+   *  gesture, which iOS requires). */
   useEffect(() => {
     const handleVisibility = () => {
+      if (document.visibilityState !== "hidden") return;
       const ctx = audioCtxRef.current;
-      if (document.visibilityState === "visible" && ctx?.state === "suspended" && isPlayingRef.current) {
-        ctx.resume().then(() => {
-          if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
-        }).catch((err) => {
-          console.warn("AudioContext resume failed after visibility change:", err);
-          // iOS rejected the resume (non-gesture context). Reflect the true state
-          // so the user sees the pause button and knows to tap Play again.
-          isPlayingRef.current = false;
-          setIsPlaying(false);
-          setIsPaused(true);
-          if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
-        });
-      }
+      if (!ctx || !isPlayingRef.current) return;
+      const elapsed = offsetRef.current + (ctx.currentTime - startTimeRef.current);
+      offsetRef.current = Math.min(Math.max(elapsed, 0), totalDurationRef.current);
+      activeSourcesRef.current.forEach((s) => { try { s.stop(); } catch {} });
+      activeSourcesRef.current = [];
+      try { musicSourceRef.current?.stop(); } catch {}
+      musicSourceRef.current = null;
+      musicGainRef.current = null;
+      cancelAnimationFrame(rafRef.current);
+      try { ctx.suspend(); } catch {}
+      isPlayingRef.current = false;
+      setIsPlaying(false);
+      setIsPaused(true);
+      if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
