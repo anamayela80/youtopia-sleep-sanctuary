@@ -128,6 +128,8 @@ export function useSegmentedMixer({
   const totalDurationRef = useRef(0);
   const isPlayingRef = useRef(false);
   const wasBackgroundedRef = useRef(false);
+  const backgroundWallTimeRef = useRef(0);
+  const backgroundAudioTimeRef = useRef(0);
   const pauseRef = useRef<(() => void) | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -149,6 +151,24 @@ export function useSegmentedMixer({
     setIsPaused(true);
     if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
   }, []);
+
+  const recoverInterruptedContext = useCallback((ctx: AudioContext) => {
+    const state = ctx.state as AudioContextState | "interrupted";
+    if (!isPlayingRef.current || (state !== "suspended" && state !== "interrupted")) return;
+    void ctx.resume().then(() => {
+      if (ctx.state === "running" && isPlayingRef.current) {
+        setIsPlaying(true);
+        setIsPaused(false);
+        if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      if (document.visibilityState === "visible") freezeInterruptedPlayback(ctx);
+    }).catch(() => {
+      if (document.visibilityState === "visible") freezeInterruptedPlayback(ctx);
+    });
+  }, [freezeInterruptedPlayback, tick]);
 
   /**
    * Build the full timeline with each segment's start/end in session seconds,
@@ -210,6 +230,8 @@ export function useSegmentedMixer({
     const markBackgrounded = () => {
       if (!isPlayingRef.current) return;
       wasBackgroundedRef.current = true;
+      backgroundWallTimeRef.current = performance.now();
+      backgroundAudioTimeRef.current = audioCtxRef.current?.currentTime ?? 0;
       if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
     };
     const handleVisibility = () => {
@@ -217,7 +239,12 @@ export function useSegmentedMixer({
       if (document.visibilityState === "visible" && wasBackgroundedRef.current) {
         wasBackgroundedRef.current = false;
         const ctx = audioCtxRef.current;
-        if (ctx && ctx.state !== "running" && isPlayingRef.current) {
+        if (!ctx || !isPlayingRef.current) return;
+        const wallElapsed = (performance.now() - backgroundWallTimeRef.current) / 1000;
+        const audioElapsed = ctx.currentTime - backgroundAudioTimeRef.current;
+        if (ctx.state !== "running") {
+          recoverInterruptedContext(ctx);
+        } else if (wallElapsed > 3 && audioElapsed < wallElapsed * 0.25) {
           freezeInterruptedPlayback(ctx);
         }
       }
@@ -228,7 +255,7 @@ export function useSegmentedMixer({
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("pagehide", markBackgrounded);
     };
-  }, [freezeInterruptedPlayback]);
+  }, [freezeInterruptedPlayback, recoverInterruptedContext]);
 
   const tick = useCallback(() => {
     const ctx = audioCtxRef.current;
