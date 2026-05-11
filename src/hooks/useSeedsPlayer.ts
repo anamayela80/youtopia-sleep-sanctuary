@@ -459,6 +459,7 @@ export function useSeedsPlayer({
     setIsPaused(true);
     if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
   }, []);
+  pauseRef.current = pause;
 
   const resume = useCallback(() => {
     const ctx = audioCtxRef.current;
