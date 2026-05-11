@@ -75,6 +75,11 @@ export function useSeedsPlayer({
   const seedBuffersRef = useRef<AudioBuffer[]>([]);
   const musicBufferRef = useRef<AudioBuffer | null>(null);
   const isPlayingRef = useRef(false);
+  const wasBackgroundedRef = useRef(false);
+  const backgroundWallTimeRef = useRef(0);
+  const backgroundAudioTimeRef = useRef(0);
+  const tickRef = useRef<(() => void) | null>(null);
+  const pauseRef = useRef<(() => void) | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -83,6 +88,34 @@ export function useSeedsPlayer({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(totalDuration);
   const [hasStarted, setHasStarted] = useState(false);
+
+  const freezeInterruptedPlayback = useCallback((ctx: AudioContext) => {
+    const elapsed = offsetRef.current + Math.max(0, ctx.currentTime - startTimeRef.current);
+    offsetRef.current = Math.min(Math.max(elapsed, 0), totalDurationRef.current);
+    cancelAnimationFrame(rafRef.current);
+    isPlayingRef.current = false;
+    setIsPlaying(false);
+    setIsPaused(true);
+    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
+  }, []);
+
+  const recoverInterruptedContext = useCallback((ctx: AudioContext) => {
+    const state = ctx.state as AudioContextState | "interrupted";
+    if (!isPlayingRef.current || (state !== "suspended" && state !== "interrupted")) return;
+    void ctx.resume().then(() => {
+      if (ctx.state === "running" && isPlayingRef.current) {
+        setIsPlaying(true);
+        setIsPaused(false);
+        if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = requestAnimationFrame(() => tickRef.current?.());
+        return;
+      }
+      if (document.visibilityState === "visible") freezeInterruptedPlayback(ctx);
+    }).catch(() => {
+      if (document.visibilityState === "visible") freezeInterruptedPlayback(ctx);
+    });
+  }, [freezeInterruptedPlayback]);
 
   /** Register a MediaSession so the OS lock screen knows we're playing audio
    *  and doesn't kill the AudioContext when the screen turns off. */
@@ -101,37 +134,40 @@ export function useSeedsPlayer({
     navigator.mediaSession.playbackState = "playing";
   }, []);
 
-  /** When the screen locks or the tab is hidden, iOS may kill the AudioContext's
-   *  scheduled source nodes even though the context object itself survives.
-   *  Auto-resuming on visibility change brings the context back to "running"
-   *  with NO live sources — the UI shows Pause but no sound plays.
-   *
-   *  Instead: on hidden, freeze elapsed time into offsetRef and enter a clean
-   *  paused state. On visible, do nothing — the UI shows the Play button, and
-   *  tapping it re-schedules audio from the saved offset (inside a real user
-   *  gesture, which iOS requires). */
+  /** Keep playback alive when the phone locks. We do not intentionally stop or
+   *  suspend audio on hidden, because that is exactly what breaks iOS lock-
+   *  screen listening. If the OS interrupts the context, we recover state when
+   *  the user returns so the Play button can reschedule audio cleanly. */
   useEffect(() => {
+    const markBackgrounded = () => {
+      if (!isPlayingRef.current) return;
+      wasBackgroundedRef.current = true;
+      backgroundWallTimeRef.current = performance.now();
+      backgroundAudioTimeRef.current = audioCtxRef.current?.currentTime ?? 0;
+      if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+    };
     const handleVisibility = () => {
-      if (document.visibilityState !== "hidden") return;
-      const ctx = audioCtxRef.current;
-      if (!ctx || !isPlayingRef.current) return;
-      const elapsed = offsetRef.current + (ctx.currentTime - startTimeRef.current);
-      offsetRef.current = Math.min(Math.max(elapsed, 0), totalDurationRef.current);
-      activeSourcesRef.current.forEach((s) => { try { s.stop(); } catch {} });
-      activeSourcesRef.current = [];
-      try { musicSourceRef.current?.stop(); } catch {}
-      musicSourceRef.current = null;
-      musicGainRef.current = null;
-      cancelAnimationFrame(rafRef.current);
-      try { ctx.suspend(); } catch {}
-      isPlayingRef.current = false;
-      setIsPlaying(false);
-      setIsPaused(true);
-      if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
+      if (document.visibilityState === "hidden") markBackgrounded();
+      if (document.visibilityState === "visible" && wasBackgroundedRef.current) {
+        wasBackgroundedRef.current = false;
+        const ctx = audioCtxRef.current;
+        if (!ctx || !isPlayingRef.current) return;
+        const wallElapsed = (performance.now() - backgroundWallTimeRef.current) / 1000;
+        const audioElapsed = ctx.currentTime - backgroundAudioTimeRef.current;
+        if (ctx.state !== "running") {
+          recoverInterruptedContext(ctx);
+        } else if (wallElapsed > 3 && audioElapsed < wallElapsed * 0.25) {
+          freezeInterruptedPlayback(ctx);
+        }
+      }
     };
     document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, []);
+    window.addEventListener("pagehide", markBackgrounded);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("pagehide", markBackgrounded);
+    };
+  }, [freezeInterruptedPlayback, recoverInterruptedContext]);
 
   /** Shuffle [0..n-1] in place, ensuring index 0 != avoidFirst. */
   const shuffleAvoiding = (n: number, avoidFirst: number | null): number[] => {
@@ -205,6 +241,7 @@ export function useSeedsPlayer({
       setIsPaused(false);
     }
   }, []);
+  tickRef.current = tick;
 
   const stopAllSources = useCallback(() => {
     activeSourcesRef.current.forEach((s) => { try { s.stop(); } catch {} });
@@ -305,7 +342,6 @@ export function useSeedsPlayer({
       musicSource.start(now, clamped % musicBuf.duration);
       musicSourceRef.current = musicSource;
       musicGainRef.current = gain;
-      activeSourcesRef.current.push(musicSource);
       musicSource.stop(now + (totalDuration - clamped) + 0.1);
     }
 
@@ -365,7 +401,7 @@ export function useSeedsPlayer({
         stopAllSources();
         playFromOffset(offsetRef.current);
       },
-      () => { pause(); },
+      () => { pauseRef.current?.(); },
     );
     if ("mediaSession" in navigator) {
       // seekforward/seekbackward are a Chrome extension — not available on all
@@ -452,6 +488,7 @@ export function useSeedsPlayer({
     setIsPaused(true);
     if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
   }, []);
+  pauseRef.current = pause;
 
   const resume = useCallback(() => {
     const ctx = audioCtxRef.current;

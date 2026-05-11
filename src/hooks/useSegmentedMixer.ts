@@ -127,6 +127,11 @@ export function useSegmentedMixer({
   const offsetRef = useRef(0);
   const totalDurationRef = useRef(0);
   const isPlayingRef = useRef(false);
+  const wasBackgroundedRef = useRef(false);
+  const backgroundWallTimeRef = useRef(0);
+  const backgroundAudioTimeRef = useRef(0);
+  const tickRef = useRef<(() => void) | null>(null);
+  const pauseRef = useRef<(() => void) | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -137,6 +142,34 @@ export function useSegmentedMixer({
   const [duration, setDuration] = useState(0);
   const [currentSegment, setCurrentSegment] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
+
+  const freezeInterruptedPlayback = useCallback((ctx: AudioContext) => {
+    const elapsed = offsetRef.current + Math.max(0, ctx.currentTime - startTimeRef.current);
+    offsetRef.current = Math.min(Math.max(elapsed, 0), totalDurationRef.current);
+    cancelAnimationFrame(rafRef.current);
+    isPlayingRef.current = false;
+    setIsPlaying(false);
+    setIsPaused(true);
+    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
+  }, []);
+
+  const recoverInterruptedContext = useCallback((ctx: AudioContext) => {
+    const state = ctx.state as AudioContextState | "interrupted";
+    if (!isPlayingRef.current || (state !== "suspended" && state !== "interrupted")) return;
+    void ctx.resume().then(() => {
+      if (ctx.state === "running" && isPlayingRef.current) {
+        setIsPlaying(true);
+        setIsPaused(false);
+        if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = requestAnimationFrame(() => tickRef.current?.());
+        return;
+      }
+      if (document.visibilityState === "visible") freezeInterruptedPlayback(ctx);
+    }).catch(() => {
+      if (document.visibilityState === "visible") freezeInterruptedPlayback(ctx);
+    });
+  }, [freezeInterruptedPlayback]);
 
   /**
    * Build the full timeline with each segment's start/end in session seconds,
@@ -181,7 +214,7 @@ export function useSegmentedMixer({
   ) => {
     if (!("mediaSession" in navigator)) return;
     navigator.mediaSession.metadata = new MediaMetadata({
-      title: "Morning Meditation",
+      title: "Morning Practice",
       artist: "YOUtopia",
       album: "Daily Practice",
     });
@@ -190,38 +223,40 @@ export function useSegmentedMixer({
     navigator.mediaSession.playbackState = "playing";
   }, []);
 
-  /** When the screen locks or the tab is hidden, iOS may kill the AudioContext's
-   *  scheduled source nodes even though the context object itself survives.
-   *  Auto-resuming on visibility change brings the context back to "running"
-   *  with NO live sources — the UI shows Pause but no sound plays, and the
-   *  user is stuck because their tap-to-pause does nothing useful.
-   *
-   *  Instead: on hidden, freeze the elapsed time into offsetRef and put the
-   *  player into a clean paused state. On visible, do nothing — the UI shows
-   *  the Play button, and tapping it re-schedules audio from the saved offset
-   *  (inside a real user gesture, which iOS requires). */
+  /** Keep playback alive when the phone locks. The previous hidden handler
+   *  stopped and suspended the session, which made iOS lock-screen playback
+   *  fail. We only mark that the app was backgrounded, then recover on return
+   *  if the OS interrupted the scheduled Web Audio nodes. */
   useEffect(() => {
+    const markBackgrounded = () => {
+      if (!isPlayingRef.current) return;
+      wasBackgroundedRef.current = true;
+      backgroundWallTimeRef.current = performance.now();
+      backgroundAudioTimeRef.current = audioCtxRef.current?.currentTime ?? 0;
+      if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+    };
     const handleVisibility = () => {
-      if (document.visibilityState !== "hidden") return;
-      const ctx = audioCtxRef.current;
-      if (!ctx || !isPlayingRef.current) return;
-      const elapsed = offsetRef.current + (ctx.currentTime - startTimeRef.current);
-      offsetRef.current = Math.min(Math.max(elapsed, 0), totalDurationRef.current);
-      try { activeSourcesRef.current.forEach((s) => { try { s.stop(); } catch {} }); } catch {}
-      activeSourcesRef.current = [];
-      try { musicSourceRef.current?.stop(); } catch {}
-      musicSourceRef.current = null;
-      musicGainRef.current = null;
-      cancelAnimationFrame(rafRef.current);
-      try { ctx.suspend(); } catch {}
-      isPlayingRef.current = false;
-      setIsPlaying(false);
-      setIsPaused(true);
-      if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
+      if (document.visibilityState === "hidden") markBackgrounded();
+      if (document.visibilityState === "visible" && wasBackgroundedRef.current) {
+        wasBackgroundedRef.current = false;
+        const ctx = audioCtxRef.current;
+        if (!ctx || !isPlayingRef.current) return;
+        const wallElapsed = (performance.now() - backgroundWallTimeRef.current) / 1000;
+        const audioElapsed = ctx.currentTime - backgroundAudioTimeRef.current;
+        if (ctx.state !== "running") {
+          recoverInterruptedContext(ctx);
+        } else if (wallElapsed > 3 && audioElapsed < wallElapsed * 0.25) {
+          freezeInterruptedPlayback(ctx);
+        }
+      }
     };
     document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, []);
+    window.addEventListener("pagehide", markBackgrounded);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("pagehide", markBackgrounded);
+    };
+  }, [freezeInterruptedPlayback, recoverInterruptedContext]);
 
   const tick = useCallback(() => {
     const ctx = audioCtxRef.current;
@@ -237,6 +272,7 @@ export function useSegmentedMixer({
       setIsPaused(false);
     }
   }, []);
+  tickRef.current = tick;
 
   const stopAllSources = useCallback(() => {
     activeSourcesRef.current.forEach((s) => { try { s.stop(); } catch {} });
@@ -512,7 +548,6 @@ export function useSegmentedMixer({
     setIsPaused(true);
     if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
   }, []);
-  const pauseRef = useRef<typeof pause | null>(null);
   pauseRef.current = pause;
 
   const resume = useCallback(() => {
