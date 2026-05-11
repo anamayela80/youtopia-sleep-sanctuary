@@ -149,7 +149,12 @@ export function useSeedsPlayer({
       if (document.visibilityState === "visible" && wasBackgroundedRef.current) {
         wasBackgroundedRef.current = false;
         const ctx = audioCtxRef.current;
-        if (ctx && ctx.state !== "running" && isPlayingRef.current) {
+        if (!ctx || !isPlayingRef.current) return;
+        const wallElapsed = (performance.now() - backgroundWallTimeRef.current) / 1000;
+        const audioElapsed = ctx.currentTime - backgroundAudioTimeRef.current;
+        if (ctx.state !== "running") {
+          recoverInterruptedContext(ctx);
+        } else if (wallElapsed > 3 && audioElapsed < wallElapsed * 0.25) {
           freezeInterruptedPlayback(ctx);
         }
       }
@@ -160,7 +165,7 @@ export function useSeedsPlayer({
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("pagehide", markBackgrounded);
     };
-  }, [freezeInterruptedPlayback]);
+  }, [freezeInterruptedPlayback, recoverInterruptedContext]);
 
   /** Shuffle [0..n-1] in place, ensuring index 0 != avoidFirst. */
   const shuffleAvoiding = (n: number, avoidFirst: number | null): number[] => {
