@@ -455,15 +455,15 @@ export function useSeedsPlayer({
 
   const resume = useCallback(() => {
     const ctx = audioCtxRef.current;
-    if (!ctx || ctx.state !== "suspended") return;
-    startTimeRef.current = ctx.currentTime;
-    ctx.resume();
-    isPlayingRef.current = true;
-    setIsPlaying(true);
-    setIsPaused(false);
-    rafRef.current = requestAnimationFrame(tick);
-    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
-  }, [tick]);
+    if (!ctx) return;
+    // After an iOS screen-off pause, our scheduled source nodes may have been
+    // dropped by the OS. The only reliable way back is to re-schedule the
+    // entire timeline from the saved offset (playFromOffset also calls
+    // ctx.resume() — which is allowed here because we're inside the user's
+    // tap-to-play gesture).
+    stopAllSources();
+    playFromOffset(offsetRef.current);
+  }, [stopAllSources, playFromOffset]);
 
   const stop = useCallback(() => {
     // Capture refs NOW — the 1s fade timeout must close the context that was
