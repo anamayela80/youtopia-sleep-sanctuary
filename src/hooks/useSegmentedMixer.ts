@@ -11,6 +11,7 @@ import {
   MUSIC_RAMP_SECS,
   ARC,
 } from "@/lib/sessionTiming";
+import { enableNativePlaybackSession, updateMediaSessionPosition } from "@/lib/mobileAudioSession";
 
 /**
  * Segmented meditation mixer: 5 narration segments spaced over music bridges.
@@ -125,11 +126,9 @@ export function useSegmentedMixer({
   const rafRef = useRef<number>(0);
   const startTimeRef = useRef(0);
   const offsetRef = useRef(0);
+  const offsetWallTimeRef = useRef(0);
   const totalDurationRef = useRef(0);
   const isPlayingRef = useRef(false);
-  const wasBackgroundedRef = useRef(false);
-  const backgroundWallTimeRef = useRef(0);
-  const backgroundAudioTimeRef = useRef(0);
   const tickRef = useRef<(() => void) | null>(null);
   const pauseRef = useRef<(() => void) | null>(null);
 
@@ -143,33 +142,13 @@ export function useSegmentedMixer({
   const [currentSegment, setCurrentSegment] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
 
-  const freezeInterruptedPlayback = useCallback((ctx: AudioContext) => {
-    const elapsed = offsetRef.current + Math.max(0, ctx.currentTime - startTimeRef.current);
-    offsetRef.current = Math.min(Math.max(elapsed, 0), totalDurationRef.current);
-    cancelAnimationFrame(rafRef.current);
-    isPlayingRef.current = false;
-    setIsPlaying(false);
-    setIsPaused(true);
-    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
+  const getPlaybackPosition = useCallback((ctx: AudioContext | null = audioCtxRef.current) => {
+    const total = totalDurationRef.current;
+    const elapsed = isPlayingRef.current && ctx
+      ? offsetRef.current + Math.max(0, ctx.currentTime - startTimeRef.current)
+      : offsetRef.current;
+    return Math.min(Math.max(elapsed, 0), total || Math.max(elapsed, 0));
   }, []);
-
-  const recoverInterruptedContext = useCallback((ctx: AudioContext) => {
-    const state = ctx.state as AudioContextState | "interrupted";
-    if (!isPlayingRef.current || (state !== "suspended" && state !== "interrupted")) return;
-    void ctx.resume().then(() => {
-      if (ctx.state === "running" && isPlayingRef.current) {
-        setIsPlaying(true);
-        setIsPaused(false);
-        if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = requestAnimationFrame(() => tickRef.current?.());
-        return;
-      }
-      if (document.visibilityState === "visible") freezeInterruptedPlayback(ctx);
-    }).catch(() => {
-      if (document.visibilityState === "visible") freezeInterruptedPlayback(ctx);
-    });
-  }, [freezeInterruptedPlayback]);
 
   /**
    * Build the full timeline with each segment's start/end in session seconds,
