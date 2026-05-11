@@ -102,13 +102,14 @@ export function useSeedsPlayer({
     onPause: () => void,
   ) => {
     if (!("mediaSession" in navigator)) return;
+    enableNativePlaybackSession();
     navigator.mediaSession.metadata = new MediaMetadata({
       title: "Evening Seeds",
       artist: "YOUtopia",
       album: "Nightly Practice",
     });
-    navigator.mediaSession.setActionHandler("play", onPlay);
-    navigator.mediaSession.setActionHandler("pause", onPause);
+    try { navigator.mediaSession.setActionHandler("play", onPlay); } catch {}
+    try { navigator.mediaSession.setActionHandler("pause", onPause); } catch {}
     navigator.mediaSession.playbackState = "playing";
   }, []);
 
@@ -197,17 +198,18 @@ export function useSeedsPlayer({
   const tick = useCallback(() => {
     const ctx = audioCtxRef.current;
     if (!ctx) return;
-    const elapsed = offsetRef.current + (ctx.currentTime - startTimeRef.current);
+    const elapsed = getPlaybackPosition(ctx);
     const total = totalDurationRef.current;
     setCurrentTime(Math.min(elapsed, total));
     setProgress(Math.min((elapsed / total) * 100, 100));
+    updateMediaSessionPosition(total, elapsed);
     if (elapsed < total) {
       rafRef.current = requestAnimationFrame(tick);
     } else {
       setIsPlaying(false);
       setIsPaused(false);
     }
-  }, []);
+  }, [getPlaybackPosition]);
   tickRef.current = tick;
 
   const stopAllSources = useCallback(() => {
