@@ -241,6 +241,7 @@ export function useSeedsPlayer({
       setIsPaused(false);
     }
   }, []);
+  tickRef.current = tick;
 
   const stopAllSources = useCallback(() => {
     activeSourcesRef.current.forEach((s) => { try { s.stop(); } catch {} });
