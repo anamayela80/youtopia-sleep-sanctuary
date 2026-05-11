@@ -142,6 +142,8 @@ export function useSeedsPlayer({
     const markBackgrounded = () => {
       if (!isPlayingRef.current) return;
       wasBackgroundedRef.current = true;
+      backgroundWallTimeRef.current = performance.now();
+      backgroundAudioTimeRef.current = audioCtxRef.current?.currentTime ?? 0;
       if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
     };
     const handleVisibility = () => {
