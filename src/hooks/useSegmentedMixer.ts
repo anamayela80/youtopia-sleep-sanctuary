@@ -441,31 +441,27 @@ export function useSegmentedMixer({
         navigator.mediaSession.setActionHandler("seekforward", () => {
           const c = audioCtxRef.current;
           if (!c) return;
-          const elapsed = isPlayingRef.current
-            ? offsetRef.current + (c.currentTime - startTimeRef.current)
-            : offsetRef.current;
+          const elapsed = getPlaybackPosition(c);
           const newPos = Math.min(elapsed + 30, totalDurationRef.current);
           stopAllSources();
-          if (c.state === "suspended") c.resume();
+          if (c.state === "suspended") void c.resume();
           offsetRef.current = newPos;
           playFromOffset(newPos);
         });
         navigator.mediaSession.setActionHandler("seekbackward", () => {
           const c = audioCtxRef.current;
           if (!c) return;
-          const elapsed = isPlayingRef.current
-            ? offsetRef.current + (c.currentTime - startTimeRef.current)
-            : offsetRef.current;
+          const elapsed = getPlaybackPosition(c);
           const newPos = Math.max(elapsed - 30, 0);
           stopAllSources();
-          if (c.state === "suspended") c.resume();
+          if (c.state === "suspended") void c.resume();
           offsetRef.current = newPos;
           playFromOffset(newPos);
         });
       } catch {}
     }
     rafRef.current = requestAnimationFrame(tick);
-  }, [musicVolume, narrationVolume, resolvedFadeIn, resolvedFadeOut, buildTimeline, tick, registerMediaSession, stopAllSources]);
+  }, [musicVolume, narrationVolume, resolvedFadeIn, resolvedFadeOut, buildTimeline, tick, registerMediaSession, stopAllSources, getPlaybackPosition]);
 
   const playSequence = useCallback(async () => {
     if (segmentUrls.length === 0) return;
@@ -559,16 +555,14 @@ export function useSegmentedMixer({
     const ctx = audioCtxRef.current;
     if (!ctx) return;
     const wasPlaying = isPlayingRef.current;
-    const currentPos = wasPlaying
-      ? offsetRef.current + (ctx.currentTime - startTimeRef.current)
-      : offsetRef.current;
+    const currentPos = getPlaybackPosition(ctx);
     const newPos = Math.max(0, Math.min(currentPos + seconds, totalDurationRef.current));
 
     stopAllSources();
     // Reuse the existing AudioContext — creating a new one here would orphan the
     // already-decoded AudioBuffer objects, causing NotSupportedError on Safari/iOS
     // when those buffers are assigned to source nodes in the new context.
-    if (ctx.state === "suspended") ctx.resume();
+    if (ctx.state === "suspended") void ctx.resume();
     offsetRef.current = newPos;
 
     if (wasPlaying || isPaused) playFromOffset(newPos);
@@ -576,7 +570,7 @@ export function useSegmentedMixer({
       setCurrentTime(newPos);
       setProgress((newPos / totalDurationRef.current) * 100);
     }
-  }, [isPaused, stopAllSources, playFromOffset]);
+  }, [isPaused, stopAllSources, playFromOffset, getPlaybackPosition]);
 
   const skipForward = useCallback(() => skip(30), [skip]);
   const skipBackward = useCallback(() => skip(-30), [skip]);
@@ -589,7 +583,7 @@ export function useSegmentedMixer({
 
     stopAllSources();
     // Same reason as skip() — reuse the existing context to avoid buffer/context mismatch.
-    if (ctx.state === "suspended") ctx.resume();
+    if (ctx.state === "suspended") void ctx.resume();
     offsetRef.current = newPos;
 
     if (wasPlaying || isPaused) playFromOffset(newPos);
