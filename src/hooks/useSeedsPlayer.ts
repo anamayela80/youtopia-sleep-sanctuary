@@ -358,18 +358,12 @@ export function useSeedsPlayer({
     setHasStarted(true);
     registerMediaSession(
       () => {
+        // Lock-screen Play: the OS may have dropped our scheduled sources.
+        // Re-schedule from the saved offset rather than relying on ctx.resume() alone.
         const c = audioCtxRef.current;
-        if (c?.state === "suspended") {
-          c.resume().then(() => {
-            isPlayingRef.current = true;
-            setIsPlaying(true);
-            setIsPaused(false);
-            rafRef.current = requestAnimationFrame(tick);
-            if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
-          }).catch((err) => {
-            console.warn("AudioContext resume failed from MediaSession play:", err);
-          });
-        }
+        if (!c) return;
+        stopAllSources();
+        playFromOffset(offsetRef.current);
       },
       () => { pause(); },
     );
