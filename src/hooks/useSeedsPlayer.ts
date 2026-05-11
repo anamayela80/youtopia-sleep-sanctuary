@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { createReverb } from "@/lib/audioEffects";
+import { enableNativePlaybackSession, updateMediaSessionPosition } from "@/lib/mobileAudioSession";
 
 /**
  * 45-minute Evening Seeds session.
@@ -75,9 +76,6 @@ export function useSeedsPlayer({
   const seedBuffersRef = useRef<AudioBuffer[]>([]);
   const musicBufferRef = useRef<AudioBuffer | null>(null);
   const isPlayingRef = useRef(false);
-  const wasBackgroundedRef = useRef(false);
-  const backgroundWallTimeRef = useRef(0);
-  const backgroundAudioTimeRef = useRef(0);
   const tickRef = useRef<(() => void) | null>(null);
   const pauseRef = useRef<(() => void) | null>(null);
 
@@ -89,33 +87,13 @@ export function useSeedsPlayer({
   const [duration, setDuration] = useState(totalDuration);
   const [hasStarted, setHasStarted] = useState(false);
 
-  const freezeInterruptedPlayback = useCallback((ctx: AudioContext) => {
-    const elapsed = offsetRef.current + Math.max(0, ctx.currentTime - startTimeRef.current);
-    offsetRef.current = Math.min(Math.max(elapsed, 0), totalDurationRef.current);
-    cancelAnimationFrame(rafRef.current);
-    isPlayingRef.current = false;
-    setIsPlaying(false);
-    setIsPaused(true);
-    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
+  const getPlaybackPosition = useCallback((ctx: AudioContext | null = audioCtxRef.current) => {
+    const total = totalDurationRef.current;
+    const elapsed = isPlayingRef.current && ctx
+      ? offsetRef.current + Math.max(0, ctx.currentTime - startTimeRef.current)
+      : offsetRef.current;
+    return Math.min(Math.max(elapsed, 0), total || Math.max(elapsed, 0));
   }, []);
-
-  const recoverInterruptedContext = useCallback((ctx: AudioContext) => {
-    const state = ctx.state as AudioContextState | "interrupted";
-    if (!isPlayingRef.current || (state !== "suspended" && state !== "interrupted")) return;
-    void ctx.resume().then(() => {
-      if (ctx.state === "running" && isPlayingRef.current) {
-        setIsPlaying(true);
-        setIsPaused(false);
-        if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = requestAnimationFrame(() => tickRef.current?.());
-        return;
-      }
-      if (document.visibilityState === "visible") freezeInterruptedPlayback(ctx);
-    }).catch(() => {
-      if (document.visibilityState === "visible") freezeInterruptedPlayback(ctx);
-    });
-  }, [freezeInterruptedPlayback]);
 
   /** Register a MediaSession so the OS lock screen knows we're playing audio
    *  and doesn't kill the AudioContext when the screen turns off. */
