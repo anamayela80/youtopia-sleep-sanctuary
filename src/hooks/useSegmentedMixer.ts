@@ -140,6 +140,16 @@ export function useSegmentedMixer({
   const [currentSegment, setCurrentSegment] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
 
+  const freezeInterruptedPlayback = useCallback((ctx: AudioContext) => {
+    const elapsed = offsetRef.current + Math.max(0, ctx.currentTime - startTimeRef.current);
+    offsetRef.current = Math.min(Math.max(elapsed, 0), totalDurationRef.current);
+    cancelAnimationFrame(rafRef.current);
+    isPlayingRef.current = false;
+    setIsPlaying(false);
+    setIsPaused(true);
+    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
+  }, []);
+
   /**
    * Build the full timeline with each segment's start/end in session seconds,
    * accounting for the slowed playback rate on narration buffers.
@@ -204,6 +214,13 @@ export function useSegmentedMixer({
     };
     const handleVisibility = () => {
       if (document.visibilityState === "hidden") markBackgrounded();
+      if (document.visibilityState === "visible" && wasBackgroundedRef.current) {
+        wasBackgroundedRef.current = false;
+        const ctx = audioCtxRef.current;
+        if (ctx && ctx.state !== "running" && isPlayingRef.current) {
+          freezeInterruptedPlayback(ctx);
+        }
+      }
     };
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("pagehide", markBackgrounded);
@@ -211,7 +228,7 @@ export function useSegmentedMixer({
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("pagehide", markBackgrounded);
     };
-  }, []);
+  }, [freezeInterruptedPlayback]);
 
   const tick = useCallback(() => {
     const ctx = audioCtxRef.current;
