@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { createReverb } from "@/lib/audioEffects";
+import { enableNativePlaybackSession, updateMediaSessionPosition } from "@/lib/mobileAudioSession";
 
 /**
  * 45-minute Evening Seeds session.
@@ -75,9 +76,6 @@ export function useSeedsPlayer({
   const seedBuffersRef = useRef<AudioBuffer[]>([]);
   const musicBufferRef = useRef<AudioBuffer | null>(null);
   const isPlayingRef = useRef(false);
-  const wasBackgroundedRef = useRef(false);
-  const backgroundWallTimeRef = useRef(0);
-  const backgroundAudioTimeRef = useRef(0);
   const tickRef = useRef<(() => void) | null>(null);
   const pauseRef = useRef<(() => void) | null>(null);
 
@@ -89,33 +87,13 @@ export function useSeedsPlayer({
   const [duration, setDuration] = useState(totalDuration);
   const [hasStarted, setHasStarted] = useState(false);
 
-  const freezeInterruptedPlayback = useCallback((ctx: AudioContext) => {
-    const elapsed = offsetRef.current + Math.max(0, ctx.currentTime - startTimeRef.current);
-    offsetRef.current = Math.min(Math.max(elapsed, 0), totalDurationRef.current);
-    cancelAnimationFrame(rafRef.current);
-    isPlayingRef.current = false;
-    setIsPlaying(false);
-    setIsPaused(true);
-    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
+  const getPlaybackPosition = useCallback((ctx: AudioContext | null = audioCtxRef.current) => {
+    const total = totalDurationRef.current;
+    const elapsed = isPlayingRef.current && ctx
+      ? offsetRef.current + Math.max(0, ctx.currentTime - startTimeRef.current)
+      : offsetRef.current;
+    return Math.min(Math.max(elapsed, 0), total || Math.max(elapsed, 0));
   }, []);
-
-  const recoverInterruptedContext = useCallback((ctx: AudioContext) => {
-    const state = ctx.state as AudioContextState | "interrupted";
-    if (!isPlayingRef.current || (state !== "suspended" && state !== "interrupted")) return;
-    void ctx.resume().then(() => {
-      if (ctx.state === "running" && isPlayingRef.current) {
-        setIsPlaying(true);
-        setIsPaused(false);
-        if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = requestAnimationFrame(() => tickRef.current?.());
-        return;
-      }
-      if (document.visibilityState === "visible") freezeInterruptedPlayback(ctx);
-    }).catch(() => {
-      if (document.visibilityState === "visible") freezeInterruptedPlayback(ctx);
-    });
-  }, [freezeInterruptedPlayback]);
 
   /** Register a MediaSession so the OS lock screen knows we're playing audio
    *  and doesn't kill the AudioContext when the screen turns off. */
@@ -124,50 +102,40 @@ export function useSeedsPlayer({
     onPause: () => void,
   ) => {
     if (!("mediaSession" in navigator)) return;
+    enableNativePlaybackSession();
     navigator.mediaSession.metadata = new MediaMetadata({
       title: "Evening Seeds",
       artist: "YOUtopia",
       album: "Nightly Practice",
     });
-    navigator.mediaSession.setActionHandler("play", onPlay);
-    navigator.mediaSession.setActionHandler("pause", onPause);
+    try { navigator.mediaSession.setActionHandler("play", onPlay); } catch {}
+    try { navigator.mediaSession.setActionHandler("pause", onPause); } catch {}
     navigator.mediaSession.playbackState = "playing";
   }, []);
 
-  /** Keep playback alive when the phone locks. We do not intentionally stop or
-   *  suspend audio on hidden, because that is exactly what breaks iOS lock-
-   *  screen listening. If the OS interrupts the context, we recover state when
-   *  the user returns so the Play button can reschedule audio cleanly. */
+  /** Keep lock-screen audio alive by leaving playback running when the document
+   *  is hidden. Mobile browsers suspend timers, so the UI clock catches up from
+   *  the AudioContext clock when the app becomes visible again. */
   useEffect(() => {
-    const markBackgrounded = () => {
+    const keepSessionActive = () => {
       if (!isPlayingRef.current) return;
-      wasBackgroundedRef.current = true;
-      backgroundWallTimeRef.current = performance.now();
-      backgroundAudioTimeRef.current = audioCtxRef.current?.currentTime ?? 0;
-      if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
-    };
-    const handleVisibility = () => {
-      if (document.visibilityState === "hidden") markBackgrounded();
-      if (document.visibilityState === "visible" && wasBackgroundedRef.current) {
-        wasBackgroundedRef.current = false;
-        const ctx = audioCtxRef.current;
-        if (!ctx || !isPlayingRef.current) return;
-        const wallElapsed = (performance.now() - backgroundWallTimeRef.current) / 1000;
-        const audioElapsed = ctx.currentTime - backgroundAudioTimeRef.current;
-        if (ctx.state !== "running") {
-          recoverInterruptedContext(ctx);
-        } else if (wallElapsed > 3 && audioElapsed < wallElapsed * 0.25) {
-          freezeInterruptedPlayback(ctx);
-        }
+      enableNativePlaybackSession();
+      if ("mediaSession" in navigator) {
+        navigator.mediaSession.playbackState = "playing";
+        updateMediaSessionPosition(totalDurationRef.current, getPlaybackPosition());
       }
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(() => tickRef.current?.());
     };
-    document.addEventListener("visibilitychange", handleVisibility);
-    window.addEventListener("pagehide", markBackgrounded);
+    document.addEventListener("visibilitychange", keepSessionActive);
+    window.addEventListener("pagehide", keepSessionActive);
+    window.addEventListener("pageshow", keepSessionActive);
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibility);
-      window.removeEventListener("pagehide", markBackgrounded);
+      document.removeEventListener("visibilitychange", keepSessionActive);
+      window.removeEventListener("pagehide", keepSessionActive);
+      window.removeEventListener("pageshow", keepSessionActive);
     };
-  }, [freezeInterruptedPlayback, recoverInterruptedContext]);
+  }, [getPlaybackPosition]);
 
   /** Shuffle [0..n-1] in place, ensuring index 0 != avoidFirst. */
   const shuffleAvoiding = (n: number, avoidFirst: number | null): number[] => {
@@ -230,17 +198,18 @@ export function useSeedsPlayer({
   const tick = useCallback(() => {
     const ctx = audioCtxRef.current;
     if (!ctx) return;
-    const elapsed = offsetRef.current + (ctx.currentTime - startTimeRef.current);
+    const elapsed = getPlaybackPosition(ctx);
     const total = totalDurationRef.current;
     setCurrentTime(Math.min(elapsed, total));
     setProgress(Math.min((elapsed / total) * 100, 100));
+    updateMediaSessionPosition(total, elapsed);
     if (elapsed < total) {
       rafRef.current = requestAnimationFrame(tick);
     } else {
       setIsPlaying(false);
       setIsPaused(false);
     }
-  }, []);
+  }, [getPlaybackPosition]);
   tickRef.current = tick;
 
   const stopAllSources = useCallback(() => {
@@ -258,6 +227,7 @@ export function useSeedsPlayer({
     const musicBuf = musicBufferRef.current;
     if (!ctx || buffers.length === 0) return;
 
+    enableNativePlaybackSession();
     if (ctx.state === "suspended") await ctx.resume();
 
     const { events } = buildTimeline();
@@ -392,14 +362,17 @@ export function useSeedsPlayer({
     setIsPlaying(true);
     setIsPaused(false);
     setHasStarted(true);
+    updateMediaSessionPosition(totalDuration, clamped);
     registerMediaSession(
       () => {
-        // Lock-screen Play: the OS may have dropped our scheduled sources.
-        // Re-schedule from the saved offset rather than relying on ctx.resume() alone.
         const c = audioCtxRef.current;
         if (!c) return;
-        stopAllSources();
-        playFromOffset(offsetRef.current);
+        void c.resume().then(() => {
+          isPlayingRef.current = true;
+          setIsPlaying(true);
+          setIsPaused(false);
+          navigator.mediaSession.playbackState = "playing";
+        });
       },
       () => { pauseRef.current?.(); },
     );
@@ -410,31 +383,27 @@ export function useSeedsPlayer({
         navigator.mediaSession.setActionHandler("seekforward", () => {
           const c = audioCtxRef.current;
           if (!c) return;
-          const elapsed = isPlayingRef.current
-            ? offsetRef.current + (c.currentTime - startTimeRef.current)
-            : offsetRef.current;
+          const elapsed = getPlaybackPosition(c);
           const newPos = Math.min(elapsed + 30, totalDurationRef.current);
           stopAllSources();
-          if (c.state === "suspended") c.resume();
+          if (c.state === "suspended") void c.resume();
           offsetRef.current = newPos;
           playFromOffset(newPos);
         });
         navigator.mediaSession.setActionHandler("seekbackward", () => {
           const c = audioCtxRef.current;
           if (!c) return;
-          const elapsed = isPlayingRef.current
-            ? offsetRef.current + (c.currentTime - startTimeRef.current)
-            : offsetRef.current;
+          const elapsed = getPlaybackPosition(c);
           const newPos = Math.max(elapsed - 30, 0);
           stopAllSources();
-          if (c.state === "suspended") c.resume();
+          if (c.state === "suspended") void c.resume();
           offsetRef.current = newPos;
           playFromOffset(newPos);
         });
       } catch {}
     }
     rafRef.current = requestAnimationFrame(tick);
-  }, [buildTimeline, totalDuration, tick, registerMediaSession]);
+  }, [buildTimeline, totalDuration, tick, registerMediaSession, stopAllSources, getPlaybackPosition]);
 
   const play = useCallback(async () => {
     const validUrls = seedAudioUrls.filter(Boolean);
@@ -445,7 +414,8 @@ export function useSeedsPlayer({
     if (audioCtxRef.current) return;
     setIsLoading(true);
     try {
-      const ctx = new AudioContext();
+      enableNativePlaybackSession();
+      const ctx = new AudioContext({ latencyHint: "playback" });
       audioCtxRef.current = ctx;
 
       // Load seeds ONE AT A TIME — parallel fetches exceed mobile memory budgets
@@ -480,14 +450,17 @@ export function useSeedsPlayer({
   const pause = useCallback(() => {
     const ctx = audioCtxRef.current;
     if (!ctx || ctx.state !== "running") return;
-    offsetRef.current = offsetRef.current + (ctx.currentTime - startTimeRef.current);
+    offsetRef.current = getPlaybackPosition(ctx);
     ctx.suspend();
     cancelAnimationFrame(rafRef.current);
     isPlayingRef.current = false;
     setIsPlaying(false);
     setIsPaused(true);
-    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
-  }, []);
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.playbackState = "paused";
+      updateMediaSessionPosition(totalDurationRef.current, offsetRef.current);
+    }
+  }, [getPlaybackPosition]);
   pauseRef.current = pause;
 
   const resume = useCallback(() => {
@@ -552,7 +525,7 @@ export function useSeedsPlayer({
     stopAllSources();
     // Reuse existing context — same reason as useSeedsPlayer.stop(): creating a
     // new AudioContext here would orphan the already-decoded seed buffers.
-    if (ctx.state === "suspended") ctx.resume();
+    if (ctx.state === "suspended") void ctx.resume();
     offsetRef.current = newPos;
     if (wasPlaying || isPaused) playFromOffset(newPos);
     else { setCurrentTime(newPos); setProgress((newPos / totalDurationRef.current) * 100); }
@@ -563,20 +536,16 @@ export function useSeedsPlayer({
   const skipForward = useCallback(() => {
     const ctx = audioCtxRef.current;
     if (!ctx) return;
-    const elapsed = isPlayingRef.current
-      ? offsetRef.current + (ctx.currentTime - startTimeRef.current)
-      : offsetRef.current;
+    const elapsed = getPlaybackPosition(ctx);
     seekTo(Math.min(elapsed + 30, totalDurationRef.current));
-  }, [seekTo]);
+  }, [seekTo, getPlaybackPosition]);
 
   const skipBackward = useCallback(() => {
     const ctx = audioCtxRef.current;
     if (!ctx) return;
-    const elapsed = isPlayingRef.current
-      ? offsetRef.current + (ctx.currentTime - startTimeRef.current)
-      : offsetRef.current;
+    const elapsed = getPlaybackPosition(ctx);
     seekTo(Math.max(elapsed - 30, 0));
-  }, [seekTo]);
+  }, [seekTo, getPlaybackPosition]);
 
   const togglePlay = useCallback(() => {
     if (isPlaying) pause();

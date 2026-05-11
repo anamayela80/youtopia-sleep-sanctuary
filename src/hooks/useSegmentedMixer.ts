@@ -11,6 +11,7 @@ import {
   MUSIC_RAMP_SECS,
   ARC,
 } from "@/lib/sessionTiming";
+import { enableNativePlaybackSession, updateMediaSessionPosition } from "@/lib/mobileAudioSession";
 
 /**
  * Segmented meditation mixer: 5 narration segments spaced over music bridges.
@@ -127,9 +128,6 @@ export function useSegmentedMixer({
   const offsetRef = useRef(0);
   const totalDurationRef = useRef(0);
   const isPlayingRef = useRef(false);
-  const wasBackgroundedRef = useRef(false);
-  const backgroundWallTimeRef = useRef(0);
-  const backgroundAudioTimeRef = useRef(0);
   const tickRef = useRef<(() => void) | null>(null);
   const pauseRef = useRef<(() => void) | null>(null);
 
@@ -143,33 +141,13 @@ export function useSegmentedMixer({
   const [currentSegment, setCurrentSegment] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
 
-  const freezeInterruptedPlayback = useCallback((ctx: AudioContext) => {
-    const elapsed = offsetRef.current + Math.max(0, ctx.currentTime - startTimeRef.current);
-    offsetRef.current = Math.min(Math.max(elapsed, 0), totalDurationRef.current);
-    cancelAnimationFrame(rafRef.current);
-    isPlayingRef.current = false;
-    setIsPlaying(false);
-    setIsPaused(true);
-    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
+  const getPlaybackPosition = useCallback((ctx: AudioContext | null = audioCtxRef.current) => {
+    const total = totalDurationRef.current;
+    const elapsed = isPlayingRef.current && ctx
+      ? offsetRef.current + Math.max(0, ctx.currentTime - startTimeRef.current)
+      : offsetRef.current;
+    return Math.min(Math.max(elapsed, 0), total || Math.max(elapsed, 0));
   }, []);
-
-  const recoverInterruptedContext = useCallback((ctx: AudioContext) => {
-    const state = ctx.state as AudioContextState | "interrupted";
-    if (!isPlayingRef.current || (state !== "suspended" && state !== "interrupted")) return;
-    void ctx.resume().then(() => {
-      if (ctx.state === "running" && isPlayingRef.current) {
-        setIsPlaying(true);
-        setIsPaused(false);
-        if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = requestAnimationFrame(() => tickRef.current?.());
-        return;
-      }
-      if (document.visibilityState === "visible") freezeInterruptedPlayback(ctx);
-    }).catch(() => {
-      if (document.visibilityState === "visible") freezeInterruptedPlayback(ctx);
-    });
-  }, [freezeInterruptedPlayback]);
 
   /**
    * Build the full timeline with each segment's start/end in session seconds,
@@ -213,65 +191,56 @@ export function useSegmentedMixer({
     onPause: () => void,
   ) => {
     if (!("mediaSession" in navigator)) return;
+    enableNativePlaybackSession();
     navigator.mediaSession.metadata = new MediaMetadata({
       title: "Morning Practice",
       artist: "YOUtopia",
       album: "Daily Practice",
     });
-    navigator.mediaSession.setActionHandler("play", onPlay);
-    navigator.mediaSession.setActionHandler("pause", onPause);
+    try { navigator.mediaSession.setActionHandler("play", onPlay); } catch {}
+    try { navigator.mediaSession.setActionHandler("pause", onPause); } catch {}
     navigator.mediaSession.playbackState = "playing";
   }, []);
 
-  /** Keep playback alive when the phone locks. The previous hidden handler
-   *  stopped and suspended the session, which made iOS lock-screen playback
-   *  fail. We only mark that the app was backgrounded, then recover on return
-   *  if the OS interrupted the scheduled Web Audio nodes. */
+  /** Keep lock-screen audio alive by leaving playback running when the document
+   *  is hidden. Mobile browsers suspend timers, so the UI clock catches up from
+   *  the AudioContext clock when the app becomes visible again. */
   useEffect(() => {
-    const markBackgrounded = () => {
+    const keepSessionActive = () => {
       if (!isPlayingRef.current) return;
-      wasBackgroundedRef.current = true;
-      backgroundWallTimeRef.current = performance.now();
-      backgroundAudioTimeRef.current = audioCtxRef.current?.currentTime ?? 0;
-      if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
-    };
-    const handleVisibility = () => {
-      if (document.visibilityState === "hidden") markBackgrounded();
-      if (document.visibilityState === "visible" && wasBackgroundedRef.current) {
-        wasBackgroundedRef.current = false;
-        const ctx = audioCtxRef.current;
-        if (!ctx || !isPlayingRef.current) return;
-        const wallElapsed = (performance.now() - backgroundWallTimeRef.current) / 1000;
-        const audioElapsed = ctx.currentTime - backgroundAudioTimeRef.current;
-        if (ctx.state !== "running") {
-          recoverInterruptedContext(ctx);
-        } else if (wallElapsed > 3 && audioElapsed < wallElapsed * 0.25) {
-          freezeInterruptedPlayback(ctx);
-        }
+      enableNativePlaybackSession();
+      if ("mediaSession" in navigator) {
+        navigator.mediaSession.playbackState = "playing";
+        updateMediaSessionPosition(totalDurationRef.current, getPlaybackPosition());
       }
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(() => tickRef.current?.());
     };
-    document.addEventListener("visibilitychange", handleVisibility);
-    window.addEventListener("pagehide", markBackgrounded);
+    document.addEventListener("visibilitychange", keepSessionActive);
+    window.addEventListener("pagehide", keepSessionActive);
+    window.addEventListener("pageshow", keepSessionActive);
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibility);
-      window.removeEventListener("pagehide", markBackgrounded);
+      document.removeEventListener("visibilitychange", keepSessionActive);
+      window.removeEventListener("pagehide", keepSessionActive);
+      window.removeEventListener("pageshow", keepSessionActive);
     };
-  }, [freezeInterruptedPlayback, recoverInterruptedContext]);
+  }, [getPlaybackPosition]);
 
   const tick = useCallback(() => {
     const ctx = audioCtxRef.current;
     if (!ctx) return;
-    const elapsed = offsetRef.current + (ctx.currentTime - startTimeRef.current);
+    const elapsed = getPlaybackPosition(ctx);
     const total = totalDurationRef.current;
     setCurrentTime(Math.min(elapsed, total));
     setProgress(Math.min((elapsed / total) * 100, 100));
+    updateMediaSessionPosition(total, elapsed);
     if (elapsed < total) {
       rafRef.current = requestAnimationFrame(tick);
     } else {
       setIsPlaying(false);
       setIsPaused(false);
     }
-  }, []);
+  }, [getPlaybackPosition]);
   tickRef.current = tick;
 
   const stopAllSources = useCallback(() => {
@@ -291,6 +260,7 @@ export function useSegmentedMixer({
     const musicBuf = musicBufferRef.current;
     if (!ctx || buffers.length === 0) return;
 
+    enableNativePlaybackSession();
     if (ctx.state === "suspended") await ctx.resume();
 
     const { events, totalDuration } = buildTimeline();
@@ -450,14 +420,17 @@ export function useSegmentedMixer({
     setIsPlaying(true);
     setIsPaused(false);
     setHasStarted(true);
+    updateMediaSessionPosition(totalDuration, clampedOffset);
     registerMediaSession(
       () => {
-        // Lock-screen Play: the OS may have dropped our scheduled sources.
-        // Re-schedule from the saved offset rather than relying on ctx.resume() alone.
         const c = audioCtxRef.current;
         if (!c) return;
-        stopAllSources();
-        playFromOffset(offsetRef.current);
+        void c.resume().then(() => {
+          isPlayingRef.current = true;
+          setIsPlaying(true);
+          setIsPaused(false);
+          navigator.mediaSession.playbackState = "playing";
+        });
       },
       () => { pauseRef.current?.(); },
     );
@@ -468,31 +441,27 @@ export function useSegmentedMixer({
         navigator.mediaSession.setActionHandler("seekforward", () => {
           const c = audioCtxRef.current;
           if (!c) return;
-          const elapsed = isPlayingRef.current
-            ? offsetRef.current + (c.currentTime - startTimeRef.current)
-            : offsetRef.current;
+          const elapsed = getPlaybackPosition(c);
           const newPos = Math.min(elapsed + 30, totalDurationRef.current);
           stopAllSources();
-          if (c.state === "suspended") c.resume();
+          if (c.state === "suspended") void c.resume();
           offsetRef.current = newPos;
           playFromOffset(newPos);
         });
         navigator.mediaSession.setActionHandler("seekbackward", () => {
           const c = audioCtxRef.current;
           if (!c) return;
-          const elapsed = isPlayingRef.current
-            ? offsetRef.current + (c.currentTime - startTimeRef.current)
-            : offsetRef.current;
+          const elapsed = getPlaybackPosition(c);
           const newPos = Math.max(elapsed - 30, 0);
           stopAllSources();
-          if (c.state === "suspended") c.resume();
+          if (c.state === "suspended") void c.resume();
           offsetRef.current = newPos;
           playFromOffset(newPos);
         });
       } catch {}
     }
     rafRef.current = requestAnimationFrame(tick);
-  }, [musicVolume, narrationVolume, resolvedFadeIn, resolvedFadeOut, buildTimeline, tick, registerMediaSession, stopAllSources]);
+  }, [musicVolume, narrationVolume, resolvedFadeIn, resolvedFadeOut, buildTimeline, tick, registerMediaSession, stopAllSources, getPlaybackPosition]);
 
   const playSequence = useCallback(async () => {
     if (segmentUrls.length === 0) return;
@@ -506,7 +475,8 @@ export function useSegmentedMixer({
     setIsLoading(true);
     setLoadError(false);
     try {
-      const ctx = new AudioContext();
+      enableNativePlaybackSession();
+      const ctx = new AudioContext({ latencyHint: "playback" });
       audioCtxRef.current = ctx;
       // Load segments ONE AT A TIME — parallel fetches exceed mobile memory budgets
       // and trigger silent failures on iOS Safari (no error, just hangs).
@@ -540,14 +510,17 @@ export function useSegmentedMixer({
   const pause = useCallback(() => {
     const ctx = audioCtxRef.current;
     if (!ctx || ctx.state !== "running") return;
-    offsetRef.current = offsetRef.current + (ctx.currentTime - startTimeRef.current);
+    offsetRef.current = getPlaybackPosition(ctx);
     ctx.suspend();
     cancelAnimationFrame(rafRef.current);
     isPlayingRef.current = false;
     setIsPlaying(false);
     setIsPaused(true);
-    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
-  }, []);
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.playbackState = "paused";
+      updateMediaSessionPosition(totalDurationRef.current, offsetRef.current);
+    }
+  }, [getPlaybackPosition]);
   pauseRef.current = pause;
 
   const resume = useCallback(() => {
@@ -582,16 +555,14 @@ export function useSegmentedMixer({
     const ctx = audioCtxRef.current;
     if (!ctx) return;
     const wasPlaying = isPlayingRef.current;
-    const currentPos = wasPlaying
-      ? offsetRef.current + (ctx.currentTime - startTimeRef.current)
-      : offsetRef.current;
+    const currentPos = getPlaybackPosition(ctx);
     const newPos = Math.max(0, Math.min(currentPos + seconds, totalDurationRef.current));
 
     stopAllSources();
     // Reuse the existing AudioContext — creating a new one here would orphan the
     // already-decoded AudioBuffer objects, causing NotSupportedError on Safari/iOS
     // when those buffers are assigned to source nodes in the new context.
-    if (ctx.state === "suspended") ctx.resume();
+    if (ctx.state === "suspended") void ctx.resume();
     offsetRef.current = newPos;
 
     if (wasPlaying || isPaused) playFromOffset(newPos);
@@ -599,7 +570,7 @@ export function useSegmentedMixer({
       setCurrentTime(newPos);
       setProgress((newPos / totalDurationRef.current) * 100);
     }
-  }, [isPaused, stopAllSources, playFromOffset]);
+  }, [isPaused, stopAllSources, playFromOffset, getPlaybackPosition]);
 
   const skipForward = useCallback(() => skip(30), [skip]);
   const skipBackward = useCallback(() => skip(-30), [skip]);
@@ -612,7 +583,7 @@ export function useSegmentedMixer({
 
     stopAllSources();
     // Same reason as skip() — reuse the existing context to avoid buffer/context mismatch.
-    if (ctx.state === "suspended") ctx.resume();
+    if (ctx.state === "suspended") void ctx.resume();
     offsetRef.current = newPos;
 
     if (wasPlaying || isPaused) playFromOffset(newPos);
