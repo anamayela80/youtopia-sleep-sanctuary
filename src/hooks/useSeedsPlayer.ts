@@ -383,31 +383,27 @@ export function useSeedsPlayer({
         navigator.mediaSession.setActionHandler("seekforward", () => {
           const c = audioCtxRef.current;
           if (!c) return;
-          const elapsed = isPlayingRef.current
-            ? offsetRef.current + (c.currentTime - startTimeRef.current)
-            : offsetRef.current;
+          const elapsed = getPlaybackPosition(c);
           const newPos = Math.min(elapsed + 30, totalDurationRef.current);
           stopAllSources();
-          if (c.state === "suspended") c.resume();
+          if (c.state === "suspended") void c.resume();
           offsetRef.current = newPos;
           playFromOffset(newPos);
         });
         navigator.mediaSession.setActionHandler("seekbackward", () => {
           const c = audioCtxRef.current;
           if (!c) return;
-          const elapsed = isPlayingRef.current
-            ? offsetRef.current + (c.currentTime - startTimeRef.current)
-            : offsetRef.current;
+          const elapsed = getPlaybackPosition(c);
           const newPos = Math.max(elapsed - 30, 0);
           stopAllSources();
-          if (c.state === "suspended") c.resume();
+          if (c.state === "suspended") void c.resume();
           offsetRef.current = newPos;
           playFromOffset(newPos);
         });
       } catch {}
     }
     rafRef.current = requestAnimationFrame(tick);
-  }, [buildTimeline, totalDuration, tick, registerMediaSession]);
+  }, [buildTimeline, totalDuration, tick, registerMediaSession, stopAllSources, getPlaybackPosition]);
 
   const play = useCallback(async () => {
     const validUrls = seedAudioUrls.filter(Boolean);
@@ -418,7 +414,8 @@ export function useSeedsPlayer({
     if (audioCtxRef.current) return;
     setIsLoading(true);
     try {
-      const ctx = new AudioContext();
+      enableNativePlaybackSession();
+      const ctx = new AudioContext({ latencyHint: "playback" });
       audioCtxRef.current = ctx;
 
       // Load seeds ONE AT A TIME — parallel fetches exceed mobile memory budgets
@@ -453,14 +450,17 @@ export function useSeedsPlayer({
   const pause = useCallback(() => {
     const ctx = audioCtxRef.current;
     if (!ctx || ctx.state !== "running") return;
-    offsetRef.current = offsetRef.current + (ctx.currentTime - startTimeRef.current);
+    offsetRef.current = getPlaybackPosition(ctx);
     ctx.suspend();
     cancelAnimationFrame(rafRef.current);
     isPlayingRef.current = false;
     setIsPlaying(false);
     setIsPaused(true);
-    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
-  }, []);
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.playbackState = "paused";
+      updateMediaSessionPosition(totalDurationRef.current, offsetRef.current);
+    }
+  }, [getPlaybackPosition]);
   pauseRef.current = pause;
 
   const resume = useCallback(() => {
