@@ -319,7 +319,7 @@ const Home = () => {
       if (hasNewTheme) {
         setNextTheme(next);
         setNeedsNewChapter(true);
-        const { count: completedCount } = await sb
+        const { count: completedCount } = await supabase
           .from("user_monthly_intakes")
           .select("id", { count: "exact", head: true })
           .eq("user_id", user.id);
@@ -350,7 +350,7 @@ const Home = () => {
     setCurrentChapter(cur);
 
     // Past chapters from meditation history
-    const { data: history } = await sb
+    const { data: history } = await supabase
       .from("meditations")
       .select("month, theme_id, monthly_themes(theme)")
       .eq("user_id", user.id)
@@ -379,7 +379,7 @@ const Home = () => {
     setMonthsCount(totalMonths);
 
     // All checkins for streak + mood history
-    const { data: allCheckins } = await sb
+    const { data: allCheckins } = await supabase
       .from("checkins")
       .select("checkin_date, mood_score")
       .eq("user_id", user.id)
@@ -393,7 +393,7 @@ const Home = () => {
 
     // Hours: count meditation records × ~20 min per session (rough estimate
     // until we have actual session-duration tracking)
-    const { count: medCount } = await sb
+    const { count: medCount } = await supabase
       .from("meditations")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id);
@@ -406,7 +406,7 @@ const Home = () => {
 
     // ── Mid-month check-in trigger ─────────────────────────────────────────
     if (currentIntake?.id) {
-      const { count: doneCount } = await sb
+      const { count: doneCount } = await supabase
         .from("checkins")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
@@ -417,7 +417,7 @@ const Home = () => {
       else if ((doneCount ?? 0) >= 10) triggerNumber = 1;
 
       if (triggerNumber) {
-        const { data: state } = await sb
+        const { data: state } = await supabase
           .from("intake_checkin_state")
           .select("*")
           .eq("user_id", user.id)
