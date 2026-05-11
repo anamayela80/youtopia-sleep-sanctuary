@@ -418,7 +418,7 @@ export function useSegmentedMixer({
           });
         }
       },
-      () => { pause(); },
+      () => { pauseRef.current?.(); },
     );
     if ("mediaSession" in navigator) {
       // seekforward/seekbackward are a Chrome extension — not available on all
