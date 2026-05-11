@@ -313,7 +313,6 @@ export function useSeedsPlayer({
       musicSource.start(now, clamped % musicBuf.duration);
       musicSourceRef.current = musicSource;
       musicGainRef.current = gain;
-      activeSourcesRef.current.push(musicSource);
       musicSource.stop(now + (totalDuration - clamped) + 0.1);
     }
 
@@ -373,7 +372,7 @@ export function useSeedsPlayer({
         stopAllSources();
         playFromOffset(offsetRef.current);
       },
-      () => { pause(); },
+      () => { pauseRef.current?.(); },
     );
     if ("mediaSession" in navigator) {
       // seekforward/seekbackward are a Chrome extension — not available on all
