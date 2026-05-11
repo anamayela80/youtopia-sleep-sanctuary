@@ -418,7 +418,7 @@ export function useSegmentedMixer({
           });
         }
       },
-      () => { pause(); },
+      () => { pauseRef.current?.(); },
     );
     if ("mediaSession" in navigator) {
       // seekforward/seekbackward are a Chrome extension — not available on all
@@ -451,7 +451,7 @@ export function useSegmentedMixer({
       } catch {}
     }
     rafRef.current = requestAnimationFrame(tick);
-  }, [musicVolume, narrationVolume, resolvedFadeIn, resolvedFadeOut, buildTimeline, tick, registerMediaSession, pause, stopAllSources]);
+  }, [musicVolume, narrationVolume, resolvedFadeIn, resolvedFadeOut, buildTimeline, tick, registerMediaSession, stopAllSources]);
 
   const playSequence = useCallback(async () => {
     if (segmentUrls.length === 0) return;
@@ -507,6 +507,8 @@ export function useSegmentedMixer({
     setIsPaused(true);
     if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
   }, []);
+  const pauseRef = useRef<typeof pause | null>(null);
+  pauseRef.current = pause;
 
   const resume = useCallback(() => {
     const ctx = audioCtxRef.current;
