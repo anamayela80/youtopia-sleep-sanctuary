@@ -202,40 +202,27 @@ export function useSegmentedMixer({
     navigator.mediaSession.playbackState = "playing";
   }, []);
 
-  /** Keep playback alive when the phone locks. The previous hidden handler
-   *  stopped and suspended the session, which made iOS lock-screen playback
-   *  fail. We only mark that the app was backgrounded, then recover on return
-   *  if the OS interrupted the scheduled Web Audio nodes. */
+  /** Keep lock-screen audio alive by leaving playback running when the document
+   *  is hidden. Mobile browsers suspend timers, so the UI clock catches up from
+   *  the AudioContext clock when the app becomes visible again. */
   useEffect(() => {
-    const markBackgrounded = () => {
+    const keepSessionActive = () => {
       if (!isPlayingRef.current) return;
-      wasBackgroundedRef.current = true;
-      backgroundWallTimeRef.current = performance.now();
-      backgroundAudioTimeRef.current = audioCtxRef.current?.currentTime ?? 0;
-      if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
-    };
-    const handleVisibility = () => {
-      if (document.visibilityState === "hidden") markBackgrounded();
-      if (document.visibilityState === "visible" && wasBackgroundedRef.current) {
-        wasBackgroundedRef.current = false;
-        const ctx = audioCtxRef.current;
-        if (!ctx || !isPlayingRef.current) return;
-        const wallElapsed = (performance.now() - backgroundWallTimeRef.current) / 1000;
-        const audioElapsed = ctx.currentTime - backgroundAudioTimeRef.current;
-        if (ctx.state !== "running") {
-          recoverInterruptedContext(ctx);
-        } else if (wallElapsed > 3 && audioElapsed < wallElapsed * 0.25) {
-          freezeInterruptedPlayback(ctx);
-        }
+      enableNativePlaybackSession();
+      if ("mediaSession" in navigator) {
+        navigator.mediaSession.playbackState = "playing";
+        updateMediaSessionPosition(totalDurationRef.current, getPlaybackPosition());
       }
     };
-    document.addEventListener("visibilitychange", handleVisibility);
-    window.addEventListener("pagehide", markBackgrounded);
+    document.addEventListener("visibilitychange", keepSessionActive);
+    window.addEventListener("pagehide", keepSessionActive);
+    window.addEventListener("pageshow", keepSessionActive);
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibility);
-      window.removeEventListener("pagehide", markBackgrounded);
+      document.removeEventListener("visibilitychange", keepSessionActive);
+      window.removeEventListener("pagehide", keepSessionActive);
+      window.removeEventListener("pageshow", keepSessionActive);
     };
-  }, [freezeInterruptedPlayback, recoverInterruptedContext]);
+  }, [getPlaybackPosition]);
 
   const tick = useCallback(() => {
     const ctx = audioCtxRef.current;
