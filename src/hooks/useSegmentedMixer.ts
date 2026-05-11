@@ -213,6 +213,8 @@ export function useSegmentedMixer({
         navigator.mediaSession.playbackState = "playing";
         updateMediaSessionPosition(totalDurationRef.current, getPlaybackPosition());
       }
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(() => tickRef.current?.());
     };
     document.addEventListener("visibilitychange", keepSessionActive);
     window.addEventListener("pagehide", keepSessionActive);
@@ -418,6 +420,7 @@ export function useSegmentedMixer({
     setIsPlaying(true);
     setIsPaused(false);
     setHasStarted(true);
+    updateMediaSessionPosition(totalDuration, clampedOffset);
     registerMediaSession(
       () => {
         const c = audioCtxRef.current;
@@ -476,7 +479,8 @@ export function useSegmentedMixer({
     setIsLoading(true);
     setLoadError(false);
     try {
-      const ctx = new AudioContext();
+      enableNativePlaybackSession();
+      const ctx = new AudioContext({ latencyHint: "playback" });
       audioCtxRef.current = ctx;
       // Load segments ONE AT A TIME — parallel fetches exceed mobile memory budgets
       // and trigger silent failures on iOS Safari (no error, just hangs).
@@ -510,14 +514,17 @@ export function useSegmentedMixer({
   const pause = useCallback(() => {
     const ctx = audioCtxRef.current;
     if (!ctx || ctx.state !== "running") return;
-    offsetRef.current = offsetRef.current + (ctx.currentTime - startTimeRef.current);
+    offsetRef.current = getPlaybackPosition(ctx);
     ctx.suspend();
     cancelAnimationFrame(rafRef.current);
     isPlayingRef.current = false;
     setIsPlaying(false);
     setIsPaused(true);
-    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
-  }, []);
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.playbackState = "paused";
+      updateMediaSessionPosition(totalDurationRef.current, offsetRef.current);
+    }
+  }, [getPlaybackPosition]);
   pauseRef.current = pause;
 
   const resume = useCallback(() => {
