@@ -451,7 +451,7 @@ export function useSegmentedMixer({
       } catch {}
     }
     rafRef.current = requestAnimationFrame(tick);
-  }, [musicVolume, narrationVolume, resolvedFadeIn, resolvedFadeOut, buildTimeline, tick, registerMediaSession, pause, stopAllSources]);
+  }, [musicVolume, narrationVolume, resolvedFadeIn, resolvedFadeOut, buildTimeline, tick, registerMediaSession, stopAllSources]);
 
   const playSequence = useCallback(async () => {
     if (segmentUrls.length === 0) return;
