@@ -227,6 +227,7 @@ export function useSeedsPlayer({
     const musicBuf = musicBufferRef.current;
     if (!ctx || buffers.length === 0) return;
 
+    enableNativePlaybackSession();
     if (ctx.state === "suspended") await ctx.resume();
 
     const { events } = buildTimeline();
@@ -361,14 +362,17 @@ export function useSeedsPlayer({
     setIsPlaying(true);
     setIsPaused(false);
     setHasStarted(true);
+    updateMediaSessionPosition(totalDuration, clamped);
     registerMediaSession(
       () => {
-        // Lock-screen Play: the OS may have dropped our scheduled sources.
-        // Re-schedule from the saved offset rather than relying on ctx.resume() alone.
         const c = audioCtxRef.current;
         if (!c) return;
-        stopAllSources();
-        playFromOffset(offsetRef.current);
+        void c.resume().then(() => {
+          isPlayingRef.current = true;
+          setIsPlaying(true);
+          setIsPaused(false);
+          navigator.mediaSession.playbackState = "playing";
+        });
       },
       () => { pauseRef.current?.(); },
     );
