@@ -112,40 +112,29 @@ export function useSeedsPlayer({
     navigator.mediaSession.playbackState = "playing";
   }, []);
 
-  /** Keep playback alive when the phone locks. We do not intentionally stop or
-   *  suspend audio on hidden, because that is exactly what breaks iOS lock-
-   *  screen listening. If the OS interrupts the context, we recover state when
-   *  the user returns so the Play button can reschedule audio cleanly. */
+  /** Keep lock-screen audio alive by leaving playback running when the document
+   *  is hidden. Mobile browsers suspend timers, so the UI clock catches up from
+   *  the AudioContext clock when the app becomes visible again. */
   useEffect(() => {
-    const markBackgrounded = () => {
+    const keepSessionActive = () => {
       if (!isPlayingRef.current) return;
-      wasBackgroundedRef.current = true;
-      backgroundWallTimeRef.current = performance.now();
-      backgroundAudioTimeRef.current = audioCtxRef.current?.currentTime ?? 0;
-      if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
-    };
-    const handleVisibility = () => {
-      if (document.visibilityState === "hidden") markBackgrounded();
-      if (document.visibilityState === "visible" && wasBackgroundedRef.current) {
-        wasBackgroundedRef.current = false;
-        const ctx = audioCtxRef.current;
-        if (!ctx || !isPlayingRef.current) return;
-        const wallElapsed = (performance.now() - backgroundWallTimeRef.current) / 1000;
-        const audioElapsed = ctx.currentTime - backgroundAudioTimeRef.current;
-        if (ctx.state !== "running") {
-          recoverInterruptedContext(ctx);
-        } else if (wallElapsed > 3 && audioElapsed < wallElapsed * 0.25) {
-          freezeInterruptedPlayback(ctx);
-        }
+      enableNativePlaybackSession();
+      if ("mediaSession" in navigator) {
+        navigator.mediaSession.playbackState = "playing";
+        updateMediaSessionPosition(totalDurationRef.current, getPlaybackPosition());
       }
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(() => tickRef.current?.());
     };
-    document.addEventListener("visibilitychange", handleVisibility);
-    window.addEventListener("pagehide", markBackgrounded);
+    document.addEventListener("visibilitychange", keepSessionActive);
+    window.addEventListener("pagehide", keepSessionActive);
+    window.addEventListener("pageshow", keepSessionActive);
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibility);
-      window.removeEventListener("pagehide", markBackgrounded);
+      document.removeEventListener("visibilitychange", keepSessionActive);
+      window.removeEventListener("pagehide", keepSessionActive);
+      window.removeEventListener("pageshow", keepSessionActive);
     };
-  }, [freezeInterruptedPlayback, recoverInterruptedContext]);
+  }, [getPlaybackPosition]);
 
   /** Shuffle [0..n-1] in place, ensuring index 0 != avoidFirst. */
   const shuffleAvoiding = (n: number, avoidFirst: number | null): number[] => {
