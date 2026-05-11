@@ -507,6 +507,8 @@ export function useSegmentedMixer({
     setIsPaused(true);
     if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
   }, []);
+  const pauseRef = useRef<typeof pause | null>(null);
+  pauseRef.current = pause;
 
   const resume = useCallback(() => {
     const ctx = audioCtxRef.current;
