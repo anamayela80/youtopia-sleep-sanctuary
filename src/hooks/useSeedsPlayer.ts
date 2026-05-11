@@ -525,7 +525,7 @@ export function useSeedsPlayer({
     stopAllSources();
     // Reuse existing context — same reason as useSeedsPlayer.stop(): creating a
     // new AudioContext here would orphan the already-decoded seed buffers.
-    if (ctx.state === "suspended") ctx.resume();
+    if (ctx.state === "suspended") void ctx.resume();
     offsetRef.current = newPos;
     if (wasPlaying || isPaused) playFromOffset(newPos);
     else { setCurrentTime(newPos); setProgress((newPos / totalDurationRef.current) * 100); }
@@ -536,20 +536,16 @@ export function useSeedsPlayer({
   const skipForward = useCallback(() => {
     const ctx = audioCtxRef.current;
     if (!ctx) return;
-    const elapsed = isPlayingRef.current
-      ? offsetRef.current + (ctx.currentTime - startTimeRef.current)
-      : offsetRef.current;
+    const elapsed = getPlaybackPosition(ctx);
     seekTo(Math.min(elapsed + 30, totalDurationRef.current));
-  }, [seekTo]);
+  }, [seekTo, getPlaybackPosition]);
 
   const skipBackward = useCallback(() => {
     const ctx = audioCtxRef.current;
     if (!ctx) return;
-    const elapsed = isPlayingRef.current
-      ? offsetRef.current + (ctx.currentTime - startTimeRef.current)
-      : offsetRef.current;
+    const elapsed = getPlaybackPosition(ctx);
     seekTo(Math.max(elapsed - 30, 0));
-  }, [seekTo]);
+  }, [seekTo, getPlaybackPosition]);
 
   const togglePlay = useCallback(() => {
     if (isPlaying) pause();
