@@ -130,6 +130,7 @@ export function useSegmentedMixer({
   const wasBackgroundedRef = useRef(false);
   const backgroundWallTimeRef = useRef(0);
   const backgroundAudioTimeRef = useRef(0);
+  const tickRef = useRef<(() => void) | null>(null);
   const pauseRef = useRef<(() => void) | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -161,14 +162,14 @@ export function useSegmentedMixer({
         setIsPaused(false);
         if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
         cancelAnimationFrame(rafRef.current);
-        rafRef.current = requestAnimationFrame(tick);
+        rafRef.current = requestAnimationFrame(() => tickRef.current?.());
         return;
       }
       if (document.visibilityState === "visible") freezeInterruptedPlayback(ctx);
     }).catch(() => {
       if (document.visibilityState === "visible") freezeInterruptedPlayback(ctx);
     });
-  }, [freezeInterruptedPlayback, tick]);
+  }, [freezeInterruptedPlayback]);
 
   /**
    * Build the full timeline with each segment's start/end in session seconds,
