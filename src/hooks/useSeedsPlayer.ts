@@ -78,6 +78,7 @@ export function useSeedsPlayer({
   const isPlayingRef = useRef(false);
   const tickRef = useRef<(() => void) | null>(null);
   const pauseRef = useRef<(() => void) | null>(null);
+  const resumeRef = useRef<(() => void) | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -113,12 +114,23 @@ export function useSeedsPlayer({
     navigator.mediaSession.playbackState = "playing";
   }, []);
 
-  /** Keep lock-screen audio alive by leaving playback running when the document
-   *  is hidden. Mobile browsers suspend timers, so the UI clock catches up from
-   *  the AudioContext clock when the app becomes visible again. */
+  /** Keep lock-screen audio alive. On iOS, the AudioContext is suspended when
+   *  the screen locks and all scheduled source nodes are dropped. On unlock,
+   *  we detect the suspended context and re-schedule from the current position. */
   useEffect(() => {
     const keepSessionActive = () => {
       if (!isPlayingRef.current) return;
+
+      if (document.visibilityState === "visible") {
+        // Screen just unlocked — iOS suspends AudioContext on lock and drops all
+        // scheduled source nodes. Re-create them from the correct current position.
+        const ctx = audioCtxRef.current;
+        if (ctx && ctx.state === "suspended") {
+          resumeRef.current?.();
+          return; // resumeRef restarts the rAF tick via playFromOffset
+        }
+      }
+
       enableNativePlaybackSession();
       if ("mediaSession" in navigator) {
         navigator.mediaSession.playbackState = "playing";
@@ -466,14 +478,16 @@ export function useSeedsPlayer({
   const resume = useCallback(() => {
     const ctx = audioCtxRef.current;
     if (!ctx) return;
-    // After an iOS screen-off pause, our scheduled source nodes may have been
-    // dropped by the OS. The only reliable way back is to re-schedule the
-    // entire timeline from the saved offset (playFromOffset also calls
-    // ctx.resume() — which is allowed here because we're inside the user's
-    // tap-to-play gesture).
+    // Calculate the true playback position BEFORE stopping sources — offsetRef
+    // is stale after a screen lock (it holds the start position, not elapsed
+    // time). We capture the real position now, then re-schedule the entire
+    // timeline from there so playback continues exactly where it was.
+    const currentPos = getPlaybackPosition(ctx);
+    offsetRef.current = currentPos;
     stopAllSources();
-    playFromOffset(offsetRef.current);
-  }, [stopAllSources, playFromOffset]);
+    playFromOffset(currentPos);
+  }, [stopAllSources, playFromOffset, getPlaybackPosition]);
+  resumeRef.current = resume;
 
   const stop = useCallback(() => {
     // Capture refs NOW — the 1s fade timeout must close the context that was
