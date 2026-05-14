@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { createReverb } from "@/lib/audioEffects";
-import { enableNativePlaybackSession, updateMediaSessionPosition } from "@/lib/mobileAudioSession";
+import { enableNativePlaybackSession, updateMediaSessionPosition, startAudioKeepalive, stopAudioKeepalive } from "@/lib/mobileAudioSession";
 
 /**
  * 45-minute Evening Seeds session.
@@ -436,6 +436,11 @@ export function useSeedsPlayer({
     setIsLoading(true);
     try {
       enableNativePlaybackSession();
+      // Start the silent keepalive BEFORE creating AudioContext — this registers
+      // an active media element with iOS so the audio session stays alive when
+      // the screen locks, keeping the AudioContext (and all Web Audio nodes:
+      // voice, seeds, reverb) running continuously.
+      startAudioKeepalive();
       const ctx = new AudioContext({ latencyHint: "playback" });
       audioCtxRef.current = ctx;
 
@@ -527,6 +532,7 @@ export function useSeedsPlayer({
     duckTimersRef.current.forEach(clearTimeout);
     duckTimersRef.current = [];
     cancelAnimationFrame(rafRef.current);
+    stopAudioKeepalive();
 
     setTimeout(() => {
       sourcesToStop.forEach((s) => { try { s.stop(); } catch {} });

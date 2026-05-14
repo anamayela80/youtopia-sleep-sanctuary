@@ -11,7 +11,7 @@ import {
   MUSIC_RAMP_SECS,
   ARC,
 } from "@/lib/sessionTiming";
-import { enableNativePlaybackSession, updateMediaSessionPosition } from "@/lib/mobileAudioSession";
+import { enableNativePlaybackSession, updateMediaSessionPosition, startAudioKeepalive, stopAudioKeepalive } from "@/lib/mobileAudioSession";
 
 /**
  * Segmented meditation mixer: 5 narration segments spaced over music bridges.
@@ -463,6 +463,9 @@ export function useSegmentedMixer({
     setLoadError(false);
     try {
       enableNativePlaybackSession();
+      // Silent keepalive — keeps iOS audio session active through screen lock
+      // so the AudioContext (voice narration, reverb, ducking) never gets suspended.
+      startAudioKeepalive();
       const ctx = new AudioContext({ latencyHint: "playback" });
       audioCtxRef.current = ctx;
       // Load segments ONE AT A TIME — parallel fetches exceed mobile memory budgets
@@ -552,6 +555,7 @@ export function useSegmentedMixer({
     setHasStarted(false);
     offsetRef.current = 0;
     if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "none";
+    stopAudioKeepalive();
   }, [stopAllSources]);
 
   const skip = useCallback((seconds: number) => {
