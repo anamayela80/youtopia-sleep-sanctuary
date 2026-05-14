@@ -60,6 +60,20 @@ async function loadBuffer(ctx: AudioContext, url: string): Promise<AudioBuffer> 
   return ctx.decodeAudioData(arrayBuf);
 }
 
+// Smoothly animate an <audio> element's volume over durationMs.
+// Uses rAF so it's frame-accurate when the screen is active.
+function fadeVol(el: HTMLAudioElement, targetVol: number, durationMs: number) {
+  const startVol = el.volume;
+  const target = Math.max(0, Math.min(1, targetVol));
+  const startTime = performance.now();
+  const step = () => {
+    const t = Math.min((performance.now() - startTime) / durationMs, 1);
+    el.volume = startVol + (target - startVol) * t;
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
 export function useSeedsPlayer({
   seedAudioUrls,
   musicUrl,
@@ -67,14 +81,13 @@ export function useSeedsPlayer({
 }: UseSeedsPlayerOptions) {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
-  const musicSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const musicGainRef = useRef<GainNode | null>(null);
+  const musicElementRef = useRef<HTMLAudioElement | null>(null);
+  const duckTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const rafRef = useRef<number>(0);
   const startTimeRef = useRef(0);
   const offsetRef = useRef(0);
   const totalDurationRef = useRef(totalDuration);
   const seedBuffersRef = useRef<AudioBuffer[]>([]);
-  const musicBufferRef = useRef<AudioBuffer | null>(null);
   const isPlayingRef = useRef(false);
   const tickRef = useRef<(() => void) | null>(null);
   const pauseRef = useRef<(() => void) | null>(null);
@@ -227,16 +240,14 @@ export function useSeedsPlayer({
   const stopAllSources = useCallback(() => {
     activeSourcesRef.current.forEach((s) => { try { s.stop(); } catch {} });
     activeSourcesRef.current = [];
-    try { musicSourceRef.current?.stop(); } catch {}
-    musicSourceRef.current = null;
-    musicGainRef.current = null;
+    duckTimersRef.current.forEach(clearTimeout);
+    duckTimersRef.current = [];
     cancelAnimationFrame(rafRef.current);
   }, []);
 
   const playFromOffset = useCallback(async (fromOffset: number) => {
     const ctx = audioCtxRef.current;
     const buffers = seedBuffersRef.current;
-    const musicBuf = musicBufferRef.current;
     if (!ctx || buffers.length === 0) return;
 
     enableNativePlaybackSession();
@@ -252,22 +263,25 @@ export function useSeedsPlayer({
     const now = ctx.currentTime;
     startTimeRef.current = now;
 
-    // ---------- Shared reverb for the session ----------
+    // ---------- Shared reverb for the session (seeds only) ----------
     const reverb = createReverb(ctx, 5.0, 2.4);
     reverb.output.connect(ctx.destination);
 
-    // ---------- MUSIC + DUCKING SCHEDULE ----------
-    if (musicBuf) {
-      const musicSource = ctx.createBufferSource();
-      musicSource.buffer = musicBuf;
-      musicSource.loop = true;
-      const gain = ctx.createGain();
+    // ---------- MUSIC via <audio> element — survives iOS screen lock ----------
+    // AudioBufferSourceNode is killed by iOS when the screen locks. A plain
+    // <audio> element is handled by iOS's native media system (same as Spotify)
+    // and keeps playing regardless of screen state.
+    const musicEl = musicElementRef.current;
+    if (musicEl) {
+      // Cancel any pending duck/fade timers from a previous playFromOffset call
+      duckTimersRef.current.forEach(clearTimeout);
+      duckTimersRef.current = [];
 
-      // Default music level when no seed is playing (gap level for the current cycle,
-      // or the prelude / final-fade levels).
+      musicEl.pause();
+
+      // Helper to resolve cycle-level gap volume for any session time
       const baseGapLevel = (sessionTime: number): number => {
         if (sessionTime < PRELUDE_SECONDS) return CYCLE_MUSIC_GAP[0];
-        // find which cycle this time falls into via events
         let cycle = 3;
         for (const evt of events) {
           if (sessionTime <= evt.startOffset + evt.duration + POST_SEED_SILENCE + CYCLE_GAP_SECONDS[evt.cycle]) {
@@ -278,53 +292,48 @@ export function useSeedsPlayer({
         return CYCLE_MUSIC_GAP[cycle];
       };
 
-      const startGain = (() => {
-        if (clamped < FADE_IN_SECONDS) return 0;
-        return baseGapLevel(clamped);
-      })();
-      gain.gain.setValueAtTime(startGain, now);
+      const startVol = clamped < FADE_IN_SECONDS ? 0 : baseGapLevel(clamped);
+      musicEl.volume = startVol;
 
-      // Initial fade-in
-      if (clamped < FADE_IN_SECONDS) {
-        gain.gain.linearRampToValueAtTime(baseGapLevel(FADE_IN_SECONDS), now + (FADE_IN_SECONDS - clamped));
+      // Seek to the right position within the looping music file
+      const startPlayback = () => {
+        if (musicEl.duration) musicEl.currentTime = clamped % musicEl.duration;
+        musicEl.play().catch(() => {});
+        // Fade in if starting from the very beginning
+        if (clamped < FADE_IN_SECONDS) {
+          fadeVol(musicEl, baseGapLevel(FADE_IN_SECONDS), (FADE_IN_SECONDS - clamped) * 1000);
+        }
+      };
+      if (musicEl.readyState >= 1) {
+        startPlayback();
+      } else {
+        musicEl.addEventListener("loadedmetadata", startPlayback, { once: true });
       }
 
-      // For each seed in the future, duck music down before, restore after.
+      // Schedule ducking with setTimeout — these fire when the screen is active.
+      // When the screen is locked, seeds (AudioBufferSourceNode) also pause, so
+      // there is nothing to duck anyway; music plays at gap level through the lock.
       events.forEach((evt) => {
         const seedEnd = evt.startOffset + evt.duration;
         if (seedEnd <= clamped) return;
         const duckDown = CYCLE_MUSIC_UNDER[evt.cycle];
         const gapLevel = CYCLE_MUSIC_GAP[evt.cycle];
 
-        const duckStartAbs = Math.max(evt.startOffset - 2, clamped);
-        const duckEndAbs = seedEnd; // restore begins after the seed audio finishes
-        const restoreEndAbs = seedEnd + POST_SEED_SILENCE + 8; // smooth ramp back over ~8s after silence
+        const duckMs = Math.max(0, (evt.startOffset - 2 - clamped) * 1000);
+        const restoreMs = Math.max(0, (seedEnd + POST_SEED_SILENCE + 2 - clamped) * 1000);
 
-        if (duckStartAbs > clamped) {
-          gain.gain.setValueAtTime(gapLevel, now + (duckStartAbs - clamped));
-          gain.gain.linearRampToValueAtTime(duckDown, now + (evt.startOffset - clamped));
-        } else {
-          gain.gain.linearRampToValueAtTime(duckDown, now + Math.max(0.1, evt.startOffset - clamped));
-        }
-        gain.gain.setValueAtTime(duckDown, now + (duckEndAbs - clamped));
-        gain.gain.linearRampToValueAtTime(gapLevel, now + (restoreEndAbs - clamped));
+        duckTimersRef.current.push(
+          setTimeout(() => fadeVol(musicEl, duckDown, 1500), duckMs),
+          setTimeout(() => fadeVol(musicEl, gapLevel, 2500), restoreMs),
+        );
       });
 
-      // Final 90s fade to silence.
+      // Final 90-second fade to silence
       const fadeOutStart = totalDuration - FINAL_FADE_SECONDS;
-      if (clamped < fadeOutStart) {
-        gain.gain.setValueAtTime(CYCLE_MUSIC_GAP[3], now + (fadeOutStart - clamped));
-        gain.gain.linearRampToValueAtTime(0, now + (totalDuration - clamped));
-      } else {
-        const remaining = totalDuration - clamped;
-        gain.gain.linearRampToValueAtTime(0, now + remaining);
-      }
-
-      musicSource.connect(gain).connect(ctx.destination);
-      musicSource.start(now, clamped % musicBuf.duration);
-      musicSourceRef.current = musicSource;
-      musicGainRef.current = gain;
-      musicSource.stop(now + (totalDuration - clamped) + 0.1);
+      const fadeOutMs = Math.max(0, (fadeOutStart - clamped) * 1000);
+      duckTimersRef.current.push(
+        setTimeout(() => fadeVol(musicEl, 0, FINAL_FADE_SECONDS * 1000), fadeOutMs),
+      );
     }
 
     // ---------- SEEDS (whisper chain: LP filter → dry + reverb send) ----------
@@ -443,12 +452,15 @@ export function useSeedsPlayer({
       seedBuffersRef.current = loaded;
 
       if (musicUrl) {
-        try {
-          musicBufferRef.current = await loadBuffer(ctx, musicUrl);
-        } catch (e) {
-          console.warn("Music failed to load — playing seeds in silence.", e);
-          musicBufferRef.current = null;
-        }
+        // Use a plain <audio> element — NOT AudioBufferSourceNode.
+        // iOS keeps <audio> elements playing when the screen locks (same as
+        // Spotify). AudioBufferSourceNode gets killed by iOS on screen lock.
+        const el = new Audio(musicUrl);
+        el.loop = true;
+        el.crossOrigin = "anonymous";
+        el.volume = 0;
+        el.load();
+        musicElementRef.current = el;
       }
 
       setIsLoading(false);
@@ -464,6 +476,9 @@ export function useSeedsPlayer({
     if (!ctx || ctx.state !== "running") return;
     offsetRef.current = getPlaybackPosition(ctx);
     ctx.suspend();
+    musicElementRef.current?.pause();
+    duckTimersRef.current.forEach(clearTimeout);
+    duckTimersRef.current = [];
     cancelAnimationFrame(rafRef.current);
     isPlayingRef.current = false;
     setIsPlaying(false);
@@ -490,21 +505,13 @@ export function useSeedsPlayer({
   resumeRef.current = resume;
 
   const stop = useCallback(() => {
-    // Capture refs NOW — the 1s fade timeout must close the context that was
-    // playing at the moment stop() was called, not whatever context exists a
-    // second later (which could be a new one if the user taps Play again quickly).
-    const gain = musicGainRef.current;
     const ctx = audioCtxRef.current;
     const sourcesToStop = activeSourcesRef.current.slice();
-    const musicSrc = musicSourceRef.current;
+    const musicEl = musicElementRef.current;
 
-    if (gain && ctx) {
-      try {
-        const now = ctx.currentTime;
-        gain.gain.cancelScheduledValues(now);
-        gain.gain.setValueAtTime(gain.gain.value, now);
-        gain.gain.linearRampToValueAtTime(0, now + 1);
-      } catch {}
+    // Fade music element out over 1s then stop it
+    if (musicEl) {
+      fadeVol(musicEl, 0, 1000);
     }
 
     // Mark as stopped immediately so UI updates and new play can start
@@ -517,18 +524,17 @@ export function useSeedsPlayer({
     setCurrentTime(0);
     offsetRef.current = 0;
     activeSourcesRef.current = [];
-    musicSourceRef.current = null;
-    musicGainRef.current = null;
+    duckTimersRef.current.forEach(clearTimeout);
+    duckTimersRef.current = [];
     cancelAnimationFrame(rafRef.current);
 
-    // Close the captured (old) context after the fade, not the current ref
     setTimeout(() => {
       sourcesToStop.forEach((s) => { try { s.stop(); } catch {} });
-      try { musicSrc?.stop(); } catch {}
+      musicEl?.pause();
+      if (musicElementRef.current === musicEl) musicElementRef.current = null;
       try { ctx?.close(); } catch {}
-      // Only null the ref if it still points to the context we just closed
       if (audioCtxRef.current === ctx) audioCtxRef.current = null;
-    }, 1000);
+    }, 1100);
   }, []);
 
   const seekTo = useCallback((t: number) => {

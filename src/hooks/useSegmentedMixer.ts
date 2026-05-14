@@ -102,6 +102,19 @@ async function loadBuffer(ctx: AudioContext, url: string): Promise<AudioBuffer> 
   return ctx.decodeAudioData(arrayBuf);
 }
 
+// Smoothly animate an <audio> element's volume over durationMs.
+function fadeVol(el: HTMLAudioElement, targetVol: number, durationMs: number) {
+  const startVol = el.volume;
+  const target = Math.max(0, Math.min(1, targetVol));
+  const startTime = performance.now();
+  const step = () => {
+    const t = Math.min((performance.now() - startTime) / durationMs, 1);
+    el.volume = startVol + (target - startVol) * t;
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
 export function useSegmentedMixer({
   segmentUrls,
   musicUrl,
@@ -119,10 +132,9 @@ export function useSegmentedMixer({
   const resolvedFadeOut = musicFadeOutDuration ?? tenureDefaults.fadeOut;
   const audioCtxRef = useRef<AudioContext | null>(null);
   const segmentBuffersRef = useRef<AudioBuffer[]>([]);
-  const musicBufferRef = useRef<AudioBuffer | null>(null);
   const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
-  const musicSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const musicGainRef = useRef<GainNode | null>(null);
+  const musicElementRef = useRef<HTMLAudioElement | null>(null);
+  const duckTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const rafRef = useRef<number>(0);
   const startTimeRef = useRef(0);
   const offsetRef = useRef(0);
@@ -258,9 +270,8 @@ export function useSegmentedMixer({
   const stopAllSources = useCallback(() => {
     activeSourcesRef.current.forEach((s) => { try { s.stop(); } catch {} });
     activeSourcesRef.current = [];
-    try { musicSourceRef.current?.stop(); } catch {}
-    musicSourceRef.current = null;
-    musicGainRef.current = null;
+    duckTimersRef.current.forEach(clearTimeout);
+    duckTimersRef.current = [];
     cancelAnimationFrame(rafRef.current);
   }, []);
 
@@ -269,7 +280,6 @@ export function useSegmentedMixer({
   const playFromOffset = useCallback(async (fromOffset: number) => {
     const ctx = audioCtxRef.current;
     const buffers = segmentBuffersRef.current;
-    const musicBuf = musicBufferRef.current;
     if (!ctx || buffers.length === 0) return;
 
     enableNativePlaybackSession();
@@ -285,121 +295,86 @@ export function useSegmentedMixer({
     const now = ctx.currentTime;
     startTimeRef.current = now;
 
-    // ---------- Shared reverb for the whole session ----------
+    // ---------- Shared reverb for voice segments ----------
     const reverb = createReverb(ctx, 4.5, 2.2);
     reverb.output.connect(ctx.destination);
 
-    // ---------- Music chain with arc + per-segment ducking ----------
-    if (musicBuf) {
-      const musicSource = ctx.createBufferSource();
-      musicSource.buffer = musicBuf;
-      musicSource.loop = true;
-      const gainNode = ctx.createGain();
+    // ---------- MUSIC via <audio> element — survives iOS screen lock ----------
+    // AudioBufferSourceNode is suspended by iOS when the screen locks.
+    // A plain <audio> element is handled by iOS's native media system (same
+    // as Spotify) and keeps playing regardless of lock state.
+    const musicEl = musicElementRef.current;
+    if (musicEl) {
+      duckTimersRef.current.forEach(clearTimeout);
+      duckTimersRef.current = [];
 
-      // Compressor — evens out the music track's natural quiet passages
-      // so soft ambient sections never drop to near-silence on phone speakers.
-      const compressor = ctx.createDynamicsCompressor();
-      compressor.threshold.value = -24;  // start compressing at -24 dB
-      compressor.knee.value = 10;        // soft knee for transparent sound
-      compressor.ratio.value = 4;        // 4:1 ratio — moderate compression
-      compressor.attack.value = 0.1;     // 100 ms attack, gentle
-      compressor.release.value = 0.6;    // 600 ms release, natural
+      musicEl.pause();
 
-      // Send a small amount of music into the reverb too — same "room"
-      const musicSend = ctx.createGain();
-      musicSend.gain.value = 0.08;
-      musicSend.connect(reverb.input);
-
-      musicSource.connect(compressor);
-      compressor.connect(gainNode);
-      gainNode.connect(ctx.destination);
-      gainNode.connect(musicSend);
-
-      const toCtx = (abs: number) => now + Math.max(0.005, abs - clampedOffset);
-
-      // Music gain: always audible within the first few seconds.
-      // We decouple the "audible ramp" (8 s to reach peak) from the voice
-      // entry time (resolvedFadeIn ≈ 60 s).  This prevents the previous glitch
-      // where the gain was still near-zero when the ducking setValueAtTime call
-      // kicked in 1.8 s before the voice, producing a perceptible pop.
-      // MUSIC_RAMP_SECS is imported from lib/sessionTiming.ts
-      let startGain: number;
+      // Calculate starting volume based on arc position
+      let startVol: number;
       if (clampedOffset === 0) {
-        startGain = 0;
+        startVol = 0;
       } else if (clampedOffset < MUSIC_RAMP_SECS) {
-        startGain = musicVolume * ARC.fadeInPeak * (clampedOffset / MUSIC_RAMP_SECS);
+        startVol = musicVolume * ARC.fadeInPeak * (clampedOffset / MUSIC_RAMP_SECS);
       } else {
-        startGain = musicVolume * arcLevelAt(clampedOffset, events);
+        startVol = musicVolume * arcLevelAt(clampedOffset, events);
       }
-      gainNode.gain.setValueAtTime(startGain, now);
+      musicEl.volume = startVol;
 
-      // Ramp to peak quickly — music is clearly audible before voice enters
-      if (clampedOffset < MUSIC_RAMP_SECS) {
-        gainNode.gain.linearRampToValueAtTime(
-          musicVolume * ARC.fadeInPeak,
-          now + Math.max(0.1, MUSIC_RAMP_SECS - clampedOffset),
-        );
+      const startPlayback = () => {
+        if (musicEl.duration) musicEl.currentTime = clampedOffset % musicEl.duration;
+        musicEl.play().catch(() => {});
+        // Fade in if starting from silence
+        if (clampedOffset < MUSIC_RAMP_SECS) {
+          fadeVol(musicEl, musicVolume * ARC.fadeInPeak, Math.max(100, (MUSIC_RAMP_SECS - clampedOffset) * 1000));
+        }
+      };
+      if (musicEl.readyState >= 1) {
+        startPlayback();
+      } else {
+        musicEl.addEventListener("loadedmetadata", startPlayback, { once: true });
       }
 
-      // Arc waypoints between sections.
-      // Music rises through sections 2→3 (section2→section3 peak),
-      // then drops to section4 only at the final Return segment.
-      // Works with any segment count (5 or 6 narration segments).
-      const sectionTransitions: { at: number; level: number }[] = [];
-      if (events[1]) sectionTransitions.push({ at: events[1].startOffset - 10, level: musicVolume * ARC.section2 });
-      if (events[2]) sectionTransitions.push({ at: events[2].startOffset - 10, level: musicVolume * ARC.section3 });
+      // Arc volume shifts — scheduled with setTimeout so they fire on the
+      // active screen. During lock, music plays at whatever volume it was at;
+      // voice segments (AudioBufferSourceNode) also pause during lock so
+      // there is nothing to duck anyway.
+      const arcTimers: { at: number; vol: number }[] = [];
+      if (events[1]) arcTimers.push({ at: events[1].startOffset - 10, vol: musicVolume * ARC.section2 });
+      if (events[2]) arcTimers.push({ at: events[2].startOffset - 10, vol: musicVolume * ARC.section3 });
       const returnEvt = events.length > 1 ? events[events.length - 1] : null;
-      if (returnEvt) sectionTransitions.push({ at: returnEvt.startOffset - 10, level: musicVolume * ARC.section4 });
+      if (returnEvt) arcTimers.push({ at: returnEvt.startOffset - 10, vol: musicVolume * ARC.section4 });
 
-      sectionTransitions.forEach(({ at, level }) => {
-        if (at > clampedOffset) gainNode.gain.linearRampToValueAtTime(level, toCtx(at));
+      arcTimers.forEach(({ at, vol }) => {
+        if (at <= clampedOffset) return;
+        duckTimersRef.current.push(
+          setTimeout(() => fadeVol(musicEl, vol, 10000), (at - clampedOffset) * 1000),
+        );
       });
 
-      // ---------- Per-segment ducking ----------
+      // Per-segment ducking
       events.forEach((evt) => {
         const segEnd = evt.startOffset + evt.duration;
         if (segEnd <= clampedOffset) return;
 
         const arcLevel = musicVolume * arcLevelAt(evt.startOffset, events);
-        // Short segments are dissolution (staccato, ~50-70s of sparse speech).
-        // A 55% duck on top of near-silence sounds like the music has disappeared.
-        // Use a much lighter duck (20%) so the music holds the space through dissolution.
         const segDuckRatio = evt.duration < 90 ? 0.80 : DUCK_RATIO;
         const duckLevel = arcLevel * segDuckRatio;
+        const duckMs = Math.max(0, (evt.startOffset - DUCK_PRE_RAMP - clampedOffset) * 1000);
+        const restoreMs = Math.max(0, (segEnd + DUCK_POST_RAMP - clampedOffset) * 1000);
 
-        const duckDownStart = Math.max(clampedOffset, evt.startOffset - DUCK_PRE_RAMP);
-        const duckDownEnd = evt.startOffset;
-        const restoreStart = segEnd;
-        const restoreEnd = segEnd + DUCK_POST_RAMP;
-
-        if (duckDownStart > clampedOffset) {
-          gainNode.gain.setValueAtTime(arcLevel, toCtx(duckDownStart));
-        }
-        gainNode.gain.linearRampToValueAtTime(duckLevel, toCtx(duckDownEnd));
-        gainNode.gain.setValueAtTime(duckLevel, toCtx(restoreStart));
-        gainNode.gain.linearRampToValueAtTime(arcLevel, toCtx(restoreEnd));
+        duckTimersRef.current.push(
+          setTimeout(() => fadeVol(musicEl, duckLevel, DUCK_PRE_RAMP * 1000), duckMs),
+          setTimeout(() => fadeVol(musicEl, arcLevel, DUCK_POST_RAMP * 1000), restoreMs),
+        );
       });
 
-      // Final fade-out — anchor the gain explicitly at fadeOutStart so the
-      // ramp-to-zero does not interpolate backwards from the initial 8-second
-      // ramp (which would cause a slow, whole-session fade creating perceived
-      // silences at ~9:40, ~15:52, ~19:44).
+      // Final fade-out
       const fadeOutStart = totalDuration - resolvedFadeOut;
-      if (clampedOffset < fadeOutStart) {
-        const arcAtFade = musicVolume * arcLevelAt(fadeOutStart, events);
-        gainNode.gain.setValueAtTime(arcAtFade, toCtx(fadeOutStart));
-        gainNode.gain.linearRampToValueAtTime(0, toCtx(totalDuration));
-      } else {
-        gainNode.gain.linearRampToValueAtTime(0, now + (totalDuration - clampedOffset));
-      }
-
-      musicSource.start(now, clampedOffset % musicBuf.duration);
-      musicSource.stop(now + (totalDuration - clampedOffset) + 0.1);
-      musicSourceRef.current = musicSource;
-      musicGainRef.current = gainNode;
-      // Do NOT push musicSource into activeSourcesRef — stopAllSources already
-      // calls musicSourceRef.current?.stop() separately, and stopping twice
-      // throws InvalidStateError on Safari.
+      const fadeOutMs = Math.max(0, (fadeOutStart - clampedOffset) * 1000);
+      duckTimersRef.current.push(
+        setTimeout(() => fadeVol(musicEl, 0, resolvedFadeOut * 1000), fadeOutMs),
+      );
     }
 
     // ---------- Voice bus — one bus for all segments, shared reverb ----------
@@ -502,11 +477,15 @@ export function useSegmentedMixer({
       }
       segmentBuffersRef.current = loaded;
       if (musicUrl) {
-        try {
-          musicBufferRef.current = await loadBuffer(ctx, musicUrl);
-        } catch (e) {
-          console.warn("Music failed to load, continuing without it:", e);
-        }
+        // Plain <audio> element — iOS keeps this playing through screen lock.
+        // We do NOT load music into an AudioBuffer; streaming directly means
+        // faster start and background-safe playback (same as Spotify web).
+        const el = new Audio(musicUrl);
+        el.loop = true;
+        el.crossOrigin = "anonymous";
+        el.volume = 0;
+        el.load();
+        musicElementRef.current = el;
       }
       const { totalDuration } = buildTimeline();
       setDuration(totalDuration);
@@ -524,6 +503,9 @@ export function useSegmentedMixer({
     if (!ctx || ctx.state !== "running") return;
     offsetRef.current = getPlaybackPosition(ctx);
     ctx.suspend();
+    musicElementRef.current?.pause();
+    duckTimersRef.current.forEach(clearTimeout);
+    duckTimersRef.current = [];
     cancelAnimationFrame(rafRef.current);
     isPlayingRef.current = false;
     setIsPlaying(false);
@@ -550,11 +532,18 @@ export function useSegmentedMixer({
   resumeRef.current = resume;
 
   const stopAll = useCallback(() => {
+    const musicEl = musicElementRef.current;
+    if (musicEl) {
+      fadeVol(musicEl, 0, 1000);
+      setTimeout(() => {
+        musicEl.pause();
+        if (musicElementRef.current === musicEl) musicElementRef.current = null;
+      }, 1100);
+    }
     stopAllSources();
     audioCtxRef.current?.close();
     audioCtxRef.current = null;
     segmentBuffersRef.current = [];
-    musicBufferRef.current = null;
     isPlayingRef.current = false;
     setIsPlaying(false);
     setIsPaused(false);
