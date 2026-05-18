@@ -68,3 +68,18 @@ Built with Lovable (React + Vite + Supabase).
 ## Pending / known issues
 - `fix-theme-language` edge function needs Lovable to publish before it works
 - `voice_switch_used_at TIMESTAMPTZ DEFAULT NULL` column needs adding to profiles table via Lovable prompt
+
+## Reflect page — mood + journal
+The Reflect page (`src/pages/Reflect.tsx`) is the user's daily inner space. It has four sections:
+
+1. **Mood check-in** — 5 mood orbs (heavy / unsettled / okay / good / alive), one tap per day. Stored in `checkins` table with `mood_score` (1–5) and optional `mood_note`. Once submitted shows "you checked in today" — can't re-submit same day.
+
+2. **Journal** — free-text textarea, no prompt, no structure. Saved to `journal_entries` table with `entry_text`, `chapter_theme`, and `chapter_id`. Multiple entries per day are allowed. The placeholder is "what's present for you today?" — deliberately open.
+
+3. **Your month so far** — a constellation grid of MiniSun dots, one per calendar day of the current month. Each dot is coloured by mood score if checked in, empty if not. Shows the whole month at a glance.
+
+4. **Previous entries** — past journal entries grouped into collapsible folders by month + theme name. Shows newest first. Long entries collapse with a "read more" toggle.
+
+### DB tables for Reflect
+- `checkins` — user_id, chapter_id (intake), mood_score (1–5), mood_note, checkin_date (YYYY-MM-DD). One row per user per day.
+- `journal_entries` — user_id, chapter_id, chapter_theme, entry_text, created_at. Multiple per day allowed.
