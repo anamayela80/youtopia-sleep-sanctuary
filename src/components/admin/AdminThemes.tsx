@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Save, Trash2 } from "lucide-react";
+import { Save, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
@@ -17,6 +17,7 @@ type Theme = {
   theme: string;
   description: string | null;
   status: string;
+  sequence: number | null;
   intro_orienting: string | null;
   intro_settling: string | null;
   intro_established: string | null;
@@ -62,10 +63,15 @@ export const AdminThemes = () => {
   const load = async () => {
     const { data } = await supabase
       .from("monthly_themes")
-      .select("id, month_key, month, theme, description, status, intro_orienting, intro_settling, intro_established, about, science, practice, questions, guide_voice_id, seed_voice_id, allow_voice_clone")
+      .select("id, month_key, month, theme, description, status, sequence, intro_orienting, intro_settling, intro_established, about, science, practice, questions, guide_voice_id, seed_voice_id, allow_voice_clone")
       .not("month_key", "is", null);
     if (data) {
-      const sorted = [...data].sort((a, b) => ORDER.indexOf(a.month_key!) - ORDER.indexOf(b.month_key!));
+      const sorted = [...data].sort((a, b) => {
+        const sa = (a as any).sequence ?? 999;
+        const sb = (b as any).sequence ?? 999;
+        if (sa !== sb) return sa - sb;
+        return ORDER.indexOf(a.month_key!) - ORDER.indexOf(b.month_key!);
+      });
       setThemes(sorted.map((t) => ({ ...t, questions: parseQuestions((t as any).questions) })) as Theme[]);
     }
   };
@@ -93,6 +99,7 @@ export const AdminThemes = () => {
         theme: t.theme,
         description: t.description,
         status: t.status,
+        sequence: t.sequence,
         intro_orienting: t.intro_orienting,
         intro_settling: t.intro_settling,
         intro_established: t.intro_established,
@@ -108,6 +115,25 @@ export const AdminThemes = () => {
     setSavingId(null);
     if (error) toast({ variant: "destructive", title: "Save failed", description: error.message });
     else toast({ title: `${t.month} saved ✨` });
+  };
+
+  const moveTheme = async (index: number, direction: -1 | 1) => {
+    const swapIndex = index + direction;
+    if (swapIndex < 0 || swapIndex >= themes.length) return;
+
+    const updated = [...themes];
+    const seqA = updated[index].sequence ?? index + 1;
+    const seqB = updated[swapIndex].sequence ?? swapIndex + 1;
+
+    updated[index] = { ...updated[index], sequence: seqB };
+    updated[swapIndex] = { ...updated[swapIndex], sequence: seqA };
+
+    setThemes(updated);
+
+    await Promise.all([
+      supabase.from("monthly_themes").update({ sequence: seqB }).eq("id", updated[index].id),
+      supabase.from("monthly_themes").update({ sequence: seqA }).eq("id", updated[swapIndex].id),
+    ]);
   };
 
   const togglePublish = async (t: Theme, published: boolean) => {
@@ -153,10 +179,33 @@ export const AdminThemes = () => {
           {fixingLanguage ? "Scanning all themes…" : "Fix language in all themes"}
         </button>
       </div>
-      {themes.map((t) => (
+      {themes.map((t, index) => (
         <div key={t.id} className="bg-cream-light rounded-2xl p-4 border border-border space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-heading text-lg text-secondary">{t.month}</h3>
+            <div className="flex items-center gap-2">
+              <div className="flex flex-col">
+                <button
+                  onClick={() => moveTheme(index, -1)}
+                  disabled={index === 0}
+                  className="text-muted-foreground hover:text-foreground disabled:opacity-20 leading-none"
+                  aria-label="Move up"
+                >
+                  <ChevronUp size={14} />
+                </button>
+                <button
+                  onClick={() => moveTheme(index, 1)}
+                  disabled={index === themes.length - 1}
+                  className="text-muted-foreground hover:text-foreground disabled:opacity-20 leading-none"
+                  aria-label="Move down"
+                >
+                  <ChevronDown size={14} />
+                </button>
+              </div>
+              <span className="w-6 h-6 rounded-full bg-primary/10 text-primary font-body text-xs flex items-center justify-center font-semibold">
+                {t.sequence ?? "–"}
+              </span>
+              <h3 className="font-heading text-lg text-secondary">{t.month}</h3>
+            </div>
             <div className="flex items-center gap-2">
               <span className={`text-xs font-body ${t.status === "published" ? "text-primary" : "text-muted-foreground"}`}>
                 {t.status === "published" ? "Published" : "Draft"}
